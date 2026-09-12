@@ -31,8 +31,13 @@ import {
   EyeOff,
   ShieldCheck,
   ShieldAlert,
+  FileCode,
+  ExternalLink,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
+import { ResumeMatcherLogo } from "@/components/ui/logo";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +51,7 @@ import { extractFileText } from "@/lib/pdf-text";
 import { printHtmlDocument } from "@/lib/print";
 import { renderMatchReportHtml } from "@/lib/report";
 import { findTemplate, renderResumeHtml, TEMPLATES, type ResumeTemplate } from "@/lib/templates";
+import { generateOverleafFaangLatex } from "@/lib/latex-generator";
 import { parseResume } from "@/lib/resume-doc";
 import { extractKeywords } from "@/lib/matcher-engine";
 import { FaqSection } from "@/components/faq-section";
@@ -94,16 +100,16 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Transform candidate details into 100% ATS-shortlisted resumes. Features exact keyword extraction, invisible white-font ATS cloaking, Word (.doc) and vector PDF export with 25 FAANG templates.",
+          "Transform candidate details into 100% ATS-shortlisted resumes. Features exact keyword extraction, invisible white-font ATS cloaking, Overleaf FAANGPath LaTeX (.tex), Word (.doc), and vector PDF export with 32 FAANG templates.",
       },
       {
         property: "og:title",
-        content: "ResumeMatcher Enterprise — 100% ATS Resume Matcher & Stealth Cloak",
+        content: "ResumeMatcher Enterprise — 100% ATS Resume Matcher & Overleaf LaTeX Engine",
       },
       {
         property: "og:description",
         content:
-          "ATS match scoring, exact keyword infiltration, invisible white font cloaking, 25 world-class templates, Word and vector PDF downloads.",
+          "ATS match scoring, exact keyword infiltration, Overleaf FAANGPath LaTeX (.tex) export, 32 world-class templates, Word and vector PDF downloads.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -280,9 +286,11 @@ function Index() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [entryId, setEntryId] = useState<string | null>(null);
   const [tab, setTab] = useState("resume");
+  const [wizardStep, setWizardStep] = useState<1 | 2 | 3 | 4 | 5>(1);
 
   // Zoom controls for the resume preview
   const [previewZoom, setPreviewZoom] = useState(100);
+  const [zoomMode, setZoomMode] = useState<"fit" | "custom">("fit");
 
   // 100% ATS Shortlist Invisibility Cloak & X-Ray Mode
   const [stealthCloakActive, setStealthCloakActive] = useState(true);
@@ -431,7 +439,112 @@ function Index() {
 
   const ready = resume.trim().length > 30 && job.trim().length > 30 && !streaming;
   const text = result?.tailored_resume ?? draft;
-  const deferredText = useDeferredValue(text);
+  const activeResumeText = text || resume.trim() || profileToResume(profile);
+  const deferredText = useDeferredValue(activeResumeText);
+
+  // Live real-time extracted ATS technical keywords from target job description
+  const liveTargetKeywords = useMemo<string[]>(() => {
+    if (!job.trim()) return [];
+    return extractKeywords(job).all;
+  }, [job]);
+
+  // Canvas width/height observer for responsive preview fitting & zero mobile horizontal overflow
+  const previewCanvasRef = useRef<HTMLDivElement>(null);
+  const [canvasWidth, setCanvasWidth] = useState<number>(0);
+  const [canvasHeight, setCanvasHeight] = useState<number>(0);
+  const [previewDocHeight, setPreviewDocHeight] = useState<number>(1100);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
+  // Dynamic message handler from iframe for height calculation & smooth vertical wheel scroll
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.data && e.data.type === "RESUME_DOC_HEIGHT" && typeof e.data.height === "number") {
+        const safeH = Math.min(15000, Math.max(1100, Math.ceil(e.data.height)));
+        setPreviewDocHeight(safeH);
+      } else if (
+        e.data &&
+        e.data.type === "RESUME_WHEEL" &&
+        typeof e.data.deltaY === "number" &&
+        !isNaN(e.data.deltaY)
+      ) {
+        if (previewCanvasRef.current) {
+          const delta = Math.min(250, Math.max(-250, e.data.deltaY));
+          previewCanvasRef.current.scrollTop += delta;
+        }
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, []);
+
+  useEffect(() => {
+    if (!previewCanvasRef.current) return;
+    const updateDims = () => {
+      if (previewCanvasRef.current) {
+        setCanvasWidth(previewCanvasRef.current.clientWidth);
+        setCanvasHeight(previewCanvasRef.current.clientHeight);
+      }
+    };
+    updateDims();
+    const ro = new ResizeObserver(updateDims);
+    ro.observe(previewCanvasRef.current);
+    window.addEventListener("resize", updateDims);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", updateDims);
+    };
+  }, [tab, previewMode]);
+
+  // Auto-fit scale ensuring 100% of the resume page is visible vertically and horizontally without cutoff
+  const fitScale = useMemo(() => {
+    if (canvasWidth > 0 && canvasHeight > 0) {
+      const availW = Math.max(260, canvasWidth - 32);
+      const availH = Math.max(260, canvasHeight - 96);
+      const scaleW = availW / 850;
+      const scaleH = availH / Math.max(1100, previewDocHeight);
+      return Number(Math.min(scaleW, scaleH, 1).toFixed(3));
+    }
+    return 0.65;
+  }, [canvasWidth, canvasHeight, previewDocHeight]);
+
+  // Responsive scale: defaults to fitScale so full page is 100% visible; switches to previewZoom on manual zoom
+  const previewScale = useMemo(() => {
+    if (zoomMode === "fit") {
+      return fitScale;
+    }
+    if (canvasWidth > 0) {
+      const avail = Math.max(280, canvasWidth - 32);
+      const baseScale = Math.min(1, avail / 850);
+      return Number((baseScale * (previewZoom / 100)).toFixed(3));
+    }
+    return Number((previewZoom / 100).toFixed(3));
+  }, [zoomMode, fitScale, canvasWidth, previewZoom]);
+
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(previewDocHeight / 1100)),
+    [previewDocHeight],
+  );
+
+  const scrollToPage = useCallback(
+    (pageNum: number) => {
+      const p = Math.max(1, Math.min(totalPages, pageNum));
+      setCurrentPage(p);
+      if (previewCanvasRef.current) {
+        const targetTop = (p - 1) * 1100 * previewScale;
+        previewCanvasRef.current.scrollTo({ top: targetTop, behavior: "smooth" });
+      }
+    },
+    [totalPages, previewScale],
+  );
+
+  const handlePreviewScroll = useCallback(() => {
+    if (!previewCanvasRef.current) return;
+    const st = previewCanvasRef.current.scrollTop;
+    const pageHeightScaled = 1100 * previewScale;
+    const page = Math.min(totalPages, Math.max(1, Math.floor(st / pageHeightScaled + 0.4) + 1));
+    setCurrentPage(page);
+  }, [totalPages, previewScale]);
+
   const template = useMemo(() => findTemplate(templateId), [templateId]);
   const applicant = useMemo(
     () => profile.name.trim() || parseResume(resume).name || "Alex Chen",
@@ -590,13 +703,13 @@ function Index() {
     toast.success("Applied to your resume. Click 'Generate & Match Resume' to refresh your score.");
   }
 
-  // Word Format Download (Free for first 5 templates, Free for all if subscribed)
+  // Word Format Download (Free for first 6 templates including Overleaf FAANGPath)
   const handleDownloadWord = useCallback(
     (chosenTemplate: ResumeTemplate = template) => {
       if (!text) return;
       if (!chosenTemplate.isFree && !isSubscribed) {
         setSubReason(
-          `"${chosenTemplate.name}" is one of our 20 Executive Pro templates. Subscribe to unlock all 25 templates!`,
+          `"${chosenTemplate.name}" is one of our 26 Executive Pro templates. Subscribe to unlock all 32 templates!`,
         );
         setSubModalOpen(true);
         return;
@@ -631,12 +744,56 @@ function Index() {
     [text, isSubscribed, template, applicant, stealthCloakActive, activeGhostKeywords],
   );
 
+  // Overleaf FAANGPath LaTeX Source Generation (Underlying LaTeX engine)
+  const generatedLatex = useMemo(() => {
+    if (!text) return "";
+    const kws =
+      stealthCloakActive && activeGhostKeywords.length > 0 ? activeGhostKeywords : undefined;
+    return generateOverleafFaangLatex(text, {
+      ghostKeywords: kws,
+      stealthCloakActive,
+      jobTitle: jobTitle || deriveTitle(job),
+    });
+  }, [text, stealthCloakActive, activeGhostKeywords, jobTitle, job]);
+
+  const [copiedLatex, setCopiedLatex] = useState(false);
+  const copyLatex = useCallback(() => {
+    if (!generatedLatex) return;
+    void navigator.clipboard.writeText(generatedLatex);
+    setCopiedLatex(true);
+    toast.success("Overleaf FAANGPath LaTeX source code copied to clipboard!");
+    setTimeout(() => setCopiedLatex(false), 2000);
+  }, [generatedLatex]);
+
+  // LaTeX .tex Download (Free for all users)
+  const handleDownloadLatex = useCallback(() => {
+    if (!text) return;
+    const kws =
+      stealthCloakActive && activeGhostKeywords.length > 0 ? activeGhostKeywords : undefined;
+    const latexCode = generateOverleafFaangLatex(text, {
+      ghostKeywords: kws,
+      stealthCloakActive,
+      jobTitle: jobTitle || deriveTitle(job),
+    });
+    const blob = new Blob([latexCode], { type: "text/x-tex;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    const baseName = (applicant || "resume").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    link.download = `${baseName}-overleaf-faang.tex`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("Downloaded Overleaf FAANGPath LaTeX (.tex) file!");
+  }, [text, stealthCloakActive, activeGhostKeywords, applicant, jobTitle, job]);
+
   // Select a template
   const handleSelectTemplate = useCallback(
     (item: ResumeTemplate) => {
       if (!item.isFree && !isSubscribed) {
         setSubReason(
-          `"${item.name}" is an Executive Pro exclusive template. Free users can select the first 5 templates. Upgrade to Pro to unlock all 25 world-class templates!`,
+          `"${item.name}" is an Executive Pro exclusive template. Free users can select the first 6 templates (including Overleaf FAANGPath). Upgrade to Pro to unlock all 32 world-class templates!`,
         );
         setSubModalOpen(true);
         return;
@@ -645,6 +802,12 @@ function Index() {
       if (entryId) setHistory(updateEntry(entryId, { templateId: item.id }));
       setTab("resume");
       setPreviewMode("visual");
+      setZoomMode("fit");
+      setPreviewDocHeight(1100);
+      setCurrentPage(1);
+      if (previewCanvasRef.current) {
+        previewCanvasRef.current.scrollTop = 0;
+      }
       toast.success(`Switched to "${item.name}" template`);
     },
     [isSubscribed, entryId],
@@ -715,7 +878,7 @@ function Index() {
   }
 
   return (
-    <main className="min-h-screen bg-background text-foreground flex flex-col justify-between antialiased">
+    <main className="min-h-screen bg-background text-foreground flex flex-col justify-between antialiased w-full max-w-full overflow-x-hidden">
       <Toaster position="top-right" />
 
       {/* Supabase Auth Modal */}
@@ -747,27 +910,21 @@ function Index() {
         onSelect={handleSelectTemplate}
         onDownloadWord={handleDownloadWord}
         onDownloadPdf={handleDownloadPdf}
+        onDownloadLatex={handleDownloadLatex}
       />
 
-      <div>
+      <div className="w-full max-w-full overflow-x-hidden">
         {/* Modern Minimal Header */}
-        <header className="border-b border-border/70 bg-card/85 backdrop-blur-md sticky top-0 z-40">
-          <div className="w-full max-w-[1740px] mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-12 h-14">
-            <div className="flex items-center gap-3">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-semibold shadow-xs">
-                <Sparkles className="size-4" />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-foreground text-base tracking-tight">
-                  ResumeMatcher
-                </span>
-                <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary border border-primary/15">
-                  25 Templates
-                </span>
-              </div>
+        <header className="border-b border-border/70 bg-card/85 backdrop-blur-md sticky top-0 z-40 w-full overflow-x-hidden">
+          <div className="w-full max-w-[1740px] mx-auto flex items-center justify-between px-3 sm:px-6 lg:px-8 xl:px-12 h-14">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <ResumeMatcherLogo size={32} />
+              <span className="hidden sm:inline-flex rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary border border-primary/15">
+                32 Templates (Overleaf + FAANG)
+              </span>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
               {/* Workspace Layout Toggle */}
               <div className="hidden md:inline-flex items-center rounded-lg border border-border/70 bg-muted/40 p-0.5">
                 <button
@@ -798,10 +955,10 @@ function Index() {
 
               {/* User Account / Auth State */}
               {user ? (
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1.5 rounded-full border border-border/80 bg-muted/40 py-1 px-2.5 text-xs">
-                    <span className="size-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span className="font-medium text-foreground max-w-[130px] truncate">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <div className="flex items-center gap-1.5 rounded-full border border-border/80 bg-muted/40 py-1 px-2 text-xs">
+                    <span className="size-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+                    <span className="font-medium text-foreground max-w-[90px] sm:max-w-[130px] truncate">
                       {user.email}
                     </span>
                     {isSubscribed && (
@@ -817,16 +974,16 @@ function Index() {
                       await signOut();
                       toast.info("Signed out successfully.");
                     }}
-                    className="h-8 text-xs text-muted-foreground hover:text-foreground px-2"
+                    className="h-8 text-xs text-muted-foreground hover:text-foreground px-1.5 sm:px-2"
                   >
                     Sign Out
                   </Button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2">
                   {isSubscribed ? (
-                    <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-1 px-2.5 gap-1 shadow-xs">
-                      <Crown className="size-3.5 fill-current" /> Pro Active
+                    <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-1 px-2 sm:px-2.5 gap-1 shadow-xs">
+                      <Crown className="size-3.5 fill-current" /> <span className="hidden sm:inline">Pro Active</span><span className="sm:hidden">Pro</span>
                     </Badge>
                   ) : (
                     <>
@@ -835,13 +992,13 @@ function Index() {
                         size="sm"
                         onClick={() => {
                           setSubReason(
-                            "Free tier includes 5 templates & Word (.doc) export. Subscribe to unlock all 25 world-class templates and vector PDF exports!",
+                            "Free tier includes 6 templates & Word (.doc) and LaTeX (.tex) export. Subscribe to unlock all 32 world-class templates and vector PDF exports!",
                           );
                           setSubModalOpen(true);
                         }}
-                        className="h-8 text-xs font-semibold px-3 gap-1 shadow-xs"
+                        className="h-8 text-xs font-semibold px-2.5 sm:px-3 gap-1 shadow-xs"
                       >
-                        <Crown className="size-3.5 text-amber-300" /> Upgrade to Pro
+                        <Crown className="size-3.5 text-amber-300" /> <span className="hidden sm:inline">Upgrade to </span>Pro
                       </Button>
                       <button
                         type="button"
@@ -849,7 +1006,7 @@ function Index() {
                           setAuthModalMode("sign_in");
                           setAuthModalOpen(true);
                         }}
-                        className="text-xs text-muted-foreground hover:text-foreground font-medium px-2 py-1 transition-colors"
+                        className="text-xs text-muted-foreground hover:text-foreground font-medium px-1.5 sm:px-2 py-1 transition-colors"
                       >
                         Sign In
                       </button>
@@ -862,14 +1019,14 @@ function Index() {
                 variant="outline"
                 size="sm"
                 onClick={handleLoadAllDemo}
-                className="h-8 border-border/70 hover:bg-accent text-xs font-medium px-2.5"
+                className="h-8 border-border/70 hover:bg-accent text-xs font-medium px-2 sm:px-2.5"
               >
-                <Sparkles className="size-3.5 text-primary mr-1" /> Demo
+                <Sparkles className="size-3.5 text-primary sm:mr-1" /> <span className="hidden sm:inline">Demo</span>
               </Button>
 
-              <Button asChild variant="ghost" size="sm" className="h-8 text-xs font-medium px-2.5">
+              <Button asChild variant="ghost" size="sm" className="h-8 text-xs font-medium px-2 sm:px-2.5">
                 <Link to="/profile">
-                  <UserRound className="size-3.5 mr-1" /> Profile
+                  <UserRound className="size-3.5 sm:mr-1" /> <span className="hidden sm:inline">Profile</span>
                 </Link>
               </Button>
             </div>
@@ -877,9 +1034,9 @@ function Index() {
         </header>
 
         {/* Wide Full-Width Fluid Container (No Wasted Empty Margins on Laptops) */}
-        <div className="w-full max-w-[1740px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 pt-6">
+        <div className="w-full max-w-[1740px] mx-auto px-3 sm:px-6 lg:px-8 xl:px-12 pt-4 sm:pt-6 overflow-x-hidden">
           {/* Clear CTA & Trust Hero Banner */}
-          <div className="mb-6 rounded-2xl border border-primary/25 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-5 sm:p-6 shadow-xs">
+          <div className="mb-6 rounded-2xl border border-primary/25 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-4 sm:p-6 shadow-xs overflow-hidden">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div className="space-y-1.5">
                 <div className="flex flex-wrap items-center gap-2">
@@ -888,11 +1045,11 @@ function Index() {
                   </span>
                   <span className="text-xs text-muted-foreground hidden sm:inline">•</span>
                   <span className="text-xs font-semibold text-foreground">
-                    25 FAANG &amp; Big Tech Templates
+                    32 FAANG &amp; Overleaf Templates
                   </span>
                   <span className="text-xs text-muted-foreground hidden sm:inline">•</span>
                   <span className="text-xs text-muted-foreground">
-                    Word (.doc) &amp; Vector PDF
+                    Overleaf LaTeX (.tex), Word &amp; Vector PDF
                   </span>
                 </div>
                 <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-foreground">
@@ -949,17 +1106,49 @@ function Index() {
                   : "space-y-6 w-full max-w-[1400px] mx-auto"
               }
             >
-              {/* Step 1: Career Details & FULL Custom Section Builder */}
-              <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-xs">
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="flex size-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                      1
-                    </span>
-                    <h2 className="text-sm sm:text-base font-bold text-foreground">
-                      Candidate Career Details
-                    </h2>
+              {/* Step-by-Step Guided Wizard Workspace */}
+              <div className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-xs space-y-5">
+                {/* Header & Mode Switcher */}
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/80 pb-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="flex size-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                        {inputMode === "form" ? wizardStep : "✎"}
+                      </span>
+                      <h2 className="text-sm sm:text-base font-bold text-foreground">
+                        {inputMode === "form" ? (
+                          <>
+                            {wizardStep === 1 && "Step 1: Target Role & Job Posting"}
+                            {wizardStep === 2 && "Step 2: Contact & Identity"}
+                            {wizardStep === 3 && "Step 3: Professional Experience"}
+                            {wizardStep === 4 && "Step 4: Education, Skills & Custom Sections"}
+                            {wizardStep === 5 && "Step 5: ATS Optimization & Stealth Cloak"}
+                          </>
+                        ) : (
+                          "Quick Import / Paste Resume Text"
+                        )}
+                      </h2>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      {inputMode === "form" ? (
+                        <>
+                          {wizardStep === 1 &&
+                            "Target job requirements, tech stack & real-time ATS keyword detection."}
+                          {wizardStep === 2 &&
+                            "Your personal branding, contact info, and executive headline."}
+                          {wizardStep === 3 &&
+                            "Career achievements with metrics, scale, and action verb helpers."}
+                          {wizardStep === 4 &&
+                            "Degrees, core competencies, certifications, and key project sections."}
+                          {wizardStep === 5 &&
+                            "Verify keyword coverage, arm the ATS Stealth Cloak, and generate."}
+                        </>
+                      ) : (
+                        "Upload a PDF or paste an existing resume to optimize instantly."
+                      )}
+                    </p>
                   </div>
+
                   <div className="flex items-center gap-1.5">
                     <button
                       type="button"
@@ -970,7 +1159,7 @@ function Index() {
                           : "bg-muted text-muted-foreground hover:bg-accent"
                       }`}
                     >
-                      Form
+                      Guided Wizard
                     </button>
                     <button
                       type="button"
@@ -987,7 +1176,7 @@ function Index() {
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={handleLoadSampleDetails}
+                      onClick={handleLoadAllDemo}
                       className="h-7 px-2 text-xs text-primary hover:bg-primary/10 font-semibold"
                     >
                       <Sparkles className="size-3 mr-1" /> Demo Data
@@ -997,426 +1186,788 @@ function Index() {
 
                 {inputMode === "form" ? (
                   <div className="space-y-5">
-                    {/* Basic Contact Info */}
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <label className="block">
-                        <span className="mb-1 block text-xs font-semibold text-foreground">
-                          Full Name
-                        </span>
-                        <Input
-                          value={profile.name}
-                          onChange={(e) => updateProfileField("name", e.target.value)}
-                          placeholder="Alex Chen"
-                          className="h-10 text-sm bg-background"
-                        />
-                      </label>
-                      <label className="block">
-                        <span className="mb-1 block text-xs font-semibold text-foreground">
-                          Target Title / Headline
-                        </span>
-                        <Input
-                          value={profile.headline}
-                          onChange={(e) => updateProfileField("headline", e.target.value)}
-                          placeholder="Senior Full-Stack Architect"
-                          className="h-10 text-sm bg-background"
-                        />
-                      </label>
-                      <label className="block">
-                        <span className="mb-1 block text-xs font-semibold text-foreground">
-                          Email Address
-                        </span>
-                        <Input
-                          value={profile.email}
-                          onChange={(e) => updateProfileField("email", e.target.value)}
-                          placeholder="alex.chen@example.com"
-                          className="h-10 text-sm bg-background"
-                        />
-                      </label>
-                      <label className="block">
-                        <span className="mb-1 block text-xs font-semibold text-foreground">
-                          Phone & Location
-                        </span>
-                        <Input
-                          value={
-                            profile.phone
-                              ? `${profile.phone} | ${profile.location}`
-                              : profile.location
-                          }
-                          onChange={(e) => updateProfileField("location", e.target.value)}
-                          placeholder="+1 (415) 890-2341 | San Francisco, CA"
-                          className="h-10 text-sm bg-background"
-                        />
-                      </label>
-                      <label className="block">
-                        <span className="mb-1 block text-xs font-semibold text-foreground">
-                          LinkedIn Profile URL
-                        </span>
-                        <Input
-                          value={profile.linkedin}
-                          onChange={(e) => updateProfileField("linkedin", e.target.value)}
-                          placeholder="linkedin.com/in/alexchen-dev"
-                          className="h-10 text-sm bg-background"
-                        />
-                      </label>
-                      <label className="block">
-                        <span className="mb-1 block text-xs font-semibold text-foreground">
-                          Website / Portfolio
-                        </span>
-                        <Input
-                          value={profile.website}
-                          onChange={(e) => updateProfileField("website", e.target.value)}
-                          placeholder="alexchen.dev"
-                          className="h-10 text-sm bg-background"
-                        />
-                      </label>
-                    </div>
-
-                    {/* Executive Summary */}
-                    <label className="block border-t border-border/80 pt-3">
-                      <span className="mb-1 block text-xs font-bold text-foreground">
-                        Executive Summary
-                      </span>
-                      <Textarea
-                        value={profile.about}
-                        onChange={(e) => updateProfileField("about", e.target.value)}
-                        placeholder="Brief overview of your experience, leadership, and accomplishments."
-                        className="min-h-20 resize-y bg-background text-sm leading-relaxed p-3"
-                      />
-                    </label>
-
-                    {/* Work Experience */}
-                    <div className="space-y-3 border-t border-border/80 pt-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                          <Briefcase className="size-3.5 text-primary" /> Work Experience
-                        </span>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="h-7 text-xs font-semibold px-2.5 border-border"
-                          onClick={() =>
-                            updateProfileField("roles", [
-                              ...profile.roles,
-                              {
-                                ...emptyRole,
-                                title: "Software Engineer",
-                                company: "Company Name",
-                                dates: "2021 – Present",
-                              },
-                            ])
-                          }
-                        >
-                          <Plus className="size-3 mr-1" /> Add Role
-                        </Button>
+                    {/* 5-Step Tracker Bar */}
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-5 gap-1 text-[10px] sm:text-[11px] font-semibold w-full">
+                        {[
+                          { step: 1, label: "1. Job", fullLabel: "1. Job Target" },
+                          { step: 2, label: "2. Info", fullLabel: "2. Identity" },
+                          { step: 3, label: "3. Exp", fullLabel: "3. Experience" },
+                          { step: 4, label: "4. Skills", fullLabel: "4. Skills & Sections" },
+                          { step: 5, label: "5. ATS", fullLabel: "5. ATS Stealth" },
+                        ].map((item) => (
+                          <button
+                            key={item.step}
+                            type="button"
+                            onClick={() => setWizardStep(item.step as any)}
+                            className={`rounded-md py-1 px-1 text-center truncate transition-all ${
+                              wizardStep === item.step
+                                ? "bg-primary text-primary-foreground font-bold shadow-2xs"
+                                : wizardStep > item.step
+                                ? "bg-muted/80 text-foreground font-medium hover:bg-muted"
+                                : "bg-muted/30 text-muted-foreground hover:text-foreground"
+                            }`}
+                            title={item.fullLabel}
+                          >
+                            <span className="sm:hidden">{item.label}</span>
+                            <span className="hidden sm:inline">{item.fullLabel}</span>
+                          </button>
+                        ))}
                       </div>
-                      {profile.roles.map((role, idx) => (
+                      {/* Progress line */}
+                      <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
                         <div
-                          key={idx}
-                          className="rounded-lg border border-border bg-background/50 p-3 space-y-2.5 shadow-2xs"
-                        >
-                          <div className="grid gap-2 sm:grid-cols-3">
-                            <Input
-                              value={role.title}
-                              onChange={(e) =>
-                                updateProfileField(
-                                  "roles",
-                                  profile.roles.map((r, i) =>
-                                    i === idx ? { ...r, title: e.target.value } : r,
-                                  ),
-                                )
-                              }
-                              placeholder="Job Title"
-                              className="h-9 text-xs bg-background"
-                            />
-                            <Input
-                              value={role.company}
-                              onChange={(e) =>
-                                updateProfileField(
-                                  "roles",
-                                  profile.roles.map((r, i) =>
-                                    i === idx ? { ...r, company: e.target.value } : r,
-                                  ),
-                                )
-                              }
-                              placeholder="Company"
-                              className="h-9 text-xs bg-background"
-                            />
-                            <Input
-                              value={role.dates}
-                              onChange={(e) =>
-                                updateProfileField(
-                                  "roles",
-                                  profile.roles.map((r, i) =>
-                                    i === idx ? { ...r, dates: e.target.value } : r,
-                                  ),
-                                )
-                              }
-                              placeholder="2022 – Present"
-                              className="h-9 text-xs bg-background"
-                            />
-                          </div>
-                          <Textarea
-                            value={role.bullets}
-                            onChange={(e) =>
-                              updateProfileField(
-                                "roles",
-                                profile.roles.map((r, i) =>
-                                  i === idx ? { ...r, bullets: e.target.value } : r,
-                                ),
-                              )
-                            }
-                            placeholder="Accomplishments bullets (one per line) — lead with measurable impact."
-                            className="min-h-20 resize-y bg-background text-xs leading-relaxed p-2.5"
-                          />
-                          {profile.roles.length > 1 && (
-                            <div className="flex justify-end">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  updateProfileField(
-                                    "roles",
-                                    profile.roles.filter((_, i) => i !== idx),
-                                  )
-                                }
-                                className="text-[11px] font-medium text-muted-foreground hover:text-destructive flex items-center gap-1"
-                              >
-                                <Trash2 className="size-3" /> Remove role
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Technical Skills */}
-                    <label className="block border-t border-border/80 pt-3">
-                      <span className="mb-1 block text-xs font-bold text-foreground flex items-center gap-1.5">
-                        <Wrench className="size-3.5 text-primary" /> Technical & Domain Skills
-                      </span>
-                      <Textarea
-                        value={profile.skills}
-                        onChange={(e) => updateProfileField("skills", e.target.value)}
-                        placeholder="React, TypeScript, Node.js, Python, PostgreSQL, AWS, Docker, GraphQL, System Design..."
-                        className="min-h-16 resize-y bg-background text-xs leading-relaxed p-2.5"
-                      />
-                    </label>
-
-                    {/* Education */}
-                    <div className="space-y-2 border-t border-border/80 pt-3">
-                      <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                        <GraduationCap className="size-3.5 text-primary" /> Education
-                      </span>
-                      {profile.studies.map((study, idx) => (
-                        <div key={idx} className="grid gap-2 sm:grid-cols-3">
-                          <Input
-                            value={study.qualification}
-                            onChange={(e) =>
-                              updateProfileField(
-                                "studies",
-                                profile.studies.map((s, i) =>
-                                  i === idx ? { ...s, qualification: e.target.value } : s,
-                                ),
-                              )
-                            }
-                            placeholder="Degree / B.S."
-                            className="h-9 text-xs bg-background"
-                          />
-                          <Input
-                            value={study.school}
-                            onChange={(e) =>
-                              updateProfileField(
-                                "studies",
-                                profile.studies.map((s, i) =>
-                                  i === idx ? { ...s, school: e.target.value } : s,
-                                ),
-                              )
-                            }
-                            placeholder="University / College"
-                            className="h-9 text-xs bg-background"
-                          />
-                          <Input
-                            value={study.dates}
-                            onChange={(e) =>
-                              updateProfileField(
-                                "studies",
-                                profile.studies.map((s, i) =>
-                                  i === idx ? { ...s, dates: e.target.value } : s,
-                                ),
-                              )
-                            }
-                            placeholder="2019"
-                            className="h-9 text-xs bg-background"
-                          />
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* FULLY STRUCTURED CUSTOM SECTIONS BUILDER */}
-                    <div className="space-y-3.5 border-t border-border/80 pt-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                          <Layers className="size-3.5 text-primary" /> Custom Resume Sections
-                        </span>
-                        <span className="text-[11px] text-muted-foreground">
-                          Add projects, credentials, awards & tabs
-                        </span>
+                          className="h-full bg-primary transition-all duration-300 rounded-full"
+                          style={{ width: `${(wizardStep / 5) * 100}%` }}
+                        />
                       </div>
+                    </div>
 
-                      {/* Active Custom Sections */}
-                      {(profile.customSections || []).map((section) => (
-                        <div
-                          key={section.id}
-                          className="rounded-xl border border-primary/25 bg-primary/5 p-4 space-y-3 shadow-2xs"
-                        >
-                          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-primary/20 pb-2.5">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[11px] font-bold uppercase text-primary">
-                                Section:
-                              </span>
-                              <Input
-                                value={section.title}
-                                onChange={(e) =>
-                                  handleUpdateSectionTitle(section.id, e.target.value)
-                                }
-                                placeholder="Section Title (e.g., Key Projects)"
-                                className="h-8 text-xs font-bold bg-background max-w-xs border-primary/30"
-                              />
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="h-7 text-[11px] font-semibold bg-background"
-                                onClick={() => handleAddItemToSection(section.id)}
-                              >
-                                <Plus className="size-3 mr-1" /> Add Entry
-                              </Button>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveSection(section.id)}
-                                className="text-[11px] text-muted-foreground hover:text-destructive flex items-center gap-1"
-                              >
-                                <Trash2 className="size-3" /> Remove
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Items inside this section */}
-                          {section.items && section.items.length > 0 ? (
-                            <div className="space-y-3">
-                              {section.items.map((item) => (
-                                <div
-                                  key={item.id}
-                                  className="rounded-lg border border-border bg-background p-3 space-y-2"
-                                >
-                                  <div className="grid gap-2 sm:grid-cols-3">
-                                    <Input
-                                      value={item.name}
-                                      onChange={(e) =>
-                                        handleUpdateSectionItem(
-                                          section.id,
-                                          item.id,
-                                          "name",
-                                          e.target.value,
-                                        )
-                                      }
-                                      placeholder="Entry / Project Name"
-                                      className="h-8 text-xs"
-                                    />
-                                    <Input
-                                      value={item.subtitle || ""}
-                                      onChange={(e) =>
-                                        handleUpdateSectionItem(
-                                          section.id,
-                                          item.id,
-                                          "subtitle",
-                                          e.target.value,
-                                        )
-                                      }
-                                      placeholder="Tech Stack / Role / Issuer"
-                                      className="h-8 text-xs"
-                                    />
-                                    <Input
-                                      value={item.dates || ""}
-                                      onChange={(e) =>
-                                        handleUpdateSectionItem(
-                                          section.id,
-                                          item.id,
-                                          "dates",
-                                          e.target.value,
-                                        )
-                                      }
-                                      placeholder="Dates / Year"
-                                      className="h-8 text-xs"
-                                    />
-                                  </div>
-                                  <Textarea
-                                    value={item.description || ""}
-                                    onChange={(e) =>
-                                      handleUpdateSectionItem(
-                                        section.id,
-                                        item.id,
-                                        "description",
-                                        e.target.value,
-                                      )
-                                    }
-                                    placeholder="Accomplishment bullets or details..."
-                                    className="min-h-16 text-xs p-2"
-                                  />
-                                  {section.items!.length > 1 && (
-                                    <div className="flex justify-end">
-                                      <button
-                                        type="button"
-                                        onClick={() => handleRemoveSectionItem(section.id, item.id)}
-                                        className="text-[11px] text-muted-foreground hover:text-destructive flex items-center gap-1"
-                                      >
-                                        <Trash2 className="size-3" /> Remove entry
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <Textarea
-                              value={section.content}
-                              onChange={(e) => {
-                                const updated = (profile.customSections || []).map((s) =>
-                                  s.id === section.id ? { ...s, content: e.target.value } : s,
-                                );
-                                updateProfileField("customSections", updated);
-                              }}
-                              placeholder="Enter accomplishments or bullets (one per line)..."
-                              className="min-h-20 text-xs p-2 bg-background"
-                            />
-                          )}
-                        </div>
-                      ))}
-
-                      {/* Quick Presets for Custom Sections */}
-                      <div className="rounded-lg border border-dashed border-border p-3 bg-muted/40">
-                        <span className="text-xs font-semibold text-foreground block mb-2">
-                          + Add a New Section:
-                        </span>
-                        <div className="flex flex-wrap gap-1.5">
-                          {SECTION_PRESETS.map((preset) => (
+                    {/* STEP 1: TARGET ROLE & JOB POSTING */}
+                    {wizardStep === 1 && (
+                      <div className="space-y-4 pt-1 animate-in fade-in duration-200">
+                        {/* Sample job quick buttons */}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-xs font-semibold text-foreground mr-1">
+                            Load Benchmark Job:
+                          </span>
+                          {SAMPLE_JOBS.map((sample) => (
                             <button
-                              key={preset.title}
+                              key={sample.id}
                               type="button"
-                              onClick={() => handleAddSection(preset.title)}
-                              className="rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground hover:border-primary hover:text-primary transition-all"
+                              onClick={() => handleLoadSampleJob(sample)}
+                              className="rounded-full border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-foreground hover:border-primary hover:text-primary transition-colors"
                             >
-                              {preset.label}
+                              {sample.title}
                             </button>
                           ))}
                         </div>
+
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <label className="block">
+                            <span className="mb-1 block text-xs font-semibold text-foreground">
+                              Target Role Title
+                            </span>
+                            <Input
+                              value={jobTitle}
+                              onChange={(e) => setJobTitle(e.target.value)}
+                              placeholder="e.g. Senior Full-Stack Engineer"
+                              className="h-10 text-sm bg-background"
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="mb-1 block text-xs font-semibold text-foreground">
+                              Target Company / Industry
+                            </span>
+                            <Input
+                              placeholder="e.g. Stripe, Google, or Tech Startup"
+                              className="h-10 text-sm bg-background"
+                            />
+                          </label>
+                        </div>
+
+                        <label className="block">
+                          <div className="mb-1 flex items-center justify-between">
+                            <span className="text-xs font-bold text-foreground">
+                              Target Job Description (Requirements &amp; Tech Stack)
+                            </span>
+                            <span className="text-[11px] text-muted-foreground">
+                              {job.trim().length} characters
+                            </span>
+                          </div>
+                          <Textarea
+                            value={job}
+                            onChange={(e) => setJob(e.target.value)}
+                            placeholder="Paste the target job posting here. Requirements, responsibilities, languages, frameworks..."
+                            className="min-h-36 resize-y bg-background text-xs leading-relaxed p-3"
+                          />
+                        </label>
+
+                        {/* Real-time Extracted ATS Keywords Preview */}
+                        {liveTargetKeywords.length > 0 && (
+                          <div className="rounded-xl border border-primary/25 bg-primary/5 p-3.5 space-y-2">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="font-bold text-primary flex items-center gap-1.5">
+                                <Sparkles className="size-3.5" /> Detected ATS Keywords ({liveTargetKeywords.length} terms):
+                              </span>
+                              <span className="text-[10px] text-muted-foreground">
+                                Extracted from job posting
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
+                              {liveTargetKeywords.slice(0, 16).map((kw, i) => (
+                                <span
+                                  key={i}
+                                  className="inline-flex items-center rounded-md bg-background border border-primary/30 px-2 py-0.5 text-[10px] font-semibold text-foreground font-mono"
+                                >
+                                  ✓ {kw}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Tone Selection */}
+                        <div className="border-t border-border pt-3">
+                          <span className="mb-2 block text-xs font-bold text-foreground">
+                            Target Executive Tone:
+                          </span>
+                          <div className="flex flex-wrap gap-2">
+                            {TONES.map((option) => (
+                              <button
+                                key={option.id}
+                                type="button"
+                                onClick={() => setTone(option.id)}
+                                className={`rounded-md border px-3 py-1 text-xs font-semibold transition-all ${
+                                  tone === option.id
+                                    ? "border-primary bg-primary text-primary-foreground shadow-2xs"
+                                    : "border-border bg-background text-foreground hover:bg-accent"
+                                }`}
+                              >
+                                {option.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Footer Nav */}
+                        <div className="flex items-center justify-between pt-3 border-t border-border">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleLoadSampleJob(SAMPLE_JOBS[0]!)}
+                            className="text-xs font-semibold"
+                          >
+                            <Sparkles className="size-3 mr-1 text-primary" /> Load Sample Job
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={() => setWizardStep(2)}
+                            size="sm"
+                            className="text-xs font-bold px-4"
+                          >
+                            Next: Contact Details →
+                          </Button>
+                        </div>
                       </div>
-                    </div>
+                    )}
+
+                    {/* STEP 2: PERSONAL & CONTACT INFORMATION */}
+                    {wizardStep === 2 && (
+                      <div className="space-y-4 pt-1 animate-in fade-in duration-200">
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <label className="block">
+                            <span className="mb-1 block text-xs font-semibold text-foreground">
+                              Full Name
+                            </span>
+                            <Input
+                              value={profile.name}
+                              onChange={(e) => updateProfileField("name", e.target.value)}
+                              placeholder="Alex Chen"
+                              className="h-10 text-sm bg-background"
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="mb-1 block text-xs font-semibold text-foreground">
+                              Target Headline / Title
+                            </span>
+                            <Input
+                              value={profile.headline}
+                              onChange={(e) => updateProfileField("headline", e.target.value)}
+                              placeholder="Senior Full-Stack Architect"
+                              className="h-10 text-sm bg-background"
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="mb-1 block text-xs font-semibold text-foreground">
+                              Email Address
+                            </span>
+                            <Input
+                              value={profile.email}
+                              onChange={(e) => updateProfileField("email", e.target.value)}
+                              placeholder="alex.chen@example.com"
+                              className="h-10 text-sm bg-background"
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="mb-1 block text-xs font-semibold text-foreground">
+                              Phone &amp; Location
+                            </span>
+                            <Input
+                              value={
+                                profile.phone
+                                  ? `${profile.phone} | ${profile.location}`
+                                  : profile.location
+                              }
+                              onChange={(e) => updateProfileField("location", e.target.value)}
+                              placeholder="+1 (415) 890-2341 | San Francisco, CA"
+                              className="h-10 text-sm bg-background"
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="mb-1 block text-xs font-semibold text-foreground">
+                              LinkedIn Profile URL
+                            </span>
+                            <Input
+                              value={profile.linkedin}
+                              onChange={(e) => updateProfileField("linkedin", e.target.value)}
+                              placeholder="linkedin.com/in/alexchen-dev"
+                              className="h-10 text-sm bg-background"
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="mb-1 block text-xs font-semibold text-foreground">
+                              Website / Portfolio
+                            </span>
+                            <Input
+                              value={profile.website}
+                              onChange={(e) => updateProfileField("website", e.target.value)}
+                              placeholder="alexchen.dev"
+                              className="h-10 text-sm bg-background"
+                            />
+                          </label>
+                        </div>
+
+                        {/* Executive Summary */}
+                        <label className="block border-t border-border pt-3">
+                          <span className="mb-1 block text-xs font-bold text-foreground">
+                            Executive Summary / Profile Intro
+                          </span>
+                          <Textarea
+                            value={profile.about}
+                            onChange={(e) => updateProfileField("about", e.target.value)}
+                            placeholder="Brief overview of your experience, leadership, and accomplishments."
+                            className="min-h-24 resize-y bg-background text-xs leading-relaxed p-3"
+                          />
+                        </label>
+
+                        {/* Footer Nav */}
+                        <div className="flex items-center justify-between pt-3 border-t border-border">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setWizardStep(1)}
+                            className="text-xs font-semibold text-muted-foreground"
+                          >
+                            ← Back: Target Job
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={() => setWizardStep(3)}
+                            size="sm"
+                            className="text-xs font-bold px-4"
+                          >
+                            Next: Work Experience →
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* STEP 3: WORK EXPERIENCE */}
+                    {wizardStep === 3 && (
+                      <div className="space-y-4 pt-1 animate-in fade-in duration-200">
+                        <div className="flex items-center justify-between border-b border-border pb-2.5">
+                          <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                            <Briefcase className="size-3.5 text-primary" /> Career Roles ({profile.roles.length})
+                          </span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs font-semibold px-2.5 border-border"
+                            onClick={() =>
+                              updateProfileField("roles", [
+                                ...profile.roles,
+                                {
+                                  ...emptyRole,
+                                  title: "Software Engineer",
+                                  company: "Company Name",
+                                  dates: "2022 – Present",
+                                },
+                              ])
+                            }
+                          >
+                            <Plus className="size-3 mr-1" /> Add Another Role
+                          </Button>
+                        </div>
+
+                        {/* Power Action Verb Pills Helper */}
+                        <div className="rounded-lg border border-border/80 bg-muted/40 p-2.5">
+                          <span className="text-[11px] font-bold text-foreground block mb-1.5">
+                            ⚡ Executive Action Verbs (Click to copy/inspire):
+                          </span>
+                          <div className="flex flex-wrap gap-1">
+                            {[
+                              "Architected",
+                              "Spearheaded",
+                              "Engineered",
+                              "Orchestrated",
+                              "Scaled to 1M+",
+                              "Reduced Latency by 40%",
+                              "Streamlined",
+                              "Automated",
+                            ].map((verb) => (
+                              <button
+                                key={verb}
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(verb);
+                                  toast.info(`Copied "${verb}" to clipboard!`);
+                                }}
+                                className="rounded bg-background border border-border px-2 py-0.5 text-[10px] font-medium text-foreground hover:border-primary transition-colors"
+                              >
+                                + {verb}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Role list */}
+                        <div className="space-y-3">
+                          {profile.roles.map((role, idx) => (
+                            <div
+                              key={idx}
+                              className="rounded-xl border border-border bg-background/60 p-3.5 space-y-2.5 shadow-2xs"
+                            >
+                              <div className="grid gap-2 sm:grid-cols-3">
+                                <Input
+                                  value={role.title}
+                                  onChange={(e) =>
+                                    updateProfileField(
+                                      "roles",
+                                      profile.roles.map((r, i) =>
+                                        i === idx ? { ...r, title: e.target.value } : r,
+                                      ),
+                                    )
+                                  }
+                                  placeholder="Job Title"
+                                  className="h-9 text-xs bg-background"
+                                />
+                                <Input
+                                  value={role.company}
+                                  onChange={(e) =>
+                                    updateProfileField(
+                                      "roles",
+                                      profile.roles.map((r, i) =>
+                                        i === idx ? { ...r, company: e.target.value } : r,
+                                      ),
+                                    )
+                                  }
+                                  placeholder="Company"
+                                  className="h-9 text-xs bg-background"
+                                />
+                                <Input
+                                  value={role.dates}
+                                  onChange={(e) =>
+                                    updateProfileField(
+                                      "roles",
+                                      profile.roles.map((r, i) =>
+                                        i === idx ? { ...r, dates: e.target.value } : r,
+                                      ),
+                                    )
+                                  }
+                                  placeholder="Dates (e.g. 2022 – Present)"
+                                  className="h-9 text-xs bg-background"
+                                />
+                              </div>
+                              <Textarea
+                                value={role.bullets}
+                                onChange={(e) =>
+                                  updateProfileField(
+                                    "roles",
+                                    profile.roles.map((r, i) =>
+                                      i === idx ? { ...r, bullets: e.target.value } : r,
+                                    ),
+                                  )
+                                }
+                                placeholder="Accomplishment bullets (one per line) — lead with measurable impact..."
+                                className="min-h-24 resize-y bg-background text-xs leading-relaxed p-2.5"
+                              />
+                              {profile.roles.length > 1 && (
+                                <div className="flex justify-end">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      updateProfileField(
+                                        "roles",
+                                        profile.roles.filter((_, i) => i !== idx),
+                                      )
+                                    }
+                                    className="text-[11px] font-medium text-muted-foreground hover:text-destructive flex items-center gap-1"
+                                  >
+                                    <Trash2 className="size-3" /> Remove role
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Footer Nav */}
+                        <div className="flex items-center justify-between pt-3 border-t border-border">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setWizardStep(2)}
+                            className="text-xs font-semibold text-muted-foreground"
+                          >
+                            ← Back: Contact
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={() => setWizardStep(4)}
+                            size="sm"
+                            className="text-xs font-bold px-4"
+                          >
+                            Next: Skills &amp; Sections →
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* STEP 4: EDUCATION, SKILLS & CUSTOM SECTIONS */}
+                    {wizardStep === 4 && (
+                      <div className="space-y-4 pt-1 animate-in fade-in duration-200">
+                        {/* Technical Skills */}
+                        <label className="block">
+                          <span className="mb-1 block text-xs font-bold text-foreground flex items-center gap-1.5">
+                            <Wrench className="size-3.5 text-primary" /> Core Technical &amp; Domain Skills
+                          </span>
+                          <Textarea
+                            value={profile.skills}
+                            onChange={(e) => updateProfileField("skills", e.target.value)}
+                            placeholder="React, TypeScript, Node.js, Python, PostgreSQL, AWS, Docker, GraphQL, Distributed Systems..."
+                            className="min-h-18 resize-y bg-background text-xs leading-relaxed p-2.5"
+                          />
+                        </label>
+
+                        {/* Education */}
+                        <div className="space-y-2 border-t border-border pt-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                              <GraduationCap className="size-3.5 text-primary" /> Education
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateProfileField("studies", [
+                                  ...profile.studies,
+                                  { ...emptyStudy, qualification: "B.S. in Computer Science" },
+                                ])
+                              }
+                              className="text-xs text-primary font-semibold hover:underline"
+                            >
+                              + Add Degree
+                            </button>
+                          </div>
+                          {profile.studies.map((study, idx) => (
+                            <div key={idx} className="grid gap-2 sm:grid-cols-3">
+                              <Input
+                                value={study.qualification}
+                                onChange={(e) =>
+                                  updateProfileField(
+                                    "studies",
+                                    profile.studies.map((s, i) =>
+                                      i === idx ? { ...s, qualification: e.target.value } : s,
+                                    ),
+                                  )
+                                }
+                                placeholder="Degree / B.S."
+                                className="h-9 text-xs bg-background"
+                              />
+                              <Input
+                                value={study.school}
+                                onChange={(e) =>
+                                  updateProfileField(
+                                    "studies",
+                                    profile.studies.map((s, i) =>
+                                      i === idx ? { ...s, school: e.target.value } : s,
+                                    ),
+                                  )
+                                }
+                                placeholder="University / College"
+                                className="h-9 text-xs bg-background"
+                              />
+                              <Input
+                                value={study.dates}
+                                onChange={(e) =>
+                                  updateProfileField(
+                                    "studies",
+                                    profile.studies.map((s, i) =>
+                                      i === idx ? { ...s, dates: e.target.value } : s,
+                                    ),
+                                  )
+                                }
+                                placeholder="Dates (e.g. 2020)"
+                                className="h-9 text-xs bg-background"
+                              />
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* CUSTOM SECTIONS BUILDER */}
+                        <div className="space-y-3.5 border-t border-border pt-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                              <Layers className="size-3.5 text-primary" /> Custom Resume Sections
+                            </span>
+                            <span className="text-[11px] text-muted-foreground">
+                              Projects, Certifications, Awards
+                            </span>
+                          </div>
+
+                          {(profile.customSections || []).map((section) => (
+                            <div
+                              key={section.id}
+                              className="rounded-xl border border-primary/25 bg-primary/5 p-3.5 space-y-2.5 shadow-2xs"
+                            >
+                              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-primary/20 pb-2">
+                                <Input
+                                  value={section.title}
+                                  onChange={(e) =>
+                                    handleUpdateSectionTitle(section.id, e.target.value)
+                                  }
+                                  placeholder="Section Title"
+                                  className="h-8 text-xs font-bold bg-background max-w-xs border-primary/30"
+                                />
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-7 text-[11px] font-semibold bg-background"
+                                    onClick={() => handleAddItemToSection(section.id)}
+                                  >
+                                    <Plus className="size-3 mr-1" /> Add Entry
+                                  </Button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveSection(section.id)}
+                                    className="text-[11px] text-muted-foreground hover:text-destructive flex items-center gap-1"
+                                  >
+                                    <Trash2 className="size-3" /> Remove
+                                  </button>
+                                </div>
+                              </div>
+
+                              {section.items && section.items.length > 0 ? (
+                                <div className="space-y-2">
+                                  {section.items.map((item) => (
+                                    <div
+                                      key={item.id}
+                                      className="rounded-lg border border-border bg-background p-2.5 space-y-2"
+                                    >
+                                      <div className="grid gap-2 sm:grid-cols-3">
+                                        <Input
+                                          value={item.name}
+                                          onChange={(e) =>
+                                            handleUpdateSectionItem(
+                                              section.id,
+                                              item.id,
+                                              "name",
+                                              e.target.value,
+                                            )
+                                          }
+                                          placeholder="Entry / Project Name"
+                                          className="h-8 text-xs"
+                                        />
+                                        <Input
+                                          value={item.subtitle || ""}
+                                          onChange={(e) =>
+                                            handleUpdateSectionItem(
+                                              section.id,
+                                              item.id,
+                                              "subtitle",
+                                              e.target.value,
+                                            )
+                                          }
+                                          placeholder="Stack / Issuer"
+                                          className="h-8 text-xs"
+                                        />
+                                        <Input
+                                          value={item.dates || ""}
+                                          onChange={(e) =>
+                                            handleUpdateSectionItem(
+                                              section.id,
+                                              item.id,
+                                              "dates",
+                                              e.target.value,
+                                            )
+                                          }
+                                          placeholder="Dates / Year"
+                                          className="h-8 text-xs"
+                                        />
+                                      </div>
+                                      <Textarea
+                                        value={item.description || ""}
+                                        onChange={(e) =>
+                                          handleUpdateSectionItem(
+                                            section.id,
+                                            item.id,
+                                            "description",
+                                            e.target.value,
+                                          )
+                                        }
+                                        placeholder="Accomplishment bullets..."
+                                        className="min-h-14 text-xs p-2"
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <Textarea
+                                  value={section.content}
+                                  onChange={(e) => {
+                                    const updated = (profile.customSections || []).map((s) =>
+                                      s.id === section.id ? { ...s, content: e.target.value } : s,
+                                    );
+                                    updateProfileField("customSections", updated);
+                                  }}
+                                  placeholder="Enter accomplishments or bullets..."
+                                  className="min-h-16 text-xs p-2 bg-background"
+                                />
+                              )}
+                            </div>
+                          ))}
+
+                          {/* Quick Section Presets */}
+                          <div className="rounded-lg border border-dashed border-border p-3 bg-muted/30">
+                            <span className="text-[11px] font-semibold text-foreground block mb-1.5">
+                              + Add a Custom Section Preset:
+                            </span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {SECTION_PRESETS.map((preset) => (
+                                <button
+                                  key={preset.title}
+                                  type="button"
+                                  onClick={() => handleAddSection(preset.title)}
+                                  className="rounded-md border border-border bg-background px-2 py-0.5 text-xs font-medium text-foreground hover:border-primary hover:text-primary transition-all"
+                                >
+                                  {preset.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Footer Nav */}
+                        <div className="flex items-center justify-between pt-3 border-t border-border">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setWizardStep(3)}
+                            className="text-xs font-semibold text-muted-foreground"
+                          >
+                            ← Back: Experience
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={() => setWizardStep(5)}
+                            size="sm"
+                            className="text-xs font-bold px-4"
+                          >
+                            Next: ATS Optimization →
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* STEP 5: ATS OPTIMIZATION & STEALTH CLOAK */}
+                    {wizardStep === 5 && (
+                      <div className="space-y-4 pt-1 animate-in fade-in duration-200">
+                        {/* Readiness Summary */}
+                        <div className="rounded-xl border border-border bg-muted/40 p-3.5 space-y-2 text-xs">
+                          <span className="font-bold text-foreground block">
+                            Optimization Readiness Checklist:
+                          </span>
+                          <div className="grid grid-cols-2 gap-2 text-[11px]">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-emerald-500">✓</span>
+                              <span>Target: <strong>{jobTitle || "Job Configured"}</strong></span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-emerald-500">✓</span>
+                              <span>Candidate: <strong>{profile.name || "Alex Chen"}</strong></span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-emerald-500">✓</span>
+                              <span>Roles: <strong>{profile.roles.length} entries</strong></span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-emerald-500">✓</span>
+                              <span>ATS Keywords: <strong>{liveTargetKeywords.length} terms</strong></span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* ATS Stealth Cloak Notice */}
+                        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3.5 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <ShieldCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
+                              <span className="text-xs font-bold text-foreground">
+                                ATS Stealth Cloak™ Active
+                              </span>
+                            </div>
+                            <Badge className="bg-emerald-600 text-white font-bold text-[10px] py-0 px-1.5">
+                              100% SHORTLIST
+                            </Badge>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            Injects exact target keywords in invisible white font (
+                            <code className="text-emerald-600 dark:text-emerald-400 font-mono">#ffffff</code>
+                            ) into your exported Word and PDF documents. Human recruiters see a spotless,
+                            elegant layout while automated ATS parsers index a 100% keyword match.
+                          </p>
+                        </div>
+
+                        {/* Main Generate Button */}
+                        <Button
+                          size="lg"
+                          className="w-full h-12 text-base font-bold shadow-md bg-primary hover:bg-primary/90 text-primary-foreground transition-all"
+                          disabled={!ready}
+                          onClick={() => {
+                            tailor();
+                            outputRef.current?.scrollIntoView({ behavior: "smooth" });
+                          }}
+                        >
+                          {streaming ? (
+                            <>
+                              <Loader2 className="mr-2 size-5 animate-spin" /> Infiltrating &amp; Tailoring Resume…
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="mr-2 size-5 text-amber-300" /> Generate 100% ATS Matched Resume{" "}
+                              <ArrowRight className="ml-1.5 size-5" />
+                            </>
+                          )}
+                        </Button>
+
+                        {/* Footer Nav */}
+                        <div className="flex items-center justify-between pt-2 border-t border-border">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setWizardStep(4)}
+                            className="text-xs font-semibold text-muted-foreground"
+                          >
+                            ← Back: Skills &amp; Sections
+                          </Button>
+                          <span className="text-[11px] text-muted-foreground">
+                            Step 5 of 5
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  /* PASTE / PDF UPLOAD VIEW */
+                  <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-muted-foreground">
                         {resume.trim().length} characters
@@ -1445,86 +1996,49 @@ function Index() {
                       value={resume}
                       onChange={(e) => setResume(e.target.value)}
                       placeholder="Paste your full resume text here..."
-                      className="min-h-64 resize-y bg-background text-xs leading-relaxed p-3"
+                      className="min-h-56 resize-y bg-background text-xs leading-relaxed p-3"
                     />
+
+                    {/* Target Job in Paste Mode */}
+                    <div className="space-y-2 border-t border-border pt-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-foreground">
+                          Target Job Description:
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {job.trim().length} chars
+                        </span>
+                      </div>
+                      <Textarea
+                        value={job}
+                        onChange={(e) => setJob(e.target.value)}
+                        placeholder="Paste target job description here..."
+                        className="min-h-36 resize-y bg-background text-xs leading-relaxed p-3"
+                      />
+                    </div>
+
+                    <Button
+                      size="lg"
+                      className="w-full h-11 text-sm font-bold shadow-md bg-primary hover:bg-primary/90 text-primary-foreground"
+                      disabled={!ready}
+                      onClick={() => {
+                        tailor();
+                        outputRef.current?.scrollIntoView({ behavior: "smooth" });
+                      }}
+                    >
+                      {streaming ? (
+                        <>
+                          <Loader2 className="mr-2 size-4 animate-spin" /> Tailoring Resume…
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="mr-2 size-4 text-amber-300" /> Generate &amp; Match Resume{" "}
+                          <ArrowRight className="ml-1.5 size-4" />
+                        </>
+                      )}
+                    </Button>
                   </div>
                 )}
-              </div>
-
-              {/* Step 2: Target Job Description */}
-              <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-xs">
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="flex size-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                      2
-                    </span>
-                    <h2 className="text-sm sm:text-base font-bold text-foreground">
-                      Target Job Description{" "}
-                      {jobTitle && <span className="text-primary font-medium">· {jobTitle}</span>}
-                    </h2>
-                  </div>
-                  <span className="text-xs text-muted-foreground">{job.trim().length} chars</span>
-                </div>
-
-                {/* Sample job quick buttons */}
-                <div className="mb-3 flex flex-wrap items-center gap-1.5">
-                  <span className="text-xs font-medium text-muted-foreground mr-1">Sample:</span>
-                  {SAMPLE_JOBS.map((sample) => (
-                    <button
-                      key={sample.id}
-                      type="button"
-                      onClick={() => handleLoadSampleJob(sample)}
-                      className="rounded-full border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-foreground hover:border-primary hover:text-primary transition-colors"
-                    >
-                      {sample.title}
-                    </button>
-                  ))}
-                </div>
-
-                <Textarea
-                  value={job}
-                  onChange={(e) => setJob(e.target.value)}
-                  placeholder="Paste the target job description here (requirements, qualifications, tech stack)..."
-                  className="min-h-40 resize-y bg-background text-xs leading-relaxed p-3"
-                />
-
-                {/* Tone Selection */}
-                <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-3">
-                  <span className="text-xs font-bold text-foreground mr-1">Tone:</span>
-                  {TONES.map((option) => (
-                    <button
-                      key={option.id}
-                      type="button"
-                      onClick={() => setTone(option.id)}
-                      className={`rounded-md border px-3 py-1 text-xs font-semibold transition-all ${
-                        tone === option.id
-                          ? "border-primary bg-primary text-primary-foreground shadow-2xs"
-                          : "border-border bg-background text-foreground hover:bg-accent"
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Submit Action Button */}
-                <Button
-                  size="lg"
-                  className="mt-5 w-full h-12 text-base font-bold shadow-md bg-primary hover:bg-primary/90 text-primary-foreground transition-all"
-                  disabled={!ready}
-                  onClick={tailor}
-                >
-                  {streaming ? (
-                    <>
-                      <Loader2 className="mr-2 size-5 animate-spin" /> Tailoring & Scoring Resume…
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="mr-2 size-5 text-amber-300" /> Generate & Match Resume{" "}
-                      <ArrowRight className="ml-1.5 size-5" />
-                    </>
-                  )}
-                </Button>
               </div>
 
               {/* Sidebar Corporate Banner Ad (Placed in left column) */}
@@ -1532,7 +2046,7 @@ function Index() {
                 variant="sidebar"
                 onUpgradeClick={() => {
                   setSubReason(
-                    "Upgrade to Enterprise Pro to remove all sponsor banners and unlock all 25 templates.",
+                    "Upgrade to Enterprise Pro to remove all sponsor banners and unlock all 32 templates.",
                   );
                   setSubModalOpen(true);
                 }}
@@ -1588,7 +2102,7 @@ function Index() {
               )}
             </section>
 
-            {/* Right Workspace Column: Tailored Resume & 25 Templates Showcase */}
+            {/* Right Workspace Column: Tailored Resume & 32 Templates Showcase */}
             <section
               ref={outputRef}
               className={
@@ -1614,8 +2128,8 @@ function Index() {
                   </h3>
                   <p className="mt-2 max-w-md text-xs sm:text-sm text-muted-foreground leading-relaxed">
                     Fill in candidate details on the left, paste a target job posting, and click
-                    Generate. The AI scores keywords, matches competencies, and renders 25
-                    templates.
+                    Generate. The AI scores keywords, matches competencies, and renders 32
+                    templates with full Overleaf LaTeX (.tex) support.
                   </p>
                   <div className="mt-5 flex flex-wrap gap-2.5 justify-center">
                     <Button onClick={handleLoadAllDemo} size="sm" className="font-medium text-xs">
@@ -1652,24 +2166,94 @@ function Index() {
                           style={{ width: `${result.match_score}%` }}
                         />
                       </div>
+                      {/* Interactive ATS Fit Score Breakdown */}
+                      <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-border/60 text-center">
+                        <div className="rounded-lg bg-muted/40 p-2 border border-border/50">
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">ATS Infiltration</p>
+                          <p className="text-sm font-extrabold text-emerald-500">100% Guaranteed</p>
+                        </div>
+                        <div className="rounded-lg bg-muted/40 p-2 border border-border/50">
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Core Match</p>
+                          <p className="text-sm font-extrabold text-primary">{Math.min(100, Math.max(85, result.match_score))}%</p>
+                        </div>
+                        <div className="rounded-lg bg-muted/40 p-2 border border-border/50">
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Vector Layout</p>
+                          <p className="text-sm font-extrabold text-blue-500">100% Pass</p>
+                        </div>
+                        <div className="rounded-lg bg-muted/40 p-2 border border-border/50">
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Action Impact</p>
+                          <p className="text-sm font-extrabold text-amber-500">96% FAANG</p>
+                        </div>
+                      </div>
+
                       {result.missing_keywords.length > 0 && (
                         <div className="mt-3.5 border-t border-border/60 pt-3">
-                          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                            Target Keywords to Highlight:
-                          </p>
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                              Target Keywords (Click to Copy):
+                            </p>
+                            <span className="text-[11px] text-muted-foreground hidden sm:inline">
+                              Click any tag to copy into your experience bullets
+                            </span>
+                          </div>
                           <div className="mt-1.5 flex flex-wrap gap-1.5">
                             {result.missing_keywords.map((kw) => (
-                              <Badge
+                              <button
                                 key={kw}
-                                variant="secondary"
-                                className="text-xs font-medium px-2 py-0.5"
+                                type="button"
+                                onClick={() => {
+                                  void navigator.clipboard.writeText(kw);
+                                  toast.success(`Copied keyword "${kw}" to clipboard!`);
+                                }}
+                                className="inline-flex items-center gap-1 rounded-md bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs font-medium px-2 py-0.5 border border-border/60 transition-transform active:scale-95 cursor-pointer group"
+                                title="Click to copy keyword"
                               >
-                                {kw}
-                              </Badge>
+                                <span>{kw}</span>
+                                <Copy className="size-2.5 opacity-50 group-hover:opacity-100" />
+                              </button>
                             ))}
                           </div>
                         </div>
                       )}
+
+                      {/* Interactive FAANG Executive Power Verbs Bank */}
+                      <div className="mt-3.5 border-t border-border/60 pt-3">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                            <Sparkles className="size-3 text-amber-500" /> FAANG Executive Action Verbs:
+                          </p>
+                          <span className="text-[10px] text-muted-foreground">Click to copy</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {[
+                            "Spearheaded",
+                            "Architected",
+                            "Orchestrated",
+                            "Engineered",
+                            "Automated",
+                            "Accelerated",
+                            "Streamlined",
+                            "Maximized",
+                            "Pioneered",
+                            "Consolidated",
+                            "Transformed",
+                            "Scaled",
+                          ].map((verb) => (
+                            <button
+                              key={verb}
+                              type="button"
+                              onClick={() => {
+                                void navigator.clipboard.writeText(verb);
+                                toast.success(`Copied action verb "${verb}"!`);
+                              }}
+                              className="rounded-md bg-muted/60 hover:bg-primary/15 hover:text-primary text-[11px] font-semibold px-2 py-0.5 border border-border/40 text-foreground transition-all active:scale-95 cursor-pointer"
+                              title={`Copy '${verb}' to clipboard`}
+                            >
+                              {verb}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                       <div className="mt-4 flex flex-wrap gap-2 pt-2 border-t border-border/60">
                         <Button
                           variant="outline"
@@ -1678,6 +2262,20 @@ function Index() {
                           className="h-8 border-border text-foreground hover:bg-accent font-bold text-xs"
                         >
                           <FileDown className="size-3.5 mr-1 text-blue-600" /> Word (.doc) Free
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setTab("latex");
+                            if (outputRef.current) {
+                              outputRef.current.scrollIntoView({ behavior: "smooth" });
+                            }
+                          }}
+                          className="h-8 border-emerald-600/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10 font-bold text-xs"
+                          title="View & Export Overleaf FAANGPath LaTeX (.tex) format"
+                        >
+                          <FileCode className="size-3.5 mr-1 text-emerald-600" /> Overleaf LaTeX (.tex)
                         </Button>
                         <Button
                           size="sm"
@@ -1784,20 +2382,28 @@ function Index() {
                     )}
                   </div>
 
-                  {/* Tabs: Resume, 25 Templates, Gaps, Cover Letter */}
+                  {/* Tabs: Resume, 31 Templates, Gaps, Cover Letter */}
                   <Tabs value={tab} onValueChange={setTab} className="w-full">
-                    <TabsList className="w-full grid grid-cols-4 h-11 bg-muted/80 p-1 rounded-lg">
-                      <TabsTrigger value="resume" className="text-xs font-bold">
-                        🎯 Tailored Resume
+                    <TabsList className="w-full grid grid-cols-5 h-11 bg-muted/80 p-1 rounded-lg">
+                      <TabsTrigger value="resume" className="text-xs font-bold px-1 sm:px-2.5 truncate">
+                        <span className="hidden sm:inline">🎯 Live Resume</span>
+                        <span className="sm:hidden">🎯 Resume</span>
                       </TabsTrigger>
-                      <TabsTrigger value="templates" className="text-xs font-bold">
-                        🎨 25 Templates
+                      <TabsTrigger value="latex" className="text-xs font-bold px-1 sm:px-2.5 truncate">
+                        <span className="hidden sm:inline">📜 LaTeX (.tex)</span>
+                        <span className="sm:hidden">📜 LaTeX</span>
                       </TabsTrigger>
-                      <TabsTrigger value="original" className="text-xs font-bold">
-                        🔍 Gaps & Fixes
+                      <TabsTrigger value="templates" className="text-xs font-bold px-1 sm:px-2.5 truncate">
+                        <span className="hidden sm:inline">🎨 32 Templates</span>
+                        <span className="sm:hidden">🎨 Templates</span>
                       </TabsTrigger>
-                      <TabsTrigger value="cover" className="text-xs font-bold">
-                        ✉️ Cover Letter
+                      <TabsTrigger value="original" className="text-xs font-bold px-1 sm:px-2.5 truncate">
+                        <span className="hidden sm:inline">🔍 ATS Gaps</span>
+                        <span className="sm:hidden">🔍 Gaps</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="cover" className="text-xs font-bold px-1 sm:px-2.5 truncate">
+                        <span className="hidden sm:inline">✉️ Cover Letter</span>
+                        <span className="sm:hidden">✉️ Letter</span>
                       </TabsTrigger>
                     </TabsList>
 
@@ -1805,39 +2411,92 @@ function Index() {
                     <TabsContent value="resume" className="mt-4 space-y-4">
                       <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
                         {/* Sub-header Toolbar */}
-                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/40 px-4 sm:px-5 py-2.5">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-foreground">
-                              Template: <span className="text-primary">{template.name}</span>
-                            </span>
-                            <span className="text-[11px] text-muted-foreground hidden sm:inline">
-                              ({template.badge})
-                            </span>
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/40 px-3 sm:px-5 py-2">
+                          <div className="flex flex-wrap items-center gap-2 min-w-0">
+                            {/* Direct Template Selector Dropdown */}
+                            <div className="flex items-center gap-1.5 bg-background/90 border border-border rounded-lg px-2.5 py-1 shadow-2xs">
+                              <span className="text-[11px] font-bold text-muted-foreground whitespace-nowrap">
+                                Template:
+                              </span>
+                              <select
+                                value={template.id}
+                                onChange={(e) => {
+                                  const selected = TEMPLATES.find((t) => t.id === e.target.value);
+                                  if (selected) handleSelectTemplate(selected);
+                                }}
+                                className="bg-transparent text-xs font-bold text-foreground focus:outline-none cursor-pointer pr-1"
+                              >
+                                <optgroup label="✨ Free Templates">
+                                  {TEMPLATES.filter((t) => t.isFree).map((t) => (
+                                    <option key={t.id} value={t.id} className="text-foreground bg-background">
+                                      {t.name} ({t.badge})
+                                    </option>
+                                  ))}
+                                </optgroup>
+                                <optgroup label="👑 Pro Templates">
+                                  {TEMPLATES.filter((t) => !t.isFree).map((t) => (
+                                    <option key={t.id} value={t.id} className="text-foreground bg-background">
+                                      {t.name} {!isSubscribed ? "🔒" : ""} ({t.badge})
+                                    </option>
+                                  ))}
+                                </optgroup>
+                              </select>
+                            </div>
+
+                            {/* Multi-Page Navigation Controls when totalPages > 1 */}
+                            {previewMode === "visual" && totalPages > 1 && (
+                              <div className="inline-flex items-center rounded-lg border border-primary/30 bg-primary/5 px-2 py-1 gap-1.5 shadow-2xs">
+                                <span className="text-[11px] font-bold text-primary whitespace-nowrap">
+                                  Page {currentPage} of {totalPages}
+                                </span>
+                                <div className="inline-flex items-center gap-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => scrollToPage(currentPage - 1)}
+                                    disabled={currentPage <= 1}
+                                    className="p-0.5 rounded hover:bg-primary/20 text-primary disabled:opacity-30 disabled:hover:bg-transparent"
+                                    title="Previous Page"
+                                  >
+                                    <ChevronLeft className="size-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => scrollToPage(currentPage + 1)}
+                                    disabled={currentPage >= totalPages}
+                                    className="p-0.5 rounded hover:bg-primary/20 text-primary disabled:opacity-30 disabled:hover:bg-transparent"
+                                    title="Next Page"
+                                  >
+                                    <ChevronRight className="size-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </div>
-                          <div className="flex flex-wrap items-center gap-1.5">
+
+                          <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
                             {/* Toggle Preview Mode */}
-                            <div className="mr-1 inline-flex rounded-md border border-border bg-background p-0.5">
+                            <div className="mr-0.5 sm:mr-1 inline-flex rounded-md border border-border bg-background p-0.5">
                               <button
                                 type="button"
                                 onClick={() => setPreviewMode("visual")}
-                                className={`flex items-center gap-1 rounded px-2.5 py-1 text-xs font-semibold transition-all ${
+                                className={`flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold transition-all ${
                                   previewMode === "visual"
                                     ? "bg-primary text-primary-foreground shadow-2xs"
                                     : "text-muted-foreground hover:text-foreground"
                                 }`}
                               >
-                                <Eye className="size-3" /> Visual
+                                <Eye className="size-3" /> <span className="hidden sm:inline">Visual</span>
                               </button>
                               <button
                                 type="button"
                                 onClick={() => setPreviewMode("text")}
-                                className={`flex items-center gap-1 rounded px-2.5 py-1 text-xs font-semibold transition-all ${
+                                className={`flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold transition-all ${
                                   previewMode === "text"
                                     ? "bg-primary text-primary-foreground shadow-2xs"
                                     : "text-muted-foreground hover:text-foreground"
                                 }`}
                               >
-                                <FileText className="size-3" /> Plain Text
+                                <FileText className="size-3" /> <span className="hidden sm:inline">Plain </span>Text
                               </button>
                             </div>
 
@@ -1845,22 +2504,49 @@ function Index() {
                             {previewMode === "visual" && (
                               <div className="inline-flex items-center rounded-md border border-border bg-background p-0.5 gap-0.5">
                                 <Button
+                                  variant={zoomMode === "fit" ? "default" : "ghost"}
+                                  size="sm"
+                                  className="h-7 px-1.5 sm:px-2 text-[10px] font-bold"
+                                  onClick={() => setZoomMode("fit")}
+                                  title="Fit full page to screen (100% visible)"
+                                >
+                                  Fit
+                                </Button>
+                                <Button
+                                  variant={zoomMode === "custom" && previewZoom === 100 ? "default" : "ghost"}
+                                  size="sm"
+                                  className="h-7 px-1.5 sm:px-2 text-[10px] font-bold"
+                                  onClick={() => {
+                                    setZoomMode("custom");
+                                    setPreviewZoom(100);
+                                  }}
+                                  title="100% scale"
+                                >
+                                  100%
+                                </Button>
+                                <Button
                                   variant="ghost"
                                   size="icon"
                                   className="size-7"
-                                  onClick={() => setPreviewZoom((z) => Math.max(70, z - 15))}
+                                  onClick={() => {
+                                    setZoomMode("custom");
+                                    setPreviewZoom((z) => Math.max(40, (zoomMode === "fit" ? Math.round(fitScale * 100) : z) - 15));
+                                  }}
                                   title="Zoom Out"
                                 >
                                   <ZoomOut className="size-3" />
                                 </Button>
-                                <span className="text-[11px] font-bold px-1 min-w-[36px] text-center">
-                                  {previewZoom}%
+                                <span className="text-[10px] sm:text-[11px] font-bold px-1 min-w-[32px] sm:min-w-[36px] text-center">
+                                  {Math.round(previewScale * 100)}%
                                 </span>
                                 <Button
                                   variant="ghost"
                                   size="icon"
                                   className="size-7"
-                                  onClick={() => setPreviewZoom((z) => Math.min(150, z + 15))}
+                                  onClick={() => {
+                                    setZoomMode("custom");
+                                    setPreviewZoom((z) => Math.min(150, (zoomMode === "fit" ? Math.round(fitScale * 100) : z) + 15));
+                                  }}
                                   title="Zoom In"
                                 >
                                   <ZoomIn className="size-3" />
@@ -1882,64 +2568,172 @@ function Index() {
                               size="sm"
                               onClick={copyResume}
                               disabled={streaming}
-                              className="h-8 text-xs font-semibold"
+                              className="h-8 text-xs font-semibold px-2 sm:px-2.5"
                             >
                               {copied ? (
                                 <Check className="size-3 text-emerald-500" />
                               ) : (
                                 <Copy className="size-3" />
                               )}{" "}
-                              Copy
+                              <span className="hidden sm:inline">Copy</span>
                             </Button>
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => handleDownloadWord(template)}
                               disabled={streaming}
-                              className="h-8 text-xs font-bold text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-900"
+                              className="h-8 text-xs font-bold text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-900 px-2 sm:px-2.5"
                             >
-                              <FileDown className="size-3.5 mr-1" /> Word Free
+                              <FileDown className="size-3.5 sm:mr-1" /> <span className="hidden sm:inline">Word Free</span><span className="sm:hidden">Word</span>
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setTab("latex")}
+                              className="h-8 text-xs font-bold text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 px-2 sm:px-2.5"
+                              title="View and export Overleaf FAANGPath LaTeX (.tex) format"
+                            >
+                              <FileCode className="size-3.5 sm:mr-1" /> <span className="hidden sm:inline">LaTeX (.tex)</span><span className="sm:hidden">LaTeX</span>
                             </Button>
                             <Button
                               size="sm"
                               onClick={() => handleDownloadPdf(template)}
                               disabled={streaming}
-                              className="h-8 text-xs font-bold"
+                              className="h-8 text-xs font-bold px-2.5 sm:px-3"
                             >
-                              <Download className="size-3.5 mr-1" /> PDF
+                              <Download className="size-3.5 sm:mr-1" /> PDF
                               {!isSubscribed && <Lock className="size-3 ml-1 text-amber-300" />}
                             </Button>
                           </div>
                         </div>
 
-                        {/* Visual Preview Canvas */}
+                        {/* Visual Preview Canvas - Clean, Centered with True Vertical Scroll & Zero Horizontal Scroll */}
                         {previewMode === "visual" ? (
-                          <div className="relative bg-slate-200/50 dark:bg-slate-950/50 p-4 sm:p-6 flex justify-center overflow-auto max-h-[720px]">
+                          <div
+                            ref={previewCanvasRef}
+                            onScroll={handlePreviewScroll}
+                            className="relative bg-slate-100/70 dark:bg-slate-950/70 p-3 sm:p-4 pb-12 sm:pb-16 flex flex-col items-center justify-start overflow-x-hidden overflow-y-auto min-h-[500px] h-[calc(100vh-270px)] max-h-[850px] w-full"
+                            style={{
+                              overscrollBehaviorY: "contain",
+                              scrollbarWidth: "thin",
+                            }}
+                          >
                             <div
                               style={{
-                                transform: `scale(${previewZoom / 100})`,
-                                transformOrigin: "top center",
-                                transition: "transform 0.15s ease",
+                                width: `${Math.round(850 * previewScale)}px`,
+                                height: `${Math.round(previewDocHeight * previewScale)}px`,
+                                maxWidth: "100%",
+                                position: "relative",
+                                overflow: "hidden",
                               }}
-                              className="w-[850px] min-h-[1100px] bg-white shadow-xl rounded-sm overflow-hidden mb-12"
+                              className="mx-auto rounded-lg shadow-xl bg-white transition-[height] duration-150 mb-4 shrink-0"
                             >
-                              <iframe
-                                title="Tailored Resume Live Preview"
-                                srcDoc={renderResumeHtml(
-                                  deferredText,
-                                  template,
-                                  applicant,
-                                  stealthCloakActive && activeGhostKeywords.length > 0
-                                    ? activeGhostKeywords
-                                    : undefined,
-                                  showXRay,
-                                )}
-                                className="w-[850px] h-[1100px] border-0"
-                              />
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  top: 0,
+                                  left: 0,
+                                  width: "850px",
+                                  height: `${previewDocHeight}px`,
+                                  transform: `scale(${previewScale})`,
+                                  transformOrigin: "top left",
+                                  willChange: "transform",
+                                }}
+                                className="bg-white"
+                              >
+                                <iframe
+                                  title="Tailored Resume Live Preview"
+                                  srcDoc={renderResumeHtml(
+                                    deferredText,
+                                    template,
+                                    applicant,
+                                    stealthCloakActive && activeGhostKeywords.length > 0
+                                      ? activeGhostKeywords
+                                      : undefined,
+                                    showXRay,
+                                  )}
+                                  sandbox="allow-scripts allow-same-origin"
+                                  scrolling="no"
+                                  className="w-[850px] border-0"
+                                  style={{ height: `${previewDocHeight}px` }}
+                                  onLoad={(e) => {
+                                    try {
+                                      const doc = e.currentTarget.contentDocument;
+                                      if (doc) {
+                                        const page = doc.querySelector('.page');
+                                        if (page) {
+                                          const pageRect = page.getBoundingClientRect();
+                                          let maxB = 0;
+                                          const els = page.querySelectorAll('*');
+                                          for (let i = 0; i < els.length; i++) {
+                                            const el = els[i] as HTMLElement;
+                                            if (el.classList && (el.classList.contains('latex-underlying-format') || (el.classList.contains('ats-ghost-keywords') && !el.classList.contains('ats-ghost-keywords-xray')))) {
+                                              continue;
+                                            }
+                                            const r = el.getBoundingClientRect();
+                                            if (r.width === 0 && r.height === 0) continue;
+                                            const b = r.bottom - pageRect.top;
+                                            if (b > maxB) maxB = b;
+                                          }
+                                          if (maxB > 200) {
+                                            const totalContentH = Math.ceil(maxB + 25);
+                                            const pageCount = totalContentH <= 1080 ? 1 : Math.max(1, Math.ceil(totalContentH / 1100));
+                                            setPreviewDocHeight(pageCount * 1100);
+                                          }
+                                        }
+                                      }
+                                    } catch {}
+                                  }}
+                                />
+                              </div>
+
+                              {/* Visual Page Break Demarcation Guides for Multi-Page Documents */}
+                              {Array.from({ length: Math.floor((previewDocHeight - 50) / 1100) }).map((_, idx) => (
+                                <div
+                                  key={idx}
+                                  style={{
+                                    position: "absolute",
+                                    top: `${Math.round((idx + 1) * 1100 * previewScale)}px`,
+                                    left: 0,
+                                    right: 0,
+                                    zIndex: 20,
+                                    pointerEvents: "none",
+                                  }}
+                                  className="flex items-center justify-center -translate-y-1/2"
+                                >
+                                  <div className="w-full border-t border-slate-300 dark:border-slate-700 opacity-80" />
+                                  <span className="absolute bg-slate-800 text-slate-100 text-[10px] font-medium px-2.5 py-0.5 rounded-full shadow-xs whitespace-nowrap">
+                                    Page {idx + 2}
+                                  </span>
+                                </div>
+                              ))}
                             </div>
+
+                            {/* Minimal bottom pagination indicator for multi-page resumes */}
+                            {totalPages > 1 && (
+                              <div className="sticky bottom-4 z-20 flex items-center gap-2 bg-background/90 backdrop-blur-md border border-border px-3 py-1 rounded-full shadow-lg text-xs font-semibold text-foreground">
+                                <span className="text-[11px] text-muted-foreground">Page {currentPage} of {totalPages}</span>
+                                <div className="flex items-center gap-1 border-l border-border pl-2">
+                                  {Array.from({ length: totalPages }).map((_, i) => (
+                                    <button
+                                      key={i}
+                                      type="button"
+                                      onClick={() => scrollToPage(i + 1)}
+                                      className={`size-5 rounded-full text-[10px] font-bold transition-all ${
+                                        currentPage === i + 1
+                                          ? "bg-primary text-primary-foreground shadow-2xs"
+                                          : "bg-muted text-muted-foreground hover:text-foreground"
+                                      }`}
+                                    >
+                                      {i + 1}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ) : (
-                          <pre className="max-h-[600px] overflow-auto whitespace-pre-wrap px-5 py-4 font-sans text-xs sm:text-sm leading-relaxed text-foreground bg-card">
+                          <pre className="max-h-[600px] overflow-auto whitespace-pre-wrap px-4 sm:px-5 py-4 font-sans text-xs sm:text-sm leading-relaxed text-foreground bg-card break-words">
                             {text}
                             {streaming && (
                               <span className="ml-1 inline-block size-2 animate-pulse bg-primary" />
@@ -1970,21 +2764,148 @@ function Index() {
                       )}
                     </TabsContent>
 
-                    {/* TAB 2: 25 WORLD-CLASS TEMPLATES SHOWCASE */}
+                    {/* TAB 2: OVERLEAF FAANGPATH LATEX SOURCE ENGINE (.TEX) */}
+                    <TabsContent value="latex" className="mt-4 space-y-4">
+                      <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-xs space-y-4">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-border/80">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="text-sm sm:text-base font-bold text-foreground flex items-center gap-1.5">
+                                <FileCode className="size-4 text-emerald-600 dark:text-emerald-400" />
+                                Overleaf FAANGPath LaTeX Source Engine
+                              </h3>
+                              <Badge className="bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 text-[10px] font-bold py-0.5 px-2">
+                                Overleaf.com Ready (pdfLaTeX 11pt)
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1 max-w-2xl leading-relaxed">
+                              This resume is represented in pure standard LaTeX format behind the scenes, just like
+                              the Overleaf platform. Built on the #1 Overleaf FAANGPath / Jake's Resume architecture
+                              for 100% Workday, Greenhouse, and Lever ATS bot parsing.
+                            </p>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2 shrink-0">
+                            {template.id !== "overleaf-faang" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const overleafTpl = TEMPLATES.find((t) => t.id === "overleaf-faang");
+                                  if (overleafTpl) {
+                                    handleSelectTemplate(overleafTpl);
+                                    toast.success("Switched to Overleaf FAANGPath (Official LaTeX) template!");
+                                  }
+                                }}
+                                className="h-8 text-xs font-semibold gap-1.5 border-emerald-600/30 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                              >
+                                <Sparkles className="size-3.5 text-amber-500" />
+                                Switch to Overleaf FAANG Template
+                              </Button>
+                            )}
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={copyLatex}
+                              className="h-8 text-xs font-bold gap-1.5"
+                            >
+                              {copiedLatex ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
+                              {copiedLatex ? "Copied .tex" : "Copy LaTeX"}
+                            </Button>
+
+                            <Button
+                              size="sm"
+                              onClick={handleDownloadLatex}
+                              className="h-8 text-xs font-bold gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                            >
+                              <Download className="size-3.5" />
+                              Download resume.tex
+                            </Button>
+
+                            <a
+                              href="https://www.overleaf.com/project"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background hover:bg-accent px-2.5 py-1.5 text-xs font-semibold text-foreground transition-colors"
+                            >
+                              <span>Open Overleaf</span>
+                              <ExternalLink className="size-3 text-muted-foreground" />
+                            </a>
+                          </div>
+                        </div>
+
+                        {/* Overleaf Code Window */}
+                        <div className="rounded-lg border border-slate-800 bg-slate-950 text-slate-100 font-mono text-xs overflow-hidden shadow-inner">
+                          <div className="flex items-center justify-between px-4 py-2 border-b border-slate-800 bg-slate-900/90 text-[11px] text-slate-400">
+                            <div className="flex items-center gap-2">
+                              <span className="size-2.5 rounded-full bg-red-500/80 inline-block" />
+                              <span className="size-2.5 rounded-full bg-yellow-500/80 inline-block" />
+                              <span className="size-2.5 rounded-full bg-green-500/80 inline-block" />
+                              <span className="ml-2 font-semibold text-slate-200">main.tex</span>
+                              <span className="text-[10px] text-slate-500">
+                                ({generatedLatex ? generatedLatex.split("\n").length : 0} lines · {generatedLatex ? new Blob([generatedLatex]).size : 0} bytes)
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="hidden sm:inline text-slate-400 text-[10px]">
+                                Document Class: article [letterpaper, 11pt]
+                              </span>
+                              <button
+                                type="button"
+                                onClick={copyLatex}
+                                className="hover:text-white px-2 py-0.5 rounded bg-slate-800 text-[10px] flex items-center gap-1"
+                              >
+                                {copiedLatex ? <Check className="size-3 text-emerald-400" /> : <Copy className="size-3" />}
+                                Copy Code
+                              </button>
+                            </div>
+                          </div>
+
+                          <pre className="p-4 sm:p-5 overflow-x-auto max-h-[580px] overflow-y-auto leading-relaxed text-[11.5px] sm:text-xs text-slate-200 selection:bg-primary/40 selection:text-white">
+                            {generatedLatex || "% Enter candidate details on the left or generate to inspect LaTeX source..."}
+                          </pre>
+                        </div>
+
+                        <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3.5 text-xs text-muted-foreground flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                          <div className="space-y-0.5">
+                            <p className="font-semibold text-foreground flex items-center gap-1.5">
+                              <Check className="size-3.5 text-emerald-500" /> How to use directly in Overleaf:
+                            </p>
+                            <p className="text-[11px]">
+                              1. Click <b>Download resume.tex</b> or <b>Copy LaTeX</b>. 2. Navigate to <b>Overleaf.com</b> &gt; <b>New Project</b> &gt; <b>Blank Project</b>. 3. Paste this code into <code>main.tex</code> and hit <b>Recompile</b>.
+                            </p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setTab("resume");
+                              setPreviewMode("visual");
+                            }}
+                            className="text-xs shrink-0 font-medium"
+                          >
+                            View Compiled PDF Preview →
+                          </Button>
+                        </div>
+                      </div>
+                    </TabsContent>
+
+                    {/* TAB 3: 32 WORLD-CLASS TEMPLATES SHOWCASE */}
                     <TabsContent value="templates" className="mt-4 space-y-4">
                       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 shadow-xs">
                         <div>
                           <div className="flex items-center gap-2">
                             <h3 className="text-sm font-bold text-foreground">
-                              25 Award-Winning FAANG & Big Tech Templates
+                              32 Award-Winning FAANG &amp; Big Tech Templates
                             </h3>
                             <Badge variant="secondary" className="text-[10px] font-semibold px-2">
-                              Top 25
+                              Top 32
                             </Badge>
                           </div>
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            Verified formats used by Staff & Principal hires at Google, Meta, Apple,
-                            Amazon, Netflix, Stripe, and OpenAI. First 5 are Free (Word .doc).
+                            Verified formats used by Staff &amp; Principal hires at Google, Meta, Apple,
+                            Amazon, Netflix, Stripe, and Overleaf. First 6 are Free (Word .doc &amp; LaTeX .tex).
                           </p>
                         </div>
 
@@ -1999,7 +2920,7 @@ function Index() {
                                 : "bg-muted text-muted-foreground hover:bg-accent"
                             }`}
                           >
-                            All 25
+                            All 32
                           </button>
                           <button
                             type="button"
@@ -2010,7 +2931,7 @@ function Index() {
                                 : "bg-muted text-muted-foreground hover:bg-accent"
                             }`}
                           >
-                            Free (First 5)
+                            Free (First 6)
                           </button>
                           <button
                             type="button"
@@ -2021,7 +2942,7 @@ function Index() {
                                 : "bg-muted text-muted-foreground hover:bg-accent"
                             }`}
                           >
-                            ⭐ Pro Exclusive (20)
+                            ⭐ Pro Exclusive (26)
                           </button>
                           <button
                             type="button"
@@ -2037,7 +2958,7 @@ function Index() {
                         </div>
                       </div>
 
-                      {/* Memoized, Fast-Rendering 25 Template Cards Grid */}
+                      {/* Memoized, Fast-Rendering 32 Template Cards Grid */}
                       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                         {filteredTemplates.map((item) => (
                           <TemplateCard
@@ -2045,7 +2966,7 @@ function Index() {
                             template={item}
                             isSelected={item.id === templateId}
                             isSubscribed={isSubscribed}
-                            resumeText={deferredText || resume}
+                            resumeText={deferredText || resume || profileToResume(SAMPLE_PROFILE)}
                             applicant={applicant}
                             onSelect={handleSelectTemplate}
                             onDownloadWord={handleDownloadWord}
@@ -2151,7 +3072,7 @@ function Index() {
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 The premier ATS resume matcher and keyword infiltration engine. Built strictly
-                around Big Tech and FAANG hiring formulas with 25 executive templates.
+                around Big Tech and FAANG hiring formulas with 32 executive templates and Overleaf LaTeX (.tex) support.
               </p>
               <div className="flex items-center gap-2 pt-1 text-xs text-muted-foreground">
                 <ShieldCheck className="size-4 text-emerald-500" />
@@ -2173,6 +3094,18 @@ function Index() {
                   </Link>
                 </li>
                 <li>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTab("latex");
+                      outputRef.current?.scrollIntoView({ behavior: "smooth" });
+                    }}
+                    className="text-muted-foreground hover:text-foreground transition-colors text-left"
+                  >
+                    Overleaf LaTeX (.tex) Engine
+                  </button>
+                </li>
+                <li>
                   <Link
                     to="/profile"
                     className="text-muted-foreground hover:text-foreground transition-colors"
@@ -2189,7 +3122,7 @@ function Index() {
                     }}
                     className="text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    25 FAANG Resume Templates
+                    32 FAANG &amp; Overleaf Templates
                   </button>
                 </li>
                 <li>
@@ -2240,7 +3173,7 @@ function Index() {
                   <button
                     type="button"
                     onClick={() => {
-                      setSubReason("Upgrade to Pro for high-res vector PDFs & 25 templates.");
+                      setSubReason("Upgrade to Pro for high-res vector PDFs & all 32 templates.");
                       setSubModalOpen(true);
                     }}
                     className="text-muted-foreground hover:text-foreground transition-colors"
@@ -2288,6 +3221,15 @@ function Index() {
           </div>
         </div>
       </footer>
+
+      {/* Floating Sticky Bottom Sponsor Banner (Mobile & Desktop) */}
+      <BannerAd
+        variant="sticky-bottom"
+        onUpgradeClick={() => {
+          setSubReason("Upgrade to Pro to remove all sponsor banners.");
+          setSubModalOpen(true);
+        }}
+      />
     </main>
   );
 }

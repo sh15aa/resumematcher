@@ -18,11 +18,11 @@ export function FaqSection({ className = "" }: { className?: string }) {
     },
     {
       q: "Which Applicant Tracking Systems (ATS) are supported?",
-      a: "ResumeMatcher templates are benchmarked and verified across all major enterprise ATS platforms including Workday, Greenhouse, Lever, Taleo, iCIMS, Ashby, BambooHR, and SmartRecruiters. All 25 templates avoid complex multi-column glitches, unreadable text frames, or unsupported graphic symbols.",
+      a: "ResumeMatcher templates are benchmarked and verified across all major enterprise ATS platforms including Workday, Greenhouse, Lever, Taleo, iCIMS, Ashby, BambooHR, and SmartRecruiters. All 31 templates avoid complex multi-column glitches, unreadable text frames, or unsupported graphic symbols.",
     },
     {
       q: "Can I download my resume in both Microsoft Word (.doc) and PDF formats?",
-      a: "Yes! Free tier users get instant, unlimited downloads in Microsoft Word (.doc) format with corporate styling and ATS formatting intact. Enterprise Pro users also unlock high-resolution vector PDF downloads and access to all 25 Big Tech & FAANG templates.",
+      a: "Yes! Free tier users get instant, unlimited downloads in Microsoft Word (.doc) format with corporate styling and ATS formatting intact. Enterprise Pro users also unlock high-resolution vector PDF downloads and access to all 31 Big Tech & FAANG templates.",
     },
     {
       q: "Will human recruiters or HR see the hidden white keywords?",

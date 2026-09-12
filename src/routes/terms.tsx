@@ -114,7 +114,7 @@ function TermsPage() {
               unlimited Microsoft Word (.doc) exports.
             </li>
             <li>
-              <strong className="text-foreground">Enterprise Pro:</strong> Unlocks all 25
+              <strong className="text-foreground">Enterprise Pro:</strong> Unlocks all 31
               world-class Big Tech templates, high-resolution vector PDF downloads, cloud profile
               synchronization, and ad-free experience.
             </li>

@@ -5,8 +5,8 @@ const CHANGE_EVENT = "resumematcher:subscription_change";
 
 export type SubscriptionState = {
   isSubscribed: boolean;
-  plan?: "monthly" | "annual";
-  activatedAt?: number;
+  plan?: "monthly" | "annual" | undefined;
+  activatedAt?: number | undefined;
 };
 
 export function getSubscriptionState(): SubscriptionState {
@@ -19,7 +19,7 @@ export function getSubscriptionState(): SubscriptionState {
     const parsed = JSON.parse(raw);
     return {
       isSubscribed: Boolean(parsed.isSubscribed),
-      plan: parsed.plan || "monthly",
+      plan: (parsed.plan as "monthly" | "annual") || "monthly",
       activatedAt: parsed.activatedAt,
     };
   } catch {
@@ -33,7 +33,7 @@ export function saveSubscription(state: SubscriptionState): void {
     window.localStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(state));
     window.dispatchEvent(new Event(CHANGE_EVENT));
   } catch {
-    /* storage error ignored */
+    // LocalStorage quota exceeded or disabled
   }
 }
 
@@ -53,8 +53,8 @@ export function cancelSubscription(): void {
 
 export function useSubscription(): {
   isSubscribed: boolean;
-  plan?: "monthly" | "annual";
-  subscribe: (plan?: "monthly" | "annual") => void;
+  plan?: "monthly" | "annual" | undefined;
+  subscribe: (plan?: "monthly" | "annual" | undefined) => void;
   unsubscribe: () => void;
 } {
   const [sub, setSub] = useState<SubscriptionState>(() => getSubscriptionState());

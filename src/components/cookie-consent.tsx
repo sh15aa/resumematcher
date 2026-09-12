@@ -11,16 +11,19 @@ export function CookieConsent() {
   const [analyticsConsent, setAnalyticsConsent] = useState(true);
 
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       const stored = localStorage.getItem(COOKIE_STORAGE_KEY);
       if (!stored) {
         // Delay slightly for smooth page entrance
-        const timer = setTimeout(() => setVisible(true), 1200);
-        return () => clearTimeout(timer);
+        timer = setTimeout(() => setVisible(true), 1200);
       }
     } catch {
       // Storage unavailable
     }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
   }, []);
 
   const savePreferences = (consent: "all" | "essential" | "custom") => {

@@ -38,11 +38,17 @@ export function parseResume(raw: string): ResumeDoc {
   const lines = raw.replace(/\r/g, "").split("\n");
   const doc: ResumeDoc = { name: "", contact: [], intro: [], sections: [] };
 
+  const COMMON_SECTION_TITLES =
+    /^(?:summary|profile|about|objective|experience|work|employment|career|history|education|skills|technical skills|projects|certifications|awards|contact|contact information)$/i;
+
   let index = 0;
   while (index < lines.length && !lines[index]!.trim()) index += 1;
-  if (index < lines.length && !isHeading(lines[index]!)) {
-    doc.name = lines[index]!.trim();
-    index += 1;
+  if (index < lines.length) {
+    const firstTrimmed = lines[index]!.trim();
+    if (!COMMON_SECTION_TITLES.test(firstTrimmed.replace(/:$/, ""))) {
+      doc.name = firstTrimmed;
+      index += 1;
+    }
   }
 
   let current: ResumeSection | null = null;
@@ -75,6 +81,17 @@ export function parseResume(raw: string): ResumeDoc {
       current.blocks.push({ kind: "entry", text: trimmed });
     }
   }
+
+  if (doc.name.toUpperCase() === "CANDIDATE NAME") {
+    doc.name = "";
+  }
+
+  doc.sections = doc.sections.filter((s) => {
+    const t = s.title.toUpperCase().trim();
+    if (t === "CANDIDATE NAME") return false;
+    if (doc.name && t === doc.name.toUpperCase().trim()) return false;
+    return true;
+  });
 
   return doc;
 }

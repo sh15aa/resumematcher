@@ -160,7 +160,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         property: "og:description",
         content:
-          "100% ATS match guarantee, exact keyword infiltration, stealth white-font cloaking, 25 FAANG templates, Word and vector PDF downloads.",
+          "100% ATS match guarantee, exact keyword infiltration, stealth white-font cloaking, 31 FAANG templates, Word and vector PDF downloads.",
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://resumematcher.lovable.app/" },
@@ -173,7 +173,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "twitter:description",
         content:
-          "Beat automated ATS filters with exact keyword infiltration and 25 FAANG-proven executive resume templates.",
+          "Beat automated ATS filters with exact keyword infiltration and 31 FAANG-proven executive resume templates.",
       },
     ],
     links: [
@@ -182,7 +182,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+      { rel: "alternate icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "apple-touch-icon", href: "/favicon.svg" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
@@ -200,7 +202,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           operatingSystem: "Web",
           applicationCategory: "BusinessApplication",
           description:
-            "Automated ATS resume matcher and tailoring engine with 25 Big Tech templates, exact keyword infiltration, and Word (.doc) and PDF downloads.",
+            "Automated ATS resume matcher and tailoring engine with 31 Big Tech templates, exact keyword infiltration, and Word (.doc) and PDF downloads.",
           offers: {
             "@type": "Offer",
             price: "0.00",
@@ -223,11 +225,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className="overflow-x-hidden w-full max-w-full">
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body className="overflow-x-hidden w-full max-w-full min-h-screen">
         {children}
         <Scripts />
       </body>

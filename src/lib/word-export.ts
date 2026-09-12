@@ -17,6 +17,9 @@ function renderWordSection(section: ResumeSection, template: ResumeTemplate): st
     section.title,
   )}</h2>`;
 
+  const isSummary = /summary|profile|about|objective/i.test(section.title);
+  const isSkills = /skills|technolog|stack|competenc/i.test(section.title);
+
   let inList = false;
   for (const block of section.blocks) {
     if (block.kind === "bullet") {
@@ -32,9 +35,18 @@ function renderWordSection(section: ResumeSection, template: ResumeTemplate): st
         html += `</ul>`;
         inList = false;
       }
-      html += `<p style="font-family: Arial, Helvetica, sans-serif; font-size: 10.5pt; font-weight: bold; color: ${template.ink}; margin-top: 6pt; margin-bottom: 2pt;">${escapeXml(
-        block.text,
-      )}</p>`;
+      if (isSummary) {
+        html += `<p style="font-family: Arial, Helvetica, sans-serif; font-size: 10pt; font-weight: normal; color: ${template.ink}; line-height: 1.45; margin-top: 4pt; margin-bottom: 4pt; text-align: justify;">${escapeXml(
+          block.text,
+        )}</p>`;
+      } else if (isSkills && (block.text.includes(":") || block.text.includes("—"))) {
+        const [cat, val] = block.text.split(/[:—]\s*/, 2);
+        html += `<p style="font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: ${template.ink}; line-height: 1.35; margin-top: 3pt; margin-bottom: 2pt;"><strong style="color: ${template.accent};">${escapeXml(cat)}:</strong> ${escapeXml(val || "")}</p>`;
+      } else {
+        html += `<p style="font-family: Arial, Helvetica, sans-serif; font-size: 10.5pt; font-weight: bold; color: ${template.ink}; margin-top: 6pt; margin-bottom: 2pt;">${escapeXml(
+          block.text,
+        )}</p>`;
+      }
     }
   }
   if (inList) {

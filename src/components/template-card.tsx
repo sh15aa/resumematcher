@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import React, { memo, useState, useEffect, useRef } from "react";
 import { Check, Crown, Download, FileDown, Lock, Star, ZoomIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,29 +28,105 @@ export const TemplateCard = memo(function TemplateCard({
   onZoom,
 }: TemplateCardProps) {
   const isLocked = !template.isFree && !isSubscribed;
+  const [isVisible, setIsVisible] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!cardRef.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "250px" },
+    );
+    observer.observe(cardRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div
+      ref={cardRef}
       className={`group relative flex flex-col rounded-2xl border-2 transition-all bg-card shadow-xs overflow-hidden ${
         isSelected
           ? "border-primary ring-2 ring-primary/20 shadow-md"
           : "border-border hover:border-primary/60 hover:shadow-sm"
       }`}
     >
-      {/* High-Resolution Miniature Preview */}
-      <div className="relative h-64 sm:h-72 overflow-hidden bg-slate-100 dark:bg-slate-900 border-b border-border">
+      {/* Full-Height Miniature Preview (Shows 100% of resume from top to bottom with ZERO scrollbars) */}
+      <div
+        className="relative h-[400px] sm:h-[425px] overflow-hidden bg-slate-100 dark:bg-slate-900 border-b border-border flex items-center justify-center cursor-pointer select-none p-2"
+        onClick={() => onSelect(template)}
+      >
+        {/* Strictly-sized miniature document box to prevent any parent or card scrollbars */}
         <div
-          className="cursor-pointer origin-top-left w-full h-full"
-          onClick={() => onSelect(template)}
+          style={{
+            width: "298px",
+            height: "385px",
+            position: "relative",
+            overflow: "hidden",
+          }}
+          className="rounded shadow-xs bg-white pointer-events-none select-none"
         >
-          <iframe
-            title={`${template.name} preview`}
-            srcDoc={renderResumeHtml(resumeText, template, applicant)}
-            loading="lazy"
-            className="h-[1100px] w-[850px] origin-top-left border-0 pointer-events-none"
-            style={{ transform: "scale(0.38)", willChange: "transform" }}
-            tabIndex={-1}
-          />
+          {isVisible ? (
+            <iframe
+              title={`${template.name} preview`}
+              srcDoc={renderResumeHtml(resumeText, template, applicant)}
+              loading="lazy"
+              sandbox="allow-scripts"
+              scrolling="no"
+              className="border-0 pointer-events-none"
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "850px",
+                height: "1100px",
+                transform: "scale(0.35)",
+                transformOrigin: "top left",
+                pointerEvents: "none",
+              }}
+              tabIndex={-1}
+            />
+          ) : (
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "850px",
+                height: "1100px",
+                transform: "scale(0.35)",
+                transformOrigin: "top left",
+              }}
+              className="bg-white p-8 text-left flex flex-col justify-between shadow-xs"
+            >
+              <div className="space-y-4">
+                <div
+                  className="h-8 w-3/5 rounded"
+                  style={{ backgroundColor: template.accent || "#000000" }}
+                />
+                <div className="h-3 w-4/5 rounded bg-slate-200" />
+                <div className="border-b-2 my-2" style={{ borderColor: template.accent }} />
+                <div className="space-y-2">
+                  <div className="h-4 w-1/3 rounded bg-slate-300" />
+                  <div className="h-2.5 w-full rounded bg-slate-100" />
+                  <div className="h-2.5 w-5/6 rounded bg-slate-100" />
+                </div>
+                <div className="border-b my-2 border-slate-200" />
+                <div className="space-y-2">
+                  <div className="h-4 w-1/4 rounded bg-slate-300" />
+                  <div className="h-2.5 w-full rounded bg-slate-100" />
+                  <div className="h-2.5 w-4/5 rounded bg-slate-100" />
+                </div>
+              </div>
+              <div className="text-[10px] text-slate-400 font-mono text-center">
+                {template.name} · LaTeX Backend Ready
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Selected indicator */}
@@ -60,8 +136,8 @@ export const TemplateCard = memo(function TemplateCard({
           </div>
         )}
 
-        {/* Tier badge */}
-        <div className="absolute top-3 left-3">
+        {/* Tier badge & Overleaf indicator */}
+        <div className="absolute top-3 left-3 flex items-center gap-1.5">
           {template.isFree ? (
             <Badge className="bg-emerald-600 text-white text-[11px] font-bold shadow-xs py-0.5 px-2.5">
               FREE TIER
@@ -69,6 +145,11 @@ export const TemplateCard = memo(function TemplateCard({
           ) : (
             <Badge className="bg-blue-900 text-white text-[11px] font-bold shadow-xs py-0.5 px-2.5 gap-1.5">
               <Crown className="size-3 text-amber-300" /> PRO EXCLUSIVE
+            </Badge>
+          )}
+          {template.id === "overleaf-faang" && (
+            <Badge variant="outline" className="bg-slate-900/90 text-white border-white/30 text-[10px] font-bold py-0.5 px-2">
+              Official LaTeX
             </Badge>
           )}
         </div>

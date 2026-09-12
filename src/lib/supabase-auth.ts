@@ -22,7 +22,7 @@ export function useAuth() {
   // Sync Supabase subscription status with local state
   const checkRemoteSubscription = useCallback(async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("subscriptions")
         .select("status, plan")
         .eq("user_id", userId)
@@ -128,7 +128,7 @@ export function useAuth() {
     if (!user?.id) return;
 
     try {
-      await supabase.from("subscriptions").upsert(
+      await (supabase as any).from("subscriptions").upsert(
         {
           user_id: user.id,
           status: "active",

@@ -18,7 +18,7 @@ export interface CoverLetterRequest {
   resume: string;
   job: string;
   tone: "concise" | "impact" | "formal";
-  applicant?: string;
+  applicant?: string | undefined;
 }
 
 // Common tech keywords and skills library for ATS matching
@@ -384,11 +384,11 @@ export function generateTailoredResult(req: TailorRequest): TailorResult {
   ).filter(Boolean);
 
   // Candidate Name & Contact
-  const candidateName = doc.name.trim() || "CANDIDATE NAME";
+  const candidateName = doc.name.trim() || req.applicant?.trim() || "Alex Chen";
   const contactLine =
     doc.contact.length > 0
       ? doc.contact.join(" | ")
-      : "email@example.com | +1 (555) 019-2834 | linkedin.com/in/profile";
+      : "alex.chen@example.com | +1 (415) 890-2341 | linkedin.com/in/alexchen-dev";
 
   // Build Tailored Professional Summary
   const yearsExp = req.resume.match(/(\d+)\+?\s*years/i)?.[0] || "5+ years";
@@ -573,9 +573,13 @@ export function generateTailoredResult(req: TailorRequest): TailorResult {
   const finalSections: string[] = [
     candidateName,
     contactLine,
-    "",
-    "PROFESSIONAL SUMMARY",
-    tailoredSummary,
+  ];
+
+  if (tailoredSummary.trim()) {
+    finalSections.push("", "SUMMARY", tailoredSummary);
+  }
+
+  finalSections.push(
     "",
     "TECHNICAL SKILLS",
     ...categorizedSkillLines,
@@ -585,12 +589,17 @@ export function generateTailoredResult(req: TailorRequest): TailorResult {
     "",
     "EDUCATION",
     ...educationBlocks,
-  ];
-
-  // Include Certifications / Projects if in original
-  const otherSections = doc.sections.filter(
-    (s) => !/exp|work|employ|career|histor|edu|degree|univers|skill|summar|about/i.test(s.title),
   );
+
+  // Include Certifications / Projects if in original, excluding name / contact echoes
+  const otherSections = doc.sections.filter((s) => {
+    const t = s.title.toLowerCase().trim();
+    if (/exp|work|employ|career|histor|edu|degree|univers|skill|summar|about|contact|identity/i.test(t)) return false;
+    if (t === candidateName.toLowerCase().trim()) return false;
+    if (t === "candidate name") return false;
+    if (doc.name && t === doc.name.toLowerCase().trim()) return false;
+    return true;
+  });
   for (const s of otherSections) {
     finalSections.push("", s.title.toUpperCase());
     for (const b of s.blocks) {
