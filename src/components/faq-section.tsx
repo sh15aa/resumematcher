@@ -18,7 +18,7 @@ export function FaqSection({ className = "" }: { className?: string }) {
     },
     {
       q: "Which Applicant Tracking Systems (ATS) are supported?",
-      a: "ResumeMatcher templates are benchmarked and verified across all major enterprise ATS platforms including Workday, Greenhouse, Lever, Taleo, iCIMS, Ashby, BambooHR, and SmartRecruiters. All 31 templates avoid complex multi-column glitches, unreadable text frames, or unsupported graphic symbols.",
+      a: "CVFitt templates are benchmarked and verified across all major enterprise ATS platforms including Workday, Greenhouse, Lever, Taleo, iCIMS, Ashby, BambooHR, and SmartRecruiters. All 31 templates avoid complex multi-column glitches, unreadable text frames, or unsupported graphic symbols.",
     },
     {
       q: "Can I download my resume in both Microsoft Word (.doc) and PDF formats?",
@@ -30,7 +30,7 @@ export function FaqSection({ className = "" }: { className?: string }) {
     },
     {
       q: "What is your refund policy if I don't get interview callbacks?",
-      a: "We offer a 100% no-questions-asked 30-Day Money-Back Guarantee. If our ATS optimization and templates do not noticeably increase your interview invitation rate, email us at support@resumematcher.ai for an immediate, full refund.",
+      a: "We offer a 100% no-questions-asked 30-Day Money-Back Guarantee. If our ATS optimization and templates do not noticeably increase your interview invitation rate, email us at support@cvfitt.ai for an immediate, full refund.",
     },
     {
       q: "Is my resume data and contact information secure?",
@@ -82,9 +82,7 @@ export function FaqSection({ className = "" }: { className?: string }) {
         {/* Guarantee Banner */}
         <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
           <ShieldCheck className="size-4 text-emerald-500" />
-          <span>
-            Have more questions? Reach our 24/7 technical team at support@resumematcher.ai
-          </span>
+          <span>Have more questions? Reach our 24/7 technical team at support@cvfitt.ai</span>
         </div>
       </div>
     </section>

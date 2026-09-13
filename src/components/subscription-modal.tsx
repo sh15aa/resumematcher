@@ -207,21 +207,27 @@ export function SubscriptionModal({ open, onOpenChange, featureReason }: Subscri
         // Load live Razorpay checkout.js script
         const scriptLoaded = await loadRazorpayScript();
         if (!scriptLoaded || !(window as any).Razorpay) {
-          throw new Error("Unable to initialize Razorpay checkout script. Check network connection.");
+          throw new Error(
+            "Unable to initialize Razorpay checkout script. Check network connection.",
+          );
         }
 
         const amountPaise =
           currencyCode === "INR"
-            ? billingCycle === "annual" ? 99900 : 19900
-            : billingCycle === "annual" ? 8900 : 1900;
+            ? billingCycle === "annual"
+              ? 99900
+              : 19900
+            : billingCycle === "annual"
+              ? 8900
+              : 1900;
 
         const options = {
           key: activeKey,
           amount: amountPaise,
           currency: currencyCode === "INR" ? "INR" : "USD",
-          name: "ResumeMatcher Enterprise",
+          name: "CVFitt Enterprise",
           description: `Enterprise Pro (${billingCycle === "annual" ? "Annual" : "Monthly"}) — 100% ATS Match & All 32 Templates`,
-          image: "https://resumematcher.lovable.app/favicon.ico",
+          image: "https://cvfitt.fitt.workers.dev/favicon.ico",
           prefill: {
             name: cardName || user?.email?.split("@")[0] || "Alex Chen",
             email: user?.email || email || "alex.chen@example.com",
@@ -256,7 +262,9 @@ export function SubscriptionModal({ open, onOpenChange, featureReason }: Subscri
               isProcessingRef.current = false;
               setPaymentLoading(false);
               setPaymentStatus("failed");
-              setPaymentError("Payment window was dismissed. Zero charges were made to your account.");
+              setPaymentError(
+                "Payment window was dismissed. Zero charges were made to your account.",
+              );
               toast.info("Payment window dismissed.");
             },
           },
@@ -1072,7 +1080,8 @@ export function SubscriptionModal({ open, onOpenChange, featureReason }: Subscri
               <div>
                 <h3 className="text-xl font-bold text-foreground">Welcome to Enterprise Pro!</h3>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Your payment was successfully authorized. All features and 32 templates are active.
+                  Your payment was successfully authorized. All features and 32 templates are
+                  active.
                 </p>
               </div>
 

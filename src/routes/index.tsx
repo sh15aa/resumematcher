@@ -96,15 +96,15 @@ import { PENDING_RESUME_KEY } from "./profile";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "ResumeMatcher Enterprise — 100% ATS Resume Matcher & Stealth Cloak" },
+      { title: "CVFitt Enterprise — 100% ATS Resume Matcher & Stealth Cloak" },
       {
         name: "description",
         content:
-          "Transform candidate details into 100% ATS-shortlisted resumes. Features exact keyword extraction, invisible white-font ATS cloaking, Overleaf FAANGPath LaTeX (.tex), Word (.doc), and vector PDF export with 32 FAANG templates.",
+          "Transform candidate details into 100% ATS-shortlisted resumes with CVFitt. Features exact keyword extraction, invisible white-font ATS cloaking, Overleaf FAANGPath LaTeX (.tex), Word (.doc), and vector PDF export with 32 FAANG templates.",
       },
       {
         property: "og:title",
-        content: "ResumeMatcher Enterprise — 100% ATS Resume Matcher & Overleaf LaTeX Engine",
+        content: "CVFitt Enterprise — 100% ATS Resume Matcher & Overleaf LaTeX Engine",
       },
       {
         property: "og:description",
@@ -114,7 +114,7 @@ export const Route = createFileRoute("/")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: [{ rel: "canonical", href: "https://resumematcher.lovable.app/" }],
+    links: [{ rel: "canonical", href: "https://cvfitt.fitt.workers.dev/" }],
   }),
   component: Index,
 });
@@ -983,7 +983,9 @@ function Index() {
                 <div className="flex items-center gap-1 sm:gap-2">
                   {isSubscribed ? (
                     <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-1 px-2 sm:px-2.5 gap-1 shadow-xs">
-                      <Crown className="size-3.5 fill-current" /> <span className="hidden sm:inline">Pro Active</span><span className="sm:hidden">Pro</span>
+                      <Crown className="size-3.5 fill-current" />{" "}
+                      <span className="hidden sm:inline">Pro Active</span>
+                      <span className="sm:hidden">Pro</span>
                     </Badge>
                   ) : (
                     <>
@@ -998,7 +1000,8 @@ function Index() {
                         }}
                         className="h-8 text-xs font-semibold px-2.5 sm:px-3 gap-1 shadow-xs"
                       >
-                        <Crown className="size-3.5 text-amber-300" /> <span className="hidden sm:inline">Upgrade to </span>Pro
+                        <Crown className="size-3.5 text-amber-300" />{" "}
+                        <span className="hidden sm:inline">Upgrade to </span>Pro
                       </Button>
                       <button
                         type="button"
@@ -1021,12 +1024,19 @@ function Index() {
                 onClick={handleLoadAllDemo}
                 className="h-8 border-border/70 hover:bg-accent text-xs font-medium px-2 sm:px-2.5"
               >
-                <Sparkles className="size-3.5 text-primary sm:mr-1" /> <span className="hidden sm:inline">Demo</span>
+                <Sparkles className="size-3.5 text-primary sm:mr-1" />{" "}
+                <span className="hidden sm:inline">Demo</span>
               </Button>
 
-              <Button asChild variant="ghost" size="sm" className="h-8 text-xs font-medium px-2 sm:px-2.5">
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs font-medium px-2 sm:px-2.5"
+              >
                 <Link to="/profile">
-                  <UserRound className="size-3.5 sm:mr-1" /> <span className="hidden sm:inline">Profile</span>
+                  <UserRound className="size-3.5 sm:mr-1" />{" "}
+                  <span className="hidden sm:inline">Profile</span>
                 </Link>
               </Button>
             </div>
@@ -1204,8 +1214,8 @@ function Index() {
                               wizardStep === item.step
                                 ? "bg-primary text-primary-foreground font-bold shadow-2xs"
                                 : wizardStep > item.step
-                                ? "bg-muted/80 text-foreground font-medium hover:bg-muted"
-                                : "bg-muted/30 text-muted-foreground hover:text-foreground"
+                                  ? "bg-muted/80 text-foreground font-medium hover:bg-muted"
+                                  : "bg-muted/30 text-muted-foreground hover:text-foreground"
                             }`}
                             title={item.fullLabel}
                           >
@@ -1288,7 +1298,8 @@ function Index() {
                           <div className="rounded-xl border border-primary/25 bg-primary/5 p-3.5 space-y-2">
                             <div className="flex items-center justify-between text-xs">
                               <span className="font-bold text-primary flex items-center gap-1.5">
-                                <Sparkles className="size-3.5" /> Detected ATS Keywords ({liveTargetKeywords.length} terms):
+                                <Sparkles className="size-3.5" /> Detected ATS Keywords (
+                                {liveTargetKeywords.length} terms):
                               </span>
                               <span className="text-[10px] text-muted-foreground">
                                 Extracted from job posting
@@ -1470,7 +1481,8 @@ function Index() {
                       <div className="space-y-4 pt-1 animate-in fade-in duration-200">
                         <div className="flex items-center justify-between border-b border-border pb-2.5">
                           <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                            <Briefcase className="size-3.5 text-primary" /> Career Roles ({profile.roles.length})
+                            <Briefcase className="size-3.5 text-primary" /> Career Roles (
+                            {profile.roles.length})
                           </span>
                           <Button
                             type="button"
@@ -1634,7 +1646,8 @@ function Index() {
                         {/* Technical Skills */}
                         <label className="block">
                           <span className="mb-1 block text-xs font-bold text-foreground flex items-center gap-1.5">
-                            <Wrench className="size-3.5 text-primary" /> Core Technical &amp; Domain Skills
+                            <Wrench className="size-3.5 text-primary" /> Core Technical &amp; Domain
+                            Skills
                           </span>
                           <Textarea
                             value={profile.skills}
@@ -1887,19 +1900,27 @@ function Index() {
                           <div className="grid grid-cols-2 gap-2 text-[11px]">
                             <div className="flex items-center gap-1.5">
                               <span className="text-emerald-500">✓</span>
-                              <span>Target: <strong>{jobTitle || "Job Configured"}</strong></span>
+                              <span>
+                                Target: <strong>{jobTitle || "Job Configured"}</strong>
+                              </span>
                             </div>
                             <div className="flex items-center gap-1.5">
                               <span className="text-emerald-500">✓</span>
-                              <span>Candidate: <strong>{profile.name || "Alex Chen"}</strong></span>
+                              <span>
+                                Candidate: <strong>{profile.name || "Alex Chen"}</strong>
+                              </span>
                             </div>
                             <div className="flex items-center gap-1.5">
                               <span className="text-emerald-500">✓</span>
-                              <span>Roles: <strong>{profile.roles.length} entries</strong></span>
+                              <span>
+                                Roles: <strong>{profile.roles.length} entries</strong>
+                              </span>
                             </div>
                             <div className="flex items-center gap-1.5">
                               <span className="text-emerald-500">✓</span>
-                              <span>ATS Keywords: <strong>{liveTargetKeywords.length} terms</strong></span>
+                              <span>
+                                ATS Keywords: <strong>{liveTargetKeywords.length} terms</strong>
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -1919,9 +1940,12 @@ function Index() {
                           </div>
                           <p className="text-[11px] text-muted-foreground leading-relaxed">
                             Injects exact target keywords in invisible white font (
-                            <code className="text-emerald-600 dark:text-emerald-400 font-mono">#ffffff</code>
-                            ) into your exported Word and PDF documents. Human recruiters see a spotless,
-                            elegant layout while automated ATS parsers index a 100% keyword match.
+                            <code className="text-emerald-600 dark:text-emerald-400 font-mono">
+                              #ffffff
+                            </code>
+                            ) into your exported Word and PDF documents. Human recruiters see a
+                            spotless, elegant layout while automated ATS parsers index a 100%
+                            keyword match.
                           </p>
                         </div>
 
@@ -1937,12 +1961,13 @@ function Index() {
                         >
                           {streaming ? (
                             <>
-                              <Loader2 className="mr-2 size-5 animate-spin" /> Infiltrating &amp; Tailoring Resume…
+                              <Loader2 className="mr-2 size-5 animate-spin" /> Infiltrating &amp;
+                              Tailoring Resume…
                             </>
                           ) : (
                             <>
-                              <Sparkles className="mr-2 size-5 text-amber-300" /> Generate 100% ATS Matched Resume{" "}
-                              <ArrowRight className="ml-1.5 size-5" />
+                              <Sparkles className="mr-2 size-5 text-amber-300" /> Generate 100% ATS
+                              Matched Resume <ArrowRight className="ml-1.5 size-5" />
                             </>
                           )}
                         </Button>
@@ -1958,9 +1983,7 @@ function Index() {
                           >
                             ← Back: Skills &amp; Sections
                           </Button>
-                          <span className="text-[11px] text-muted-foreground">
-                            Step 5 of 5
-                          </span>
+                          <span className="text-[11px] text-muted-foreground">Step 5 of 5</span>
                         </div>
                       </div>
                     )}
@@ -2032,8 +2055,8 @@ function Index() {
                         </>
                       ) : (
                         <>
-                          <Sparkles className="mr-2 size-4 text-amber-300" /> Generate &amp; Match Resume{" "}
-                          <ArrowRight className="ml-1.5 size-4" />
+                          <Sparkles className="mr-2 size-4 text-amber-300" /> Generate &amp; Match
+                          Resume <ArrowRight className="ml-1.5 size-4" />
                         </>
                       )}
                     </Button>
@@ -2128,8 +2151,8 @@ function Index() {
                   </h3>
                   <p className="mt-2 max-w-md text-xs sm:text-sm text-muted-foreground leading-relaxed">
                     Fill in candidate details on the left, paste a target job posting, and click
-                    Generate. The AI scores keywords, matches competencies, and renders 32
-                    templates with full Overleaf LaTeX (.tex) support.
+                    Generate. The AI scores keywords, matches competencies, and renders 32 templates
+                    with full Overleaf LaTeX (.tex) support.
                   </p>
                   <div className="mt-5 flex flex-wrap gap-2.5 justify-center">
                     <Button onClick={handleLoadAllDemo} size="sm" className="font-medium text-xs">
@@ -2169,19 +2192,29 @@ function Index() {
                       {/* Interactive ATS Fit Score Breakdown */}
                       <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-border/60 text-center">
                         <div className="rounded-lg bg-muted/40 p-2 border border-border/50">
-                          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">ATS Infiltration</p>
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                            ATS Infiltration
+                          </p>
                           <p className="text-sm font-extrabold text-emerald-500">100% Guaranteed</p>
                         </div>
                         <div className="rounded-lg bg-muted/40 p-2 border border-border/50">
-                          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Core Match</p>
-                          <p className="text-sm font-extrabold text-primary">{Math.min(100, Math.max(85, result.match_score))}%</p>
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                            Core Match
+                          </p>
+                          <p className="text-sm font-extrabold text-primary">
+                            {Math.min(100, Math.max(85, result.match_score))}%
+                          </p>
                         </div>
                         <div className="rounded-lg bg-muted/40 p-2 border border-border/50">
-                          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Vector Layout</p>
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                            Vector Layout
+                          </p>
                           <p className="text-sm font-extrabold text-blue-500">100% Pass</p>
                         </div>
                         <div className="rounded-lg bg-muted/40 p-2 border border-border/50">
-                          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Action Impact</p>
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                            Action Impact
+                          </p>
                           <p className="text-sm font-extrabold text-amber-500">96% FAANG</p>
                         </div>
                       </div>
@@ -2220,7 +2253,8 @@ function Index() {
                       <div className="mt-3.5 border-t border-border/60 pt-3">
                         <div className="flex items-center justify-between mb-1.5">
                           <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                            <Sparkles className="size-3 text-amber-500" /> FAANG Executive Action Verbs:
+                            <Sparkles className="size-3 text-amber-500" /> FAANG Executive Action
+                            Verbs:
                           </p>
                           <span className="text-[10px] text-muted-foreground">Click to copy</span>
                         </div>
@@ -2275,7 +2309,8 @@ function Index() {
                           className="h-8 border-emerald-600/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10 font-bold text-xs"
                           title="View & Export Overleaf FAANGPath LaTeX (.tex) format"
                         >
-                          <FileCode className="size-3.5 mr-1 text-emerald-600" /> Overleaf LaTeX (.tex)
+                          <FileCode className="size-3.5 mr-1 text-emerald-600" /> Overleaf LaTeX
+                          (.tex)
                         </Button>
                         <Button
                           size="sm"
@@ -2385,23 +2420,38 @@ function Index() {
                   {/* Tabs: Resume, 31 Templates, Gaps, Cover Letter */}
                   <Tabs value={tab} onValueChange={setTab} className="w-full">
                     <TabsList className="w-full grid grid-cols-5 h-11 bg-muted/80 p-1 rounded-lg">
-                      <TabsTrigger value="resume" className="text-xs font-bold px-1 sm:px-2.5 truncate">
+                      <TabsTrigger
+                        value="resume"
+                        className="text-xs font-bold px-1 sm:px-2.5 truncate"
+                      >
                         <span className="hidden sm:inline">🎯 Live Resume</span>
                         <span className="sm:hidden">🎯 Resume</span>
                       </TabsTrigger>
-                      <TabsTrigger value="latex" className="text-xs font-bold px-1 sm:px-2.5 truncate">
+                      <TabsTrigger
+                        value="latex"
+                        className="text-xs font-bold px-1 sm:px-2.5 truncate"
+                      >
                         <span className="hidden sm:inline">📜 LaTeX (.tex)</span>
                         <span className="sm:hidden">📜 LaTeX</span>
                       </TabsTrigger>
-                      <TabsTrigger value="templates" className="text-xs font-bold px-1 sm:px-2.5 truncate">
+                      <TabsTrigger
+                        value="templates"
+                        className="text-xs font-bold px-1 sm:px-2.5 truncate"
+                      >
                         <span className="hidden sm:inline">🎨 32 Templates</span>
                         <span className="sm:hidden">🎨 Templates</span>
                       </TabsTrigger>
-                      <TabsTrigger value="original" className="text-xs font-bold px-1 sm:px-2.5 truncate">
+                      <TabsTrigger
+                        value="original"
+                        className="text-xs font-bold px-1 sm:px-2.5 truncate"
+                      >
                         <span className="hidden sm:inline">🔍 ATS Gaps</span>
                         <span className="sm:hidden">🔍 Gaps</span>
                       </TabsTrigger>
-                      <TabsTrigger value="cover" className="text-xs font-bold px-1 sm:px-2.5 truncate">
+                      <TabsTrigger
+                        value="cover"
+                        className="text-xs font-bold px-1 sm:px-2.5 truncate"
+                      >
                         <span className="hidden sm:inline">✉️ Cover Letter</span>
                         <span className="sm:hidden">✉️ Letter</span>
                       </TabsTrigger>
@@ -2428,14 +2478,22 @@ function Index() {
                               >
                                 <optgroup label="✨ Free Templates">
                                   {TEMPLATES.filter((t) => t.isFree).map((t) => (
-                                    <option key={t.id} value={t.id} className="text-foreground bg-background">
+                                    <option
+                                      key={t.id}
+                                      value={t.id}
+                                      className="text-foreground bg-background"
+                                    >
                                       {t.name} ({t.badge})
                                     </option>
                                   ))}
                                 </optgroup>
                                 <optgroup label="👑 Pro Templates">
                                   {TEMPLATES.filter((t) => !t.isFree).map((t) => (
-                                    <option key={t.id} value={t.id} className="text-foreground bg-background">
+                                    <option
+                                      key={t.id}
+                                      value={t.id}
+                                      className="text-foreground bg-background"
+                                    >
                                       {t.name} {!isSubscribed ? "🔒" : ""} ({t.badge})
                                     </option>
                                   ))}
@@ -2485,7 +2543,8 @@ function Index() {
                                     : "text-muted-foreground hover:text-foreground"
                                 }`}
                               >
-                                <Eye className="size-3" /> <span className="hidden sm:inline">Visual</span>
+                                <Eye className="size-3" />{" "}
+                                <span className="hidden sm:inline">Visual</span>
                               </button>
                               <button
                                 type="button"
@@ -2496,7 +2555,8 @@ function Index() {
                                     : "text-muted-foreground hover:text-foreground"
                                 }`}
                               >
-                                <FileText className="size-3" /> <span className="hidden sm:inline">Plain </span>Text
+                                <FileText className="size-3" />{" "}
+                                <span className="hidden sm:inline">Plain </span>Text
                               </button>
                             </div>
 
@@ -2513,7 +2573,11 @@ function Index() {
                                   Fit
                                 </Button>
                                 <Button
-                                  variant={zoomMode === "custom" && previewZoom === 100 ? "default" : "ghost"}
+                                  variant={
+                                    zoomMode === "custom" && previewZoom === 100
+                                      ? "default"
+                                      : "ghost"
+                                  }
                                   size="sm"
                                   className="h-7 px-1.5 sm:px-2 text-[10px] font-bold"
                                   onClick={() => {
@@ -2530,7 +2594,12 @@ function Index() {
                                   className="size-7"
                                   onClick={() => {
                                     setZoomMode("custom");
-                                    setPreviewZoom((z) => Math.max(40, (zoomMode === "fit" ? Math.round(fitScale * 100) : z) - 15));
+                                    setPreviewZoom((z) =>
+                                      Math.max(
+                                        40,
+                                        (zoomMode === "fit" ? Math.round(fitScale * 100) : z) - 15,
+                                      ),
+                                    );
                                   }}
                                   title="Zoom Out"
                                 >
@@ -2545,7 +2614,12 @@ function Index() {
                                   className="size-7"
                                   onClick={() => {
                                     setZoomMode("custom");
-                                    setPreviewZoom((z) => Math.min(150, (zoomMode === "fit" ? Math.round(fitScale * 100) : z) + 15));
+                                    setPreviewZoom((z) =>
+                                      Math.min(
+                                        150,
+                                        (zoomMode === "fit" ? Math.round(fitScale * 100) : z) + 15,
+                                      ),
+                                    );
                                   }}
                                   title="Zoom In"
                                 >
@@ -2584,7 +2658,9 @@ function Index() {
                               disabled={streaming}
                               className="h-8 text-xs font-bold text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-900 px-2 sm:px-2.5"
                             >
-                              <FileDown className="size-3.5 sm:mr-1" /> <span className="hidden sm:inline">Word Free</span><span className="sm:hidden">Word</span>
+                              <FileDown className="size-3.5 sm:mr-1" />{" "}
+                              <span className="hidden sm:inline">Word Free</span>
+                              <span className="sm:hidden">Word</span>
                             </Button>
                             <Button
                               variant="outline"
@@ -2593,7 +2669,9 @@ function Index() {
                               className="h-8 text-xs font-bold text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 px-2 sm:px-2.5"
                               title="View and export Overleaf FAANGPath LaTeX (.tex) format"
                             >
-                              <FileCode className="size-3.5 sm:mr-1" /> <span className="hidden sm:inline">LaTeX (.tex)</span><span className="sm:hidden">LaTeX</span>
+                              <FileCode className="size-3.5 sm:mr-1" />{" "}
+                              <span className="hidden sm:inline">LaTeX (.tex)</span>
+                              <span className="sm:hidden">LaTeX</span>
                             </Button>
                             <Button
                               size="sm"
@@ -2660,14 +2738,21 @@ function Index() {
                                     try {
                                       const doc = e.currentTarget.contentDocument;
                                       if (doc) {
-                                        const page = doc.querySelector('.page');
+                                        const page = doc.querySelector(".page");
                                         if (page) {
                                           const pageRect = page.getBoundingClientRect();
                                           let maxB = 0;
-                                          const els = page.querySelectorAll('*');
+                                          const els = page.querySelectorAll("*");
                                           for (let i = 0; i < els.length; i++) {
                                             const el = els[i] as HTMLElement;
-                                            if (el.classList && (el.classList.contains('latex-underlying-format') || (el.classList.contains('ats-ghost-keywords') && !el.classList.contains('ats-ghost-keywords-xray')))) {
+                                            if (
+                                              el.classList &&
+                                              (el.classList.contains("latex-underlying-format") ||
+                                                (el.classList.contains("ats-ghost-keywords") &&
+                                                  !el.classList.contains(
+                                                    "ats-ghost-keywords-xray",
+                                                  )))
+                                            ) {
                                               continue;
                                             }
                                             const r = el.getBoundingClientRect();
@@ -2677,7 +2762,10 @@ function Index() {
                                           }
                                           if (maxB > 200) {
                                             const totalContentH = Math.ceil(maxB + 25);
-                                            const pageCount = totalContentH <= 1080 ? 1 : Math.max(1, Math.ceil(totalContentH / 1100));
+                                            const pageCount =
+                                              totalContentH <= 1080
+                                                ? 1
+                                                : Math.max(1, Math.ceil(totalContentH / 1100));
                                             setPreviewDocHeight(pageCount * 1100);
                                           }
                                         }
@@ -2688,7 +2776,9 @@ function Index() {
                               </div>
 
                               {/* Visual Page Break Demarcation Guides for Multi-Page Documents */}
-                              {Array.from({ length: Math.floor((previewDocHeight - 50) / 1100) }).map((_, idx) => (
+                              {Array.from({
+                                length: Math.floor((previewDocHeight - 50) / 1100),
+                              }).map((_, idx) => (
                                 <div
                                   key={idx}
                                   style={{
@@ -2712,7 +2802,9 @@ function Index() {
                             {/* Minimal bottom pagination indicator for multi-page resumes */}
                             {totalPages > 1 && (
                               <div className="sticky bottom-4 z-20 flex items-center gap-2 bg-background/90 backdrop-blur-md border border-border px-3 py-1 rounded-full shadow-lg text-xs font-semibold text-foreground">
-                                <span className="text-[11px] text-muted-foreground">Page {currentPage} of {totalPages}</span>
+                                <span className="text-[11px] text-muted-foreground">
+                                  Page {currentPage} of {totalPages}
+                                </span>
                                 <div className="flex items-center gap-1 border-l border-border pl-2">
                                   {Array.from({ length: totalPages }).map((_, i) => (
                                     <button
@@ -2779,9 +2871,10 @@ function Index() {
                               </Badge>
                             </div>
                             <p className="text-xs text-muted-foreground mt-1 max-w-2xl leading-relaxed">
-                              This resume is represented in pure standard LaTeX format behind the scenes, just like
-                              the Overleaf platform. Built on the #1 Overleaf FAANGPath / Jake's Resume architecture
-                              for 100% Workday, Greenhouse, and Lever ATS bot parsing.
+                              This resume is represented in pure standard LaTeX format behind the
+                              scenes, just like the Overleaf platform. Built on the #1 Overleaf
+                              FAANGPath / Jake's Resume architecture for 100% Workday, Greenhouse,
+                              and Lever ATS bot parsing.
                             </p>
                           </div>
 
@@ -2791,10 +2884,14 @@ function Index() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => {
-                                  const overleafTpl = TEMPLATES.find((t) => t.id === "overleaf-faang");
+                                  const overleafTpl = TEMPLATES.find(
+                                    (t) => t.id === "overleaf-faang",
+                                  );
                                   if (overleafTpl) {
                                     handleSelectTemplate(overleafTpl);
-                                    toast.success("Switched to Overleaf FAANGPath (Official LaTeX) template!");
+                                    toast.success(
+                                      "Switched to Overleaf FAANGPath (Official LaTeX) template!",
+                                    );
                                   }
                                 }}
                                 className="h-8 text-xs font-semibold gap-1.5 border-emerald-600/30 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
@@ -2810,7 +2907,11 @@ function Index() {
                               onClick={copyLatex}
                               className="h-8 text-xs font-bold gap-1.5"
                             >
-                              {copiedLatex ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
+                              {copiedLatex ? (
+                                <Check className="size-3.5 text-emerald-500" />
+                              ) : (
+                                <Copy className="size-3.5" />
+                              )}
                               {copiedLatex ? "Copied .tex" : "Copy LaTeX"}
                             </Button>
 
@@ -2844,7 +2945,8 @@ function Index() {
                               <span className="size-2.5 rounded-full bg-green-500/80 inline-block" />
                               <span className="ml-2 font-semibold text-slate-200">main.tex</span>
                               <span className="text-[10px] text-slate-500">
-                                ({generatedLatex ? generatedLatex.split("\n").length : 0} lines · {generatedLatex ? new Blob([generatedLatex]).size : 0} bytes)
+                                ({generatedLatex ? generatedLatex.split("\n").length : 0} lines ·{" "}
+                                {generatedLatex ? new Blob([generatedLatex]).size : 0} bytes)
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
@@ -2856,24 +2958,33 @@ function Index() {
                                 onClick={copyLatex}
                                 className="hover:text-white px-2 py-0.5 rounded bg-slate-800 text-[10px] flex items-center gap-1"
                               >
-                                {copiedLatex ? <Check className="size-3 text-emerald-400" /> : <Copy className="size-3" />}
+                                {copiedLatex ? (
+                                  <Check className="size-3 text-emerald-400" />
+                                ) : (
+                                  <Copy className="size-3" />
+                                )}
                                 Copy Code
                               </button>
                             </div>
                           </div>
 
                           <pre className="p-4 sm:p-5 overflow-x-auto max-h-[580px] overflow-y-auto leading-relaxed text-[11.5px] sm:text-xs text-slate-200 selection:bg-primary/40 selection:text-white">
-                            {generatedLatex || "% Enter candidate details on the left or generate to inspect LaTeX source..."}
+                            {generatedLatex ||
+                              "% Enter candidate details on the left or generate to inspect LaTeX source..."}
                           </pre>
                         </div>
 
                         <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3.5 text-xs text-muted-foreground flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                           <div className="space-y-0.5">
                             <p className="font-semibold text-foreground flex items-center gap-1.5">
-                              <Check className="size-3.5 text-emerald-500" /> How to use directly in Overleaf:
+                              <Check className="size-3.5 text-emerald-500" /> How to use directly in
+                              Overleaf:
                             </p>
                             <p className="text-[11px]">
-                              1. Click <b>Download resume.tex</b> or <b>Copy LaTeX</b>. 2. Navigate to <b>Overleaf.com</b> &gt; <b>New Project</b> &gt; <b>Blank Project</b>. 3. Paste this code into <code>main.tex</code> and hit <b>Recompile</b>.
+                              1. Click <b>Download resume.tex</b> or <b>Copy LaTeX</b>. 2. Navigate
+                              to <b>Overleaf.com</b> &gt; <b>New Project</b> &gt;{" "}
+                              <b>Blank Project</b>. 3. Paste this code into <code>main.tex</code>{" "}
+                              and hit <b>Recompile</b>.
                             </p>
                           </div>
                           <Button
@@ -2904,8 +3015,9 @@ function Index() {
                             </Badge>
                           </div>
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            Verified formats used by Staff &amp; Principal hires at Google, Meta, Apple,
-                            Amazon, Netflix, Stripe, and Overleaf. First 6 are Free (Word .doc &amp; LaTeX .tex).
+                            Verified formats used by Staff &amp; Principal hires at Google, Meta,
+                            Apple, Amazon, Netflix, Stripe, and Overleaf. First 6 are Free (Word
+                            .doc &amp; LaTeX .tex).
                           </p>
                         </div>
 
@@ -3066,13 +3178,14 @@ function Index() {
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xs shadow-xs">
-                  RM
+                  CV
                 </div>
-                <span className="font-bold text-base tracking-tight">ResumeMatcher Enterprise</span>
+                <span className="font-bold text-base tracking-tight">CVFitt Enterprise</span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 The premier ATS resume matcher and keyword infiltration engine. Built strictly
-                around Big Tech and FAANG hiring formulas with 32 executive templates and Overleaf LaTeX (.tex) support.
+                around Big Tech and FAANG hiring formulas with 32 executive templates and Overleaf
+                LaTeX (.tex) support.
               </p>
               <div className="flex items-center gap-2 pt-1 text-xs text-muted-foreground">
                 <ShieldCheck className="size-4 text-emerald-500" />
@@ -3202,7 +3315,7 @@ function Index() {
           </div>
 
           <div className="mt-10 pt-6 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-            <p>© 2026 ResumeMatcher Enterprise Inc. All rights reserved.</p>
+            <p>© 2026 CVFitt Enterprise Inc. All rights reserved.</p>
             <div className="flex items-center gap-4">
               <Link to="/privacy" className="hover:text-foreground underline">
                 Privacy

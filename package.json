@@ -10,6 +10,8 @@
     "build:node": "vite build",
     "build:dev": "vite build --mode development",
     "preview": "bun --bun vite preview",
+    "deploy": "bun run build && wrangler deploy",
+    "delete:old": "wrangler delete --name resumematcherapp",
     "lint": "eslint .",
     "format": "prettier --write ."
   },

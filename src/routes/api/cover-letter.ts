@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
-import { callGateway, textStreamResponse } from "@/lib/gateway.server";
+import { streamAiText, textStreamResponse } from "@/lib/gateway.server";
 import { createCoverLetterStreamResponse, generateCoverLetter } from "@/lib/matcher-engine";
 
 const BodySchema = z.object({
@@ -31,37 +31,24 @@ export const Route = createFileRoute("/api/cover-letter")({
           );
         }
 
-        const apiKey = process.env["LOVABLE_API_KEY"];
-        if (apiKey) {
-          try {
-            const result = await callGateway(apiKey, {
-              model: "openai/gpt-5.6-sol",
-              reasoning: { effort: "low", summary: "auto" },
-              instructions:
-                "You write cover letters. Use ONLY facts present in the supplied tailored resume — never invent employers, " +
-                "metrics, dates or skills. Mirror the posting's vocabulary where truthful. Output plain text only, no markdown. " +
-                "Structure: an optional greeting line ('Dear Hiring Team,'), 3 short paragraphs, then 'Sincerely,' and the " +
-                "candidate's name. Under 300 words. " +
-                TONE_HINT[body.tone],
-              input: [
-                {
-                  role: "user",
-                  content: [
-                    {
-                      type: "input_text",
-                      text: `JOB POSTING:\n${body.job}\n\nTAILORED RESUME:\n${body.resume}${
-                        body.applicant ? `\n\nCANDIDATE NAME: ${body.applicant}` : ""
-                      }`,
-                    },
-                  ],
-                },
-              ],
-            });
+        const systemPrompt = `You write cover letters. Use ONLY facts present in the supplied tailored resume — never invent employers, metrics, dates or skills. Mirror the posting's vocabulary where truthful. Output plain text only, no markdown. Structure: an optional greeting line ('Dear Hiring Team,'), 3 short paragraphs, then 'Sincerely,' and the candidate's name. Under 300 words. ${TONE_HINT[body.tone]}`;
 
-            if (result.ok) return textStreamResponse(result.stream);
-          } catch {
-            // Fall back to built-in generator
+        const userPrompt = `JOB POSTING:\n${body.job}\n\nTAILORED RESUME:\n${body.resume}${
+          body.applicant ? `\n\nCANDIDATE NAME: ${body.applicant}` : ""
+        }`;
+
+        try {
+          const result = await streamAiText({
+            systemPrompt,
+            userPrompt,
+            isJson: false,
+          });
+
+          if (result.ok) {
+            return textStreamResponse(result.stream);
           }
+        } catch {
+          // Fall back to built-in generator
         }
 
         // Built-in intelligent cover letter generator

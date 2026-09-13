@@ -115,16 +115,21 @@ export function TemplateZoomModal({
         <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-border bg-muted/70 px-4 sm:px-6 py-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-base sm:text-lg font-bold text-foreground truncate">{template.name}</h3>
+              <h3 className="text-base sm:text-lg font-bold text-foreground truncate">
+                {template.name}
+              </h3>
               {template.isFree ? (
-                <Badge className="bg-emerald-600 text-white font-bold text-[10px] sm:text-xs">FREE TIER</Badge>
+                <Badge className="bg-emerald-600 text-white font-bold text-[10px] sm:text-xs">
+                  FREE TIER
+                </Badge>
               ) : (
                 <Badge className="bg-blue-900 text-white font-bold text-[10px] sm:text-xs gap-1">
                   <Lock className="size-3 text-amber-300" /> PRO EXCLUSIVE
                 </Badge>
               )}
               <Badge variant="outline" className="text-[10px] font-semibold">
-                📄 {Math.max(1, Math.ceil(zoomDocHeight / 1100))} {Math.max(1, Math.ceil(zoomDocHeight / 1100)) === 1 ? "Page" : "Pages"} (Letter)
+                📄 {Math.max(1, Math.ceil(zoomDocHeight / 1100))}{" "}
+                {Math.max(1, Math.ceil(zoomDocHeight / 1100)) === 1 ? "Page" : "Pages"} (Letter)
               </Badge>
               <span className="text-xs font-bold text-amber-600 dark:text-amber-400 hidden sm:inline-flex items-center gap-1">
                 <Star className="size-3.5 fill-amber-500 text-amber-500" />
@@ -289,14 +294,19 @@ export function TemplateZoomModal({
                   try {
                     const doc = e.currentTarget.contentDocument;
                     if (doc) {
-                      const page = doc.querySelector('.page');
+                      const page = doc.querySelector(".page");
                       if (page) {
                         const pageRect = page.getBoundingClientRect();
                         let maxB = 0;
-                        const els = page.querySelectorAll('*');
+                        const els = page.querySelectorAll("*");
                         for (let i = 0; i < els.length; i++) {
                           const el = els[i] as HTMLElement;
-                          if (el.classList && (el.classList.contains('latex-underlying-format') || (el.classList.contains('ats-ghost-keywords') && !el.classList.contains('ats-ghost-keywords-xray')))) {
+                          if (
+                            el.classList &&
+                            (el.classList.contains("latex-underlying-format") ||
+                              (el.classList.contains("ats-ghost-keywords") &&
+                                !el.classList.contains("ats-ghost-keywords-xray")))
+                          ) {
                             continue;
                           }
                           const r = el.getBoundingClientRect();
@@ -306,7 +316,10 @@ export function TemplateZoomModal({
                         }
                         if (maxB > 200) {
                           const totalContentH = Math.ceil(maxB + 25);
-                          const pageCount = totalContentH <= 1080 ? 1 : Math.max(1, Math.ceil(totalContentH / 1100));
+                          const pageCount =
+                            totalContentH <= 1080
+                              ? 1
+                              : Math.max(1, Math.ceil(totalContentH / 1100));
                           setZoomDocHeight(pageCount * 1100);
                         }
                       }

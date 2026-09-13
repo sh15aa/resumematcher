@@ -12,6 +12,7 @@ export interface TailorRequest {
   resume: string;
   job: string;
   tone: "concise" | "impact" | "formal";
+  applicant?: string | undefined;
 }
 
 export interface CoverLetterRequest {
@@ -570,10 +571,7 @@ export function generateTailoredResult(req: TailorRequest): TailorResult {
   }
 
   // Format Final Tailored Resume
-  const finalSections: string[] = [
-    candidateName,
-    contactLine,
-  ];
+  const finalSections: string[] = [candidateName, contactLine];
 
   if (tailoredSummary.trim()) {
     finalSections.push("", "SUMMARY", tailoredSummary);
@@ -594,7 +592,12 @@ export function generateTailoredResult(req: TailorRequest): TailorResult {
   // Include Certifications / Projects if in original, excluding name / contact echoes
   const otherSections = doc.sections.filter((s) => {
     const t = s.title.toLowerCase().trim();
-    if (/exp|work|employ|career|histor|edu|degree|univers|skill|summar|about|contact|identity/i.test(t)) return false;
+    if (
+      /exp|work|employ|career|histor|edu|degree|univers|skill|summar|about|contact|identity/i.test(
+        t,
+      )
+    )
+      return false;
     if (t === candidateName.toLowerCase().trim()) return false;
     if (t === "candidate name") return false;
     if (doc.name && t === doc.name.toLowerCase().trim()) return false;

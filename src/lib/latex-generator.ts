@@ -82,7 +82,7 @@ function parseExperienceSection(section: ResumeSection): ParsedRoleEntry[] {
       const parts = block.text.split(/\s+[|•·]\s+/);
       if (parts.length >= 2) {
         if (currentEntry) entries.push(currentEntry);
-        
+
         let title = parts[0]?.trim() || "";
         let company = parts[1]?.trim() || "";
         let location = parts[2]?.trim() || "";
@@ -263,7 +263,9 @@ export function generateOverleafFaangLatex(
   lines.push(`\\newcommand{\\resumeSubItem}[1]{\\resumeItem{#1}\\vspace{-4pt}}\n`);
   lines.push(`\\renewcommand\\labelitemii{$\\vcenter{\\hbox{\\tiny$\\bullet$}}$}\n`);
 
-  lines.push(`\\newcommand{\\resumeSubHeadingListStart}{\\begin{itemize}[leftmargin=0.15in, label={}]}`);
+  lines.push(
+    `\\newcommand{\\resumeSubHeadingListStart}{\\begin{itemize}[leftmargin=0.15in, label={}]}`,
+  );
   lines.push(`\\newcommand{\\resumeSubHeadingListEnd}{\\end{itemize}}`);
   lines.push(`\\newcommand{\\resumeItemListStart}{\\begin{itemize}}`);
   lines.push(`\\newcommand{\\resumeItemListEnd}{\\end{itemize}\\vspace{-5pt}}\n`);
@@ -330,8 +332,12 @@ export function generateOverleafFaangLatex(
       const eduEntries = parseEducationSection(section);
       for (const edu of eduEntries) {
         lines.push(`    \\resumeSubheading`);
-        lines.push(`      {${escapeLatex(edu.school || "University")}}{${escapeLatex(edu.location)}}`);
-        lines.push(`      {${escapeLatex(edu.degree || "Bachelor of Science")}}{${escapeLatex(edu.dates)}}`);
+        lines.push(
+          `      {${escapeLatex(edu.school || "University")}}{${escapeLatex(edu.location)}}`,
+        );
+        lines.push(
+          `      {${escapeLatex(edu.degree || "Bachelor of Science")}}{${escapeLatex(edu.dates)}}`,
+        );
         if (edu.bullets.length > 0) {
           lines.push(`      \\resumeItemListStart`);
           for (const bullet of edu.bullets) {
@@ -357,8 +363,12 @@ export function generateOverleafFaangLatex(
       const expEntries = parseExperienceSection(section);
       for (const exp of expEntries) {
         lines.push(`    \\resumeSubheading`);
-        lines.push(`      {${escapeLatex(exp.title || "Software Engineer")}}{${escapeLatex(exp.dates)}}`);
-        lines.push(`      {${escapeLatex(exp.company || "Technology Company")}}{${escapeLatex(exp.location)}}`);
+        lines.push(
+          `      {${escapeLatex(exp.title || "Software Engineer")}}{${escapeLatex(exp.dates)}}`,
+        );
+        lines.push(
+          `      {${escapeLatex(exp.company || "Technology Company")}}{${escapeLatex(exp.location)}}`,
+        );
         if (exp.bullets.length > 0) {
           lines.push(`      \\resumeItemListStart`);
           for (const bullet of exp.bullets) {
@@ -407,14 +417,16 @@ export function generateOverleafFaangLatex(
       lines.push(`\\section{Technical Skills}`);
       lines.push(` \\begin{itemize}[leftmargin=0.15in, label={}]`);
       lines.push(`    \\small{\\item{`);
-      
+
       const skillItems: string[] = [];
       for (const block of section.blocks) {
         const text = block.text.trim();
         if (text.includes(":") || text.includes("—") || text.includes("-")) {
           const [cat, val] = text.split(/[:—-]\s*/, 2);
           if (cat && val) {
-            skillItems.push(`     \\textbf{${escapeLatex(cat.trim())}}{: ${escapeLatex(val.trim())}}`);
+            skillItems.push(
+              `     \\textbf{${escapeLatex(cat.trim())}}{: ${escapeLatex(val.trim())}}`,
+            );
           } else {
             skillItems.push(`     ${escapeLatex(text)}`);
           }
@@ -425,7 +437,9 @@ export function generateOverleafFaangLatex(
 
       if (skillItems.length === 0) {
         skillItems.push(`     \\textbf{Languages}{: Python, Java, C++, TypeScript, SQL, Go}`);
-        skillItems.push(`     \\textbf{Frameworks \\& Tools}{: React, Node.js, Next.js, Docker, Kubernetes, AWS, Git}`);
+        skillItems.push(
+          `     \\textbf{Frameworks \\& Tools}{: React, Node.js, Next.js, Docker, Kubernetes, AWS, Git}`,
+        );
       }
 
       lines.push(skillItems.join(" \\\\\n"));

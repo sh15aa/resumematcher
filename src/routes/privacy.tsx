@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/privacy")({
   head: () => ({
     meta: [
-      { title: "Privacy Policy — ResumeMatcher Enterprise" },
+      { title: "Privacy Policy — CVFitt Enterprise" },
       {
         name: "description",
         content:
-          "ResumeMatcher Enterprise Privacy Policy. Learn how we handle your resume data, job descriptions, security standards, GDPR & CCPA compliance.",
+          "CVFitt Enterprise Privacy Policy. Learn how we handle your resume data, job descriptions, security standards, GDPR & CCPA compliance.",
       },
-      { property: "og:title", content: "Privacy Policy — ResumeMatcher Enterprise" },
+      { property: "og:title", content: "Privacy Policy — CVFitt Enterprise" },
       {
         property: "og:description",
         content:
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/privacy")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: [{ rel: "canonical", href: "https://resumematcher.lovable.app/privacy" }],
+    links: [{ rel: "canonical", href: "https://cvfitt.fitt.workers.dev/privacy" }],
   }),
   component: PrivacyPage,
 });
@@ -35,7 +35,7 @@ function PrivacyPage() {
             to="/"
             className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
           >
-            <ArrowLeft className="size-4" /> Back to ResumeMatcher
+            <ArrowLeft className="size-4" /> Back to CVFitt
           </Link>
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
@@ -66,8 +66,8 @@ function PrivacyPage() {
             <CheckCircle2 className="size-5" /> Our Fundamental Privacy Commitment
           </h2>
           <p className="text-sm text-foreground/80">
-            ResumeMatcher Enterprise is designed with privacy-first architecture. We never sell,
-            rent, or monetize your resume text, job application history, or personally identifiable
+            CVFitt Enterprise is designed with privacy-first architecture. We never sell, rent, or
+            monetize your resume text, job application history, or personally identifiable
             information (PII) to third-party data brokers, recruiters, or advertisers. Your
             documents remain strictly your property.
           </p>
@@ -79,8 +79,8 @@ function PrivacyPage() {
             1. Information We Collect
           </h2>
           <p>
-            When utilizing ResumeMatcher, we may collect the following information necessary to
-            provide and enhance our resume tailoring and ATS matching capabilities:
+            When utilizing CVFitt, we may collect the following information necessary to provide and
+            enhance our resume tailoring and ATS matching capabilities:
           </p>
           <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
             <li>
@@ -160,9 +160,9 @@ function PrivacyPage() {
             4. Cookies &amp; Local Storage
           </h2>
           <p>
-            ResumeMatcher uses minimal cookies and HTML5 LocalStorage to remember your preferred
-            template, localized currency, drafts, and cookie consent preferences. We do not use
-            intrusive third-party cross-site tracking cookies. You may manage or revoke your consent
+            CVFitt uses minimal cookies and HTML5 LocalStorage to remember your preferred template,
+            localized currency, drafts, and cookie consent preferences. We do not use intrusive
+            third-party cross-site tracking cookies. You may manage or revoke your consent
             preferences at any time via our Cookie Consent banner.
           </p>
         </section>
@@ -173,21 +173,17 @@ function PrivacyPage() {
             5. Your Rights (GDPR &amp; CCPA / CPRA)
           </h2>
           <p>
-            Under European (GDPR), United Kingdom, and California (CCPA/CPRA) privacy regulations,
-            you retain full rights over your data:
+            You maintain full sovereignty over your professional data. Under GDPR, CCPA/CPRA, and
+            international data regulations, you have the right to:
           </p>
           <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
             <li>
-              <strong className="text-foreground">Right to Access:</strong> Request a complete copy
-              of all personal data held in association with your account.
+              <strong className="text-foreground">Access &amp; Portability:</strong> Request an
+              export of all career profile details and saved tailored resumes.
             </li>
             <li>
-              <strong className="text-foreground">Right to Deletion:</strong> Request immediate and
-              permanent purging of your account, resumes, and transaction logs.
-            </li>
-            <li>
-              <strong className="text-foreground">Right to Portability:</strong> Export your career
-              profile and tailored documents at any time.
+              <strong className="text-foreground">Right to Erasure (Be Forgotten):</strong> Delete
+              your profile and tailored documents at any time.
             </li>
             <li>
               <strong className="text-foreground">Right to Non-Discrimination:</strong> Exercising
@@ -206,11 +202,9 @@ function PrivacyPage() {
             contact our Data Protection Officer at:
           </p>
           <div className="rounded-xl border border-border bg-card p-4 text-xs font-mono">
-            <p className="text-foreground font-semibold">
-              ResumeMatcher Enterprise Legal &amp; Privacy
-            </p>
-            <p className="text-muted-foreground">Email: privacy@resumematcher.ai</p>
-            <p className="text-muted-foreground">Security Team: security@resumematcher.ai</p>
+            <p className="text-foreground font-semibold">CVFitt Enterprise Legal &amp; Privacy</p>
+            <p className="text-muted-foreground">Email: privacy@cvfitt.ai</p>
+            <p className="text-muted-foreground">Security Team: security@cvfitt.ai</p>
           </div>
         </section>
 

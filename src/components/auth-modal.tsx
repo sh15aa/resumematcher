@@ -163,7 +163,7 @@ export function AuthModal({
             <Lock className="size-5" />
           </div>
           <h3 className="text-xl font-bold tracking-tight text-foreground">
-            {title || (mode === "sign_up" ? "Create Pro Account" : "Sign In to ResumeMatcher")}
+            {title || (mode === "sign_up" ? "Create Pro Account" : "Sign In to CVFitt")}
           </h3>
           <p className="text-xs text-muted-foreground mt-1.5 max-w-xs mx-auto">
             {subtitle ||

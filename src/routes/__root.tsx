@@ -139,23 +139,23 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=5" },
       {
-        title: "ResumeMatcher Enterprise — 100% ATS Resume Matcher & Keyword Infiltration Engine",
+        title: "CVFitt Enterprise — 100% ATS Resume Matcher & Keyword Infiltration Engine",
       },
       {
         name: "description",
         content:
-          "Guarantee 100% ATS shortlisting for your dream job. Extract exact keywords from postings, weave them into executive bullet points, activate invisible white-font ATS cloaking, and download in Word (.doc) and vector PDF.",
+          "Guarantee 100% ATS shortlisting for your dream job with CVFitt. Extract exact keywords from postings, weave them into executive bullet points, activate invisible white-font ATS cloaking, and download in Word (.doc) and vector PDF.",
       },
       {
         name: "keywords",
         content:
-          "ATS resume builder, resume matcher, 100% ATS score, resume keyword optimizer, ghost keywords, white font ATS hack, FAANG resume templates, Workday resume parser, Greenhouse ATS",
+          "CVFitt, ATS resume builder, resume matcher, 100% ATS score, resume keyword optimizer, ghost keywords, white font ATS hack, FAANG resume templates, Workday resume parser, Greenhouse ATS",
       },
-      { name: "author", content: "ResumeMatcher Enterprise" },
+      { name: "author", content: "CVFitt Enterprise" },
       { name: "theme-color", content: "#2563eb" },
       {
         property: "og:title",
-        content: "ResumeMatcher Enterprise — 100% ATS Resume Matcher & Tailoring Engine",
+        content: "CVFitt Enterprise — 100% ATS Resume Matcher & Tailoring Engine",
       },
       {
         property: "og:description",
@@ -163,12 +163,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "100% ATS match guarantee, exact keyword infiltration, stealth white-font cloaking, 31 FAANG templates, Word and vector PDF downloads.",
       },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://resumematcher.lovable.app/" },
-      { property: "og:site_name", content: "ResumeMatcher Enterprise" },
+      { property: "og:url", content: "https://cvfitt.fitt.workers.dev/" },
+      { property: "og:site_name", content: "CVFitt Enterprise" },
       { name: "twitter:card", content: "summary_large_image" },
       {
         name: "twitter:title",
-        content: "ResumeMatcher Enterprise — 100% ATS Resume Matcher",
+        content: "CVFitt Enterprise — 100% ATS Resume Matcher",
       },
       {
         name: "twitter:description",
@@ -177,7 +177,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
     ],
     links: [
-      { rel: "canonical", href: "https://resumematcher.lovable.app/" },
+      { rel: "canonical", href: "https://cvfitt.fitt.workers.dev/" },
       {
         rel: "stylesheet",
         href: appCss,
@@ -198,7 +198,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "SoftwareApplication",
-          name: "ResumeMatcher Enterprise",
+          name: "CVFitt Enterprise",
           operatingSystem: "Web",
           applicationCategory: "BusinessApplication",
           description:

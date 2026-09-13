@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/terms")({
   head: () => ({
     meta: [
-      { title: "Terms of Service — ResumeMatcher Enterprise" },
+      { title: "Terms of Service — CVFitt Enterprise" },
       {
         name: "description",
         content:
-          "ResumeMatcher Enterprise Terms of Service, billing, subscription terms, 30-day refund guarantee, and acceptable usage policy.",
+          "CVFitt Enterprise Terms of Service, billing, subscription terms, 30-day refund guarantee, and acceptable usage policy.",
       },
-      { property: "og:title", content: "Terms of Service — ResumeMatcher Enterprise" },
+      { property: "og:title", content: "Terms of Service — CVFitt Enterprise" },
       {
         property: "og:description",
         content:
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/terms")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: [{ rel: "canonical", href: "https://resumematcher.lovable.app/terms" }],
+    links: [{ rel: "canonical", href: "https://cvfitt.fitt.workers.dev/terms" }],
   }),
   component: TermsPage,
 });
@@ -35,7 +35,7 @@ function TermsPage() {
             to="/"
             className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
           >
-            <ArrowLeft className="size-4" /> Back to ResumeMatcher
+            <ArrowLeft className="size-4" /> Back to CVFitt
           </Link>
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-0.5 text-xs font-medium text-primary">
@@ -79,9 +79,9 @@ function TermsPage() {
             1. Agreement to Terms
           </h2>
           <p>
-            By accessing or using ResumeMatcher Enterprise (&quot;Service&quot;), provided by
-            ResumeMatcher Inc., you agree to be bound by these Terms of Service. If you do not agree
-            to these terms, you must discontinue using the Service.
+            By accessing or using CVFitt Enterprise (&quot;Service&quot;), provided by CVFitt Inc.,
+            you agree to be bound by these Terms of Service. If you do not agree to these terms, you
+            must discontinue using the Service.
           </p>
         </section>
 
@@ -97,7 +97,7 @@ function TermsPage() {
           </p>
           <p>
             The software, visual styling, templates, and tailoring algorithms are the exclusive
-            property of ResumeMatcher Enterprise and are protected under international copyright and
+            property of CVFitt Enterprise and are protected under international copyright and
             trademark laws.
           </p>
         </section>
@@ -132,10 +132,9 @@ function TermsPage() {
             4. ATS Scoring &amp; Shortlist Optimization Disclaimer
           </h2>
           <p>
-            ResumeMatcher Enterprise provides industry-leading ATS parsing analysis, keyword
-            extraction, and bullet point rewrites designed to maximize candidate interview
-            shortlisting rates across Workday, Greenhouse, Lever, Taleo, and other enterprise ATS
-            systems.
+            CVFitt Enterprise provides industry-leading ATS parsing analysis, keyword extraction,
+            and bullet point rewrites designed to maximize candidate interview shortlisting rates
+            across Workday, Greenhouse, Lever, Taleo, and other enterprise ATS systems.
           </p>
           <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-xs text-muted-foreground flex items-start gap-2.5">
             <AlertCircle className="size-4 text-amber-500 shrink-0 mt-0.5" />

@@ -53,8 +53,10 @@ export const TEMPLATES: ResumeTemplate[] = [
     category: "Overleaf & LaTeX Engineering",
     tag: "award",
     layout: "classic",
-    headFont: "'Computer Modern', 'Latin Modern Roman', 'CMU Serif', 'Source Serif 4', Georgia, serif",
-    bodyFont: "'Computer Modern', 'Latin Modern Roman', 'CMU Serif', 'Source Serif 4', Georgia, serif",
+    headFont:
+      "'Computer Modern', 'Latin Modern Roman', 'CMU Serif', 'Source Serif 4', Georgia, serif",
+    bodyFont:
+      "'Computer Modern', 'Latin Modern Roman', 'CMU Serif', 'Source Serif 4', Georgia, serif",
     googleFonts: "Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400",
     accent: "#000000",
     ink: "#000000",

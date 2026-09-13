@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+
 # Welcome to your Lovable project
 
 This project was built with [Lovable](https://lovable.dev).
@@ -28,6 +29,8 @@ npm run dev
 - TypeScript
 - React
 - Tailwind CSS
-=======
+  \=======
+
 # resumematcher
->>>>>>> 8d34bde65caec1d8b9e757018f359715a31bb161
+
+> > > > > > > 8d34bde65caec1d8b9e757018f359715a31bb161

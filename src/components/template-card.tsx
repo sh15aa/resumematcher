@@ -148,7 +148,10 @@ export const TemplateCard = memo(function TemplateCard({
             </Badge>
           )}
           {template.id === "overleaf-faang" && (
-            <Badge variant="outline" className="bg-slate-900/90 text-white border-white/30 text-[10px] font-bold py-0.5 px-2">
+            <Badge
+              variant="outline"
+              className="bg-slate-900/90 text-white border-white/30 text-[10px] font-bold py-0.5 px-2"
+            >
               Official LaTeX
             </Badge>
           )}

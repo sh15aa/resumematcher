@@ -13,8 +13,8 @@ export function SocialShare({ score = 100, roleTitle, className = "" }: SocialSh
   const [copied, setCopied] = useState(false);
 
   const shareUrl =
-    typeof window !== "undefined" ? window.location.origin : "https://resumematcher.lovable.app";
-  const shareText = `Just tailored my resume for ${roleTitle ? `"${roleTitle}"` : "my target role"} using ResumeMatcher Enterprise — achieved a ${score}% ATS shortlist score! Highly recommended for any job seeker:`;
+    typeof window !== "undefined" ? window.location.origin : "https://cvfitt.fitt.workers.dev";
+  const shareText = `Just tailored my resume for ${roleTitle ? `"${roleTitle}"` : "my target role"} using CVFitt Enterprise — achieved a ${score}% ATS shortlist score! Highly recommended for any job seeker:`;
 
   const copyToClipboard = async () => {
     try {
@@ -31,7 +31,7 @@ export function SocialShare({ score = 100, roleTitle, className = "" }: SocialSh
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({
-          title: "ResumeMatcher Enterprise — 100% ATS Resume Matcher",
+          title: "CVFitt Enterprise — 100% ATS Resume Matcher",
           text: shareText,
           url: shareUrl,
         });

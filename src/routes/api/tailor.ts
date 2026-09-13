@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
-import { callGateway, textStreamResponse } from "@/lib/gateway.server";
+import { streamAiText, textStreamResponse } from "@/lib/gateway.server";
 import { createTailorStreamResponse, generateTailoredResult } from "@/lib/matcher-engine";
 
 const BodySchema = z.object({
@@ -77,50 +77,43 @@ export const Route = createFileRoute("/api/tailor")({
           );
         }
 
-        const apiKey = process.env["LOVABLE_API_KEY"];
-        if (apiKey) {
-          try {
-            const result = await callGateway(apiKey, {
-              model: "openai/gpt-5.6-sol",
-              reasoning: { effort: "low", summary: "auto" },
-              instructions:
-                "You are an elite executive resume architect and ATS optimization specialist. " +
-                "CRITICAL SHORTLISTING MANDATE: You MUST identify and extract all primary technical skills, frameworks, tools, " +
-                "and competencies explicitly requested in the target job posting. The tailored resume's 'TECHNICAL SKILLS' section " +
-                "and 'WORK EXPERIENCE' bullet points MUST contain these EXACT verbatim keywords seamlessly woven into achievements " +
-                "and metrics so automated applicant tracking systems (Workday, Greenhouse, Lever, Taleo) immediately score 95%+ and shortlist the candidate.\n" +
-                "1. TECHNICAL SKILLS: Prominently feature the exact keywords from the posting, organized into categorized lines (e.g. Languages, Frameworks, Cloud, Databases, Tools).\n" +
-                "2. WORK EXPERIENCE: Weave these exact keywords directly into the candidate's accomplishment bullets alongside strong action verbs and quantified impact (% latency reduced, $ saved, team/system scale), retaining the candidate's truthful history while mirroring the exact phrasing of the job description.\n" +
-                "3. Section format: Output plain text with standard UPPERCASE section headers (PROFESSIONAL SUMMARY, TECHNICAL SKILLS, WORK EXPERIENCE, EDUCATION, KEY PROJECTS) and '- ' bullets. No markdown formatting (no **, no ##).\n" +
-                "4. For keyword_fixes, provide 3-8 actionable inline suggestions: each original_snippet MUST be copied verbatim from the ORIGINAL resume text so it can be highlighted in place, paired with the targeted keyword and upgraded suggestion.\n" +
-                TONE_HINT[body.tone],
-              input: [
-                {
-                  role: "user",
-                  content: [
-                    {
-                      type: "input_text",
-                      text: `JOB POSTING:\n${body.job}\n\nCURRENT RESUME:\n${body.resume}`,
-                    },
-                  ],
-                },
-              ],
-              text: {
-                format: {
-                  type: "json_schema",
-                  name: "tailored_resume_result",
-                  strict: true,
-                  schema: SCHEMA,
-                },
-              },
-            });
+        const systemPrompt = `You are an elite executive resume architect and ATS optimization specialist.
+CRITICAL SHORTLISTING MANDATE: You MUST identify and extract all primary technical skills, frameworks, tools, and competencies explicitly requested in the target job posting. The tailored resume's 'TECHNICAL SKILLS' section and 'WORK EXPERIENCE' bullet points MUST contain these EXACT verbatim keywords seamlessly woven into achievements and metrics so automated applicant tracking systems (Workday, Greenhouse, Lever, Taleo) immediately score 95%+ and shortlist the candidate.
+1. TECHNICAL SKILLS: Prominently feature the exact keywords from the posting, organized into categorized lines (e.g. Languages, Frameworks, Cloud, Databases, Tools).
+2. WORK EXPERIENCE: Weave these exact keywords directly into the candidate's accomplishment bullets alongside strong action verbs and quantified impact (% latency reduced, $ saved, team/system scale), retaining the candidate's truthful history while mirroring the exact phrasing of the job description.
+3. Section format: Output plain text with standard UPPERCASE section headers (PROFESSIONAL SUMMARY, TECHNICAL SKILLS, WORK EXPERIENCE, EDUCATION, KEY PROJECTS) and '- ' bullets. No markdown formatting (no **, no ##).
+4. For keyword_fixes, provide 3-8 actionable inline suggestions: each original_snippet MUST be copied verbatim from the ORIGINAL resume text so it can be highlighted in place, paired with the targeted keyword and upgraded suggestion.
+${TONE_HINT[body.tone]}
 
-            if (result.ok) {
-              return textStreamResponse(result.stream);
-            }
-          } catch {
-            // Fall back to built-in matcher engine
+You MUST output ONLY a valid JSON object matching this structure:
+{
+  "tailored_resume": "The full rewritten resume as plain text with clear section headers",
+  "match_score": 95,
+  "changes": ["Short bullets describing what was changed and why"],
+  "missing_keywords": ["Important posting keywords the resume still does not evidence"],
+  "keyword_fixes": [
+    {
+      "keyword": "The posting keyword",
+      "original_snippet": "Exact character-for-character substring of the ORIGINAL resume",
+      "suggestion": "The replacement wording for that snippet"
+    }
+  ]
+}`;
+
+        const userPrompt = `JOB POSTING:\n${body.job}\n\nCURRENT RESUME:\n${body.resume}`;
+
+        try {
+          const result = await streamAiText({
+            systemPrompt,
+            userPrompt,
+            isJson: true,
+          });
+
+          if (result.ok) {
+            return textStreamResponse(result.stream);
           }
+        } catch {
+          // Fall back to built-in matcher engine
         }
 
         // Built-in intelligent ATS Resume Matcher & Tailor Engine
