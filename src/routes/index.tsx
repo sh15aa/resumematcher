@@ -116,7 +116,7 @@ export const Route = createFileRoute("/")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: [{ rel: "canonical", href: "https://cvfitt.fitt.workers.dev/" }],
+    links: [{ rel: "canonical", href: "https://cv.fitt.workers.dev/" }],
   }),
   component: Index,
 });
@@ -444,12 +444,13 @@ function Index() {
   const text = result?.tailored_resume ?? draft;
   const activeResumeText = text || resume.trim() || profileToResume(profile);
   const deferredText = useDeferredValue(activeResumeText);
+  const deferredJob = useDeferredValue(job);
 
-  // Live real-time extracted ATS technical keywords from target job description
+  // Live real-time extracted ATS technical keywords from target job description (deferred for 120 FPS typing)
   const liveTargetKeywords = useMemo<string[]>(() => {
-    if (!job.trim()) return [];
-    return extractKeywords(job).all;
-  }, [job]);
+    if (!deferredJob.trim()) return [];
+    return extractKeywords(deferredJob).all;
+  }, [deferredJob]);
 
   // Canvas width/height observer for responsive preview fitting & zero mobile horizontal overflow
   const previewCanvasRef = useRef<HTMLDivElement>(null);
@@ -463,7 +464,7 @@ function Index() {
     const handler = (e: MessageEvent) => {
       if (e.data && e.data.type === "RESUME_DOC_HEIGHT" && typeof e.data.height === "number") {
         const safeH = Math.min(15000, Math.max(1100, Math.ceil(e.data.height)));
-        setPreviewDocHeight(safeH);
+        setPreviewDocHeight((prev) => (prev !== safeH ? safeH : prev));
       } else if (
         e.data &&
         e.data.type === "RESUME_WHEEL" &&
@@ -482,33 +483,37 @@ function Index() {
 
   useEffect(() => {
     if (!previewCanvasRef.current) return;
+    let rafId: number | null = null;
     const updateDims = () => {
-      if (previewCanvasRef.current) {
-        setCanvasWidth(previewCanvasRef.current.clientWidth);
-        setCanvasHeight(previewCanvasRef.current.clientHeight);
-      }
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        if (previewCanvasRef.current) {
+          const w = previewCanvasRef.current.clientWidth;
+          const h = previewCanvasRef.current.clientHeight;
+          setCanvasWidth((prev) => (prev !== w ? w : prev));
+          setCanvasHeight((prev) => (prev !== h ? h : prev));
+        }
+      });
     };
     updateDims();
     const ro = new ResizeObserver(updateDims);
     ro.observe(previewCanvasRef.current);
-    window.addEventListener("resize", updateDims);
     return () => {
+      if (rafId) cancelAnimationFrame(rafId);
       ro.disconnect();
-      window.removeEventListener("resize", updateDims);
     };
   }, [tab, previewMode]);
 
-  // Auto-fit scale ensuring 100% of the resume page is visible vertically and horizontally without cutoff
+  // Responsive fit scale: on desktop/wide displays, scales document to readable width (up to 100% / 1.0)
+  // so typography remains executive-grade and legible, never shrinking into microscopic text.
   const fitScale = useMemo(() => {
-    if (canvasWidth > 0 && canvasHeight > 0) {
-      const availW = Math.max(260, canvasWidth - 32);
-      const availH = Math.max(260, canvasHeight - 96);
+    if (canvasWidth > 0) {
+      const availW = Math.max(260, canvasWidth - 40);
       const scaleW = availW / 850;
-      const scaleH = availH / Math.max(1100, previewDocHeight);
-      return Number(Math.min(scaleW, scaleH, 1).toFixed(3));
+      return Number(Math.min(1.0, Math.max(0.40, scaleW)).toFixed(3));
     }
-    return 0.65;
-  }, [canvasWidth, canvasHeight, previewDocHeight]);
+    return 0.85;
+  }, [canvasWidth]);
 
   // Responsive scale: defaults to fitScale so full page is 100% visible; switches to previewZoom on manual zoom
   const previewScale = useMemo(() => {
@@ -540,12 +545,17 @@ function Index() {
     [totalPages, previewScale],
   );
 
+  const scrollRaf = useRef<number | null>(null);
   const handlePreviewScroll = useCallback(() => {
-    if (!previewCanvasRef.current) return;
-    const st = previewCanvasRef.current.scrollTop;
-    const pageHeightScaled = 1100 * previewScale;
-    const page = Math.min(totalPages, Math.max(1, Math.floor(st / pageHeightScaled + 0.4) + 1));
-    setCurrentPage(page);
+    if (scrollRaf.current) return;
+    scrollRaf.current = requestAnimationFrame(() => {
+      scrollRaf.current = null;
+      if (!previewCanvasRef.current) return;
+      const st = previewCanvasRef.current.scrollTop;
+      const pageHeightScaled = 1100 * previewScale;
+      const page = Math.min(totalPages, Math.max(1, Math.floor(st / pageHeightScaled + 0.4) + 1));
+      setCurrentPage((prev) => (prev !== page ? page : prev));
+    });
   }, [totalPages, previewScale]);
 
   const template = useMemo(() => findTemplate(templateId), [templateId]);
@@ -569,7 +579,7 @@ function Index() {
     }
   }, [templateFilter]);
 
-  // Extract all target keywords from the job description for the 100% ATS Cloak
+  // Extract all target keywords from the job description for the 100% ATS Cloak (deferred for 120 FPS typing)
   const activeGhostKeywords = useMemo(() => {
     if (result?.ghost_keywords && result.ghost_keywords.length > 0) {
       return result.ghost_keywords;
@@ -577,11 +587,21 @@ function Index() {
     if (result?.all_keywords && result.all_keywords.length > 0) {
       return result.all_keywords;
     }
-    if (job.trim().length > 15) {
-      return extractKeywords(job).all;
+    if (deferredJob.trim().length > 15) {
+      return extractKeywords(deferredJob).all;
     }
     return [];
-  }, [result, job]);
+  }, [result, deferredJob]);
+
+  // Pure memoized live resume HTML to avoid recalculating string on non-content renders
+  const previewHtml = useMemo(() => {
+    const kws =
+      stealthCloakActive && activeGhostKeywords.length > 0 ? activeGhostKeywords : undefined;
+    return renderResumeHtml(deferredText, template, applicant, kws, showXRay, {
+      isInteractive: true,
+      includeLatexLayer: true,
+    });
+  }, [deferredText, template, applicant, stealthCloakActive, activeGhostKeywords, showXRay]);
 
   async function onFile(file: File | null) {
     if (!file) return;
@@ -936,11 +956,11 @@ function Index() {
 
             <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
               {/* Workspace Layout Toggle */}
-              <div className="hidden md:inline-flex items-center rounded-xl border border-border bg-[#121624] p-0.5">
+              <div className="hidden sm:inline-flex items-center rounded-xl border border-border bg-[#121624] p-0.5 shadow-xs">
                 <button
                   type="button"
                   onClick={() => setWorkspaceLayout("split")}
-                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-all cursor-pointer ${
+                  className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all cursor-pointer ${
                     workspaceLayout === "split"
                       ? "bg-card text-foreground shadow-xs font-semibold"
                       : "text-muted-foreground hover:text-foreground"
@@ -953,7 +973,7 @@ function Index() {
                 <button
                   type="button"
                   onClick={() => setWorkspaceLayout("full")}
-                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-all cursor-pointer ${
+                  className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all cursor-pointer ${
                     workspaceLayout === "full"
                       ? "bg-card text-foreground shadow-xs font-semibold"
                       : "text-muted-foreground hover:text-foreground"
@@ -1132,15 +1152,21 @@ function Index() {
               }
             >
               {/* Step-by-Step Guided Wizard Workspace */}
-              <div className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-xs space-y-5">
+              <div
+                className={
+                  workspaceLayout === "full"
+                    ? "rounded-2xl border border-border bg-card p-6 sm:p-8 lg:p-10 shadow-md space-y-6"
+                    : "rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-xs space-y-5"
+                }
+              >
                 {/* Header & Mode Switcher */}
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/80 pb-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/80 pb-4 sm:pb-5">
                   <div>
-                    <div className="flex items-center gap-2">
-                      <span className="flex size-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex size-7 sm:size-8 items-center justify-center rounded-xl bg-primary text-xs sm:text-sm font-bold text-primary-foreground shadow-xs">
                         {inputMode === "form" ? wizardStep : "✎"}
                       </span>
-                      <h2 id="wizard-heading" className="text-sm sm:text-base font-bold text-foreground">
+                      <h2 id="wizard-heading" className="text-base sm:text-lg lg:text-xl font-bold text-foreground">
                         {inputMode === "form" ? (
                           <>
                             {wizardStep === 1 && "Step 1: Target Role & Job Posting"}
@@ -1154,7 +1180,7 @@ function Index() {
                         )}
                       </h2>
                     </div>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                       {inputMode === "form" ? (
                         <>
                           {wizardStep === 1 &&
@@ -1169,19 +1195,19 @@ function Index() {
                             "Verify keyword coverage, arm the ATS Stealth Cloak, and generate."}
                         </>
                       ) : (
-                        "Upload a PDF or paste an existing resume to optimize instantly."
+                        "Upload a PDF or paste an existing resume to optimize and match instantly."
                       )}
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => setInputMode("form")}
                       aria-label="Switch to guided wizard input mode"
-                      className={`rounded-md px-2.5 py-1.5 min-h-[44px] sm:min-h-0 text-xs font-semibold transition-all flex items-center ${
+                      className={`rounded-xl px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold transition-all flex items-center cursor-pointer ${
                         inputMode === "form"
-                          ? "bg-primary text-primary-foreground shadow-2xs"
+                          ? "bg-primary text-primary-foreground shadow-xs font-bold"
                           : "bg-muted text-muted-foreground hover:bg-accent"
                       }`}
                     >
@@ -1191,9 +1217,9 @@ function Index() {
                       type="button"
                       onClick={() => setInputMode("paste")}
                       aria-label="Switch to paste or PDF upload input mode"
-                      className={`rounded-md px-2.5 py-1.5 min-h-[44px] sm:min-h-0 text-xs font-semibold transition-all flex items-center ${
+                      className={`rounded-xl px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold transition-all flex items-center cursor-pointer ${
                         inputMode === "paste"
-                          ? "bg-primary text-primary-foreground shadow-2xs"
+                          ? "bg-primary text-primary-foreground shadow-xs font-bold"
                           : "bg-muted text-muted-foreground hover:bg-accent"
                       }`}
                     >
@@ -1205,18 +1231,18 @@ function Index() {
                       size="sm"
                       onClick={handleLoadAllDemo}
                       aria-label="Load demo resume and job data"
-                      className="h-7 px-2 text-xs text-primary hover:bg-primary/10 font-semibold"
+                      className="h-8 sm:h-9 px-2.5 text-xs sm:text-sm text-primary hover:bg-primary/10 font-semibold"
                     >
-                      <Sparkles className="size-3 mr-1" /> Demo Data
+                      <Sparkles className="size-3.5 mr-1" /> Demo Data
                     </Button>
                   </div>
                 </div>
 
                 {inputMode === "form" ? (
-                  <div className="space-y-5">
+                  <div className="space-y-6">
                     {/* 5-Step Tracker Bar */}
                     <div className="space-y-2">
-                      <div className="grid grid-cols-5 gap-1 text-[10px] sm:text-[11px] font-semibold w-full">
+                      <div className="grid grid-cols-5 gap-1.5 text-xs sm:text-sm font-semibold w-full">
                         {[
                           { step: 1, label: "1. Job", fullLabel: "1. Job Target" },
                           { step: 2, label: "2. Info", fullLabel: "2. Identity" },
@@ -1229,9 +1255,9 @@ function Index() {
                             type="button"
                             onClick={() => setWizardStep(item.step as any)}
                             aria-label={item.fullLabel}
-                            className={`rounded-md py-2.5 sm:py-1 px-1 min-h-[44px] sm:min-h-0 flex items-center justify-center text-center truncate transition-all ${
+                            className={`rounded-xl py-2 px-1.5 min-h-[44px] sm:min-h-0 flex items-center justify-center text-center truncate transition-all cursor-pointer ${
                               wizardStep === item.step
-                                ? "bg-primary text-primary-foreground font-bold shadow-2xs"
+                                ? "bg-primary text-primary-foreground font-bold shadow-xs"
                                 : wizardStep > item.step
                                   ? "bg-muted/80 text-foreground font-medium hover:bg-muted"
                                   : "bg-muted/30 text-muted-foreground hover:text-foreground"
@@ -1244,7 +1270,7 @@ function Index() {
                         ))}
                       </div>
                       {/* Progress line */}
-                      <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
+                      <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                         <div
                           className="h-full bg-primary transition-all duration-300 rounded-full"
                           style={{ width: `${(wizardStep / 5) * 100}%` }}
@@ -1254,10 +1280,10 @@ function Index() {
 
                     {/* STEP 1: TARGET ROLE & JOB POSTING */}
                     {wizardStep === 1 && (
-                      <div className="space-y-4 pt-1 animate-in fade-in duration-200">
+                      <div className="space-y-5 pt-1 animate-in fade-in duration-200">
                         {/* Sample job quick buttons */}
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="text-xs font-semibold text-foreground mr-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs sm:text-sm font-bold text-foreground mr-1">
                             Load Benchmark Job:
                           </span>
                           {SAMPLE_JOBS.map((sample) => (
@@ -1265,70 +1291,70 @@ function Index() {
                               key={sample.id}
                               type="button"
                               onClick={() => handleLoadSampleJob(sample)}
-                              className="rounded-full border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-foreground hover:border-primary hover:text-primary transition-colors"
+                              className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs sm:text-sm font-medium text-foreground hover:border-primary hover:text-primary transition-all cursor-pointer shadow-xs"
                             >
                               {sample.title}
                             </button>
                           ))}
                         </div>
 
-                        <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="grid gap-4 sm:grid-cols-2">
                           <label className="block">
-                            <span className="mb-1 block text-xs font-semibold text-foreground">
+                            <span className="mb-1.5 block text-sm font-bold text-foreground">
                               Target Role Title
                             </span>
                             <Input
                               value={jobTitle}
                               onChange={(e) => setJobTitle(e.target.value)}
                               placeholder="e.g. Senior Full-Stack Engineer"
-                              className="h-10 text-sm bg-background"
+                              className="h-12 text-sm sm:text-base bg-background px-4 rounded-xl border border-border/80"
                             />
                           </label>
                           <label className="block">
-                            <span className="mb-1 block text-xs font-semibold text-foreground">
+                            <span className="mb-1.5 block text-sm font-bold text-foreground">
                               Target Company / Industry
                             </span>
                             <Input
                               placeholder="e.g. Stripe, Google, or Tech Startup"
-                              className="h-10 text-sm bg-background"
+                              className="h-12 text-sm sm:text-base bg-background px-4 rounded-xl border border-border/80"
                             />
                           </label>
                         </div>
 
-                        <label className="block">
-                          <div className="mb-1 flex items-center justify-between">
-                            <span className="text-xs font-bold text-foreground">
+                        <label className="block space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm sm:text-base font-bold text-foreground">
                               Target Job Description (Requirements &amp; Tech Stack)
                             </span>
-                            <span className="text-[11px] text-muted-foreground">
+                            <span className="text-xs sm:text-sm text-muted-foreground font-mono">
                               {job.trim().length} characters
                             </span>
                           </div>
                           <Textarea
                             value={job}
                             onChange={(e) => setJob(e.target.value)}
-                            placeholder="Paste the target job posting here. Requirements, responsibilities, languages, frameworks..."
-                            className="min-h-36 resize-y bg-background text-xs leading-relaxed p-3"
+                            placeholder="Paste the target job posting here. Requirements, responsibilities, languages, frameworks, tech stack..."
+                            className="min-h-[260px] sm:min-h-[340px] resize-y bg-background text-sm sm:text-base leading-relaxed p-4 sm:p-5 rounded-xl border border-border/80 focus:border-primary transition-all"
                           />
                         </label>
 
                         {/* Real-time Extracted ATS Keywords Preview */}
                         {liveTargetKeywords.length > 0 && (
-                          <div className="rounded-xl border border-primary/25 bg-primary/5 p-3.5 space-y-2">
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="font-bold text-primary flex items-center gap-1.5">
-                                <Sparkles className="size-3.5" /> Detected ATS Keywords (
+                          <div className="rounded-xl border border-primary/25 bg-primary/5 p-4 space-y-2.5">
+                            <div className="flex items-center justify-between text-xs sm:text-sm">
+                              <span className="font-bold text-primary flex items-center gap-2">
+                                <Sparkles className="size-4" /> Detected ATS Keywords (
                                 {liveTargetKeywords.length} terms):
                               </span>
-                              <span className="text-[10px] text-muted-foreground">
+                              <span className="text-xs text-muted-foreground">
                                 Extracted from job posting
                               </span>
                             </div>
-                            <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
-                              {liveTargetKeywords.slice(0, 16).map((kw, i) => (
+                            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                              {liveTargetKeywords.slice(0, 20).map((kw, i) => (
                                 <span
                                   key={i}
-                                  className="inline-flex items-center rounded-md bg-background border border-primary/30 px-2 py-0.5 text-[10px] font-semibold text-foreground font-mono"
+                                  className="inline-flex items-center rounded-lg bg-background border border-primary/30 px-2.5 py-1 text-xs font-semibold text-foreground font-mono shadow-2xs"
                                 >
                                   ✓ {kw}
                                 </span>
@@ -1338,19 +1364,19 @@ function Index() {
                         )}
 
                         {/* Tone Selection */}
-                        <div className="border-t border-border pt-3">
-                          <span className="mb-2 block text-xs font-bold text-foreground">
+                        <div className="border-t border-border pt-4">
+                          <span className="mb-2 block text-sm font-bold text-foreground">
                             Target Executive Tone:
                           </span>
-                          <div className="flex flex-wrap gap-2">
+                          <div className="flex flex-wrap gap-2.5">
                             {TONES.map((option) => (
                               <button
                                 key={option.id}
                                 type="button"
                                 onClick={() => setTone(option.id)}
-                                className={`rounded-md border px-3 py-1 text-xs font-semibold transition-all ${
+                                className={`rounded-lg border px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
                                   tone === option.id
-                                    ? "border-primary bg-primary text-primary-foreground shadow-2xs"
+                                    ? "border-primary bg-primary text-primary-foreground shadow-xs font-bold"
                                     : "border-border bg-background text-foreground hover:bg-accent"
                                 }`}
                               >
@@ -1361,21 +1387,20 @@ function Index() {
                         </div>
 
                         {/* Footer Nav */}
-                        <div className="flex items-center justify-between pt-3 border-t border-border">
+                        <div className="flex items-center justify-between pt-4 border-t border-border">
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
                             onClick={() => handleLoadSampleJob(SAMPLE_JOBS[0]!)}
-                            className="text-xs font-semibold"
+                            className="h-10 px-4 text-xs sm:text-sm font-semibold rounded-xl"
                           >
-                            <Sparkles className="size-3 mr-1 text-primary" /> Load Sample Job
+                            <Sparkles className="size-3.5 mr-1.5 text-primary" /> Load Sample Job
                           </Button>
                           <Button
                             type="button"
                             onClick={() => setWizardStep(2)}
-                            size="sm"
-                            className="text-xs font-bold px-4"
+                            className="h-11 px-6 text-sm sm:text-base font-bold rounded-xl shadow-xs"
                           >
                             Next: Contact Details →
                           </Button>
@@ -1385,43 +1410,49 @@ function Index() {
 
                     {/* STEP 2: PERSONAL & CONTACT INFORMATION */}
                     {wizardStep === 2 && (
-                      <div className="space-y-4 pt-1 animate-in fade-in duration-200">
-                        <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-5 pt-1 animate-in fade-in duration-200">
+                        <div
+                          className={
+                            workspaceLayout === "full"
+                              ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                              : "grid gap-4 sm:grid-cols-2"
+                          }
+                        >
                           <label className="block">
-                            <span className="mb-1 block text-xs font-semibold text-foreground">
+                            <span className="mb-1.5 block text-sm font-bold text-foreground">
                               Full Name
                             </span>
                             <Input
                               value={profile.name}
                               onChange={(e) => updateProfileField("name", e.target.value)}
                               placeholder="Alex Chen"
-                              className="h-10 text-sm bg-background"
+                              className="h-12 text-sm sm:text-base bg-background px-4 rounded-xl border border-border/80"
                             />
                           </label>
                           <label className="block">
-                            <span className="mb-1 block text-xs font-semibold text-foreground">
+                            <span className="mb-1.5 block text-sm font-bold text-foreground">
                               Target Headline / Title
                             </span>
                             <Input
                               value={profile.headline}
                               onChange={(e) => updateProfileField("headline", e.target.value)}
                               placeholder="Senior Full-Stack Architect"
-                              className="h-10 text-sm bg-background"
+                              className="h-12 text-sm sm:text-base bg-background px-4 rounded-xl border border-border/80"
                             />
                           </label>
                           <label className="block">
-                            <span className="mb-1 block text-xs font-semibold text-foreground">
+                            <span className="mb-1.5 block text-sm font-bold text-foreground">
                               Email Address
                             </span>
                             <Input
                               value={profile.email}
                               onChange={(e) => updateProfileField("email", e.target.value)}
                               placeholder="alex.chen@example.com"
-                              className="h-10 text-sm bg-background"
+                              className="h-12 text-sm sm:text-base bg-background px-4 rounded-xl border border-border/80"
                             />
                           </label>
                           <label className="block">
-                            <span className="mb-1 block text-xs font-semibold text-foreground">
+                            <span className="mb-1.5 block text-sm font-bold text-foreground">
                               Phone &amp; Location
                             </span>
                             <Input
@@ -1432,62 +1463,61 @@ function Index() {
                               }
                               onChange={(e) => updateProfileField("location", e.target.value)}
                               placeholder="+1 (415) 890-2341 | San Francisco, CA"
-                              className="h-10 text-sm bg-background"
+                              className="h-12 text-sm sm:text-base bg-background px-4 rounded-xl border border-border/80"
                             />
                           </label>
                           <label className="block">
-                            <span className="mb-1 block text-xs font-semibold text-foreground">
+                            <span className="mb-1.5 block text-sm font-bold text-foreground">
                               LinkedIn Profile URL
                             </span>
                             <Input
                               value={profile.linkedin}
                               onChange={(e) => updateProfileField("linkedin", e.target.value)}
                               placeholder="linkedin.com/in/alexchen-dev"
-                              className="h-10 text-sm bg-background"
+                              className="h-12 text-sm sm:text-base bg-background px-4 rounded-xl border border-border/80"
                             />
                           </label>
                           <label className="block">
-                            <span className="mb-1 block text-xs font-semibold text-foreground">
+                            <span className="mb-1.5 block text-sm font-bold text-foreground">
                               Website / Portfolio
                             </span>
                             <Input
                               value={profile.website}
                               onChange={(e) => updateProfileField("website", e.target.value)}
                               placeholder="alexchen.dev"
-                              className="h-10 text-sm bg-background"
+                              className="h-12 text-sm sm:text-base bg-background px-4 rounded-xl border border-border/80"
                             />
                           </label>
                         </div>
 
                         {/* Executive Summary */}
-                        <label className="block border-t border-border pt-3">
-                          <span className="mb-1 block text-xs font-bold text-foreground">
+                        <label className="block border-t border-border pt-4 space-y-1.5">
+                          <span className="block text-sm sm:text-base font-bold text-foreground">
                             Executive Summary / Profile Intro
                           </span>
                           <Textarea
                             value={profile.about}
                             onChange={(e) => updateProfileField("about", e.target.value)}
-                            placeholder="Brief overview of your experience, leadership, and accomplishments."
-                            className="min-h-24 resize-y bg-background text-xs leading-relaxed p-3"
+                            placeholder="Brief overview of your experience, leadership, key metrics, and accomplishments..."
+                            className="min-h-[160px] sm:min-h-[220px] resize-y bg-background text-sm sm:text-base leading-relaxed p-4 sm:p-5 rounded-xl border border-border/80 focus:border-primary transition-all"
                           />
                         </label>
 
                         {/* Footer Nav */}
-                        <div className="flex items-center justify-between pt-3 border-t border-border">
+                        <div className="flex items-center justify-between pt-4 border-t border-border">
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
                             onClick={() => setWizardStep(1)}
-                            className="text-xs font-semibold text-muted-foreground"
+                            className="h-10 px-4 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground rounded-xl"
                           >
                             ← Back: Target Job
                           </Button>
                           <Button
                             type="button"
                             onClick={() => setWizardStep(3)}
-                            size="sm"
-                            className="text-xs font-bold px-4"
+                            className="h-11 px-6 text-sm sm:text-base font-bold rounded-xl shadow-xs"
                           >
                             Next: Work Experience →
                           </Button>
@@ -1497,17 +1527,17 @@ function Index() {
 
                     {/* STEP 3: WORK EXPERIENCE */}
                     {wizardStep === 3 && (
-                      <div className="space-y-4 pt-1 animate-in fade-in duration-200">
-                        <div className="flex items-center justify-between border-b border-border pb-2.5">
-                          <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                            <Briefcase className="size-3.5 text-primary" /> Career Roles (
+                      <div className="space-y-5 pt-1 animate-in fade-in duration-200">
+                        <div className="flex items-center justify-between border-b border-border pb-3">
+                          <span className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                            <Briefcase className="size-4 text-primary" /> Career Roles (
                             {profile.roles.length})
                           </span>
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="h-7 text-xs font-semibold px-2.5 border-border"
+                            className="h-9 sm:h-10 text-xs sm:text-sm font-semibold px-3 sm:px-4 rounded-xl border-border hover:border-primary cursor-pointer"
                             onClick={() =>
                               updateProfileField("roles", [
                                 ...profile.roles,
@@ -1520,16 +1550,16 @@ function Index() {
                               ])
                             }
                           >
-                            <Plus className="size-3 mr-1" /> Add Another Role
+                            <Plus className="size-3.5 mr-1 text-primary" /> Add Another Role
                           </Button>
                         </div>
 
                         {/* Power Action Verb Pills Helper */}
-                        <div className="rounded-lg border border-border/80 bg-muted/40 p-2.5">
-                          <span className="text-[11px] font-bold text-foreground block mb-1.5">
+                        <div className="rounded-xl border border-border/80 bg-muted/40 p-3.5 space-y-2">
+                          <span className="text-xs sm:text-sm font-bold text-foreground block">
                             ⚡ Executive Action Verbs (Click to copy/inspire):
                           </span>
-                          <div className="flex flex-wrap gap-1">
+                          <div className="flex flex-wrap gap-1.5">
                             {[
                               "Architected",
                               "Spearheaded",
@@ -1547,7 +1577,7 @@ function Index() {
                                   navigator.clipboard.writeText(verb);
                                   toast.info(`Copied "${verb}" to clipboard!`);
                                 }}
-                                className="rounded bg-background border border-border px-2 py-0.5 text-[10px] font-medium text-foreground hover:border-primary transition-colors"
+                                className="rounded-lg bg-background border border-border px-2.5 py-1 text-xs sm:text-sm font-medium text-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer shadow-2xs"
                               >
                                 + {verb}
                               </button>
@@ -1556,13 +1586,13 @@ function Index() {
                         </div>
 
                         {/* Role list */}
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                           {profile.roles.map((role, idx) => (
                             <div
                               key={idx}
-                              className="rounded-xl border border-border bg-background/60 p-3.5 space-y-2.5 shadow-2xs"
+                              className="rounded-2xl border border-border bg-background/60 p-4 sm:p-5 space-y-3 shadow-xs"
                             >
-                              <div className="grid gap-2 sm:grid-cols-3">
+                              <div className="grid gap-3 sm:grid-cols-3">
                                 <Input
                                   value={role.title}
                                   onChange={(e) =>
@@ -1574,7 +1604,7 @@ function Index() {
                                     )
                                   }
                                   placeholder="Job Title"
-                                  className="h-9 text-xs bg-background"
+                                  className="h-11 sm:h-12 text-sm sm:text-base bg-background px-3.5 sm:px-4 rounded-xl border border-border/80"
                                 />
                                 <Input
                                   value={role.company}
@@ -1587,7 +1617,7 @@ function Index() {
                                     )
                                   }
                                   placeholder="Company"
-                                  className="h-9 text-xs bg-background"
+                                  className="h-11 sm:h-12 text-sm sm:text-base bg-background px-3.5 sm:px-4 rounded-xl border border-border/80"
                                 />
                                 <Input
                                   value={role.dates}
@@ -1600,7 +1630,7 @@ function Index() {
                                     )
                                   }
                                   placeholder="Dates (e.g. 2022 – Present)"
-                                  className="h-9 text-xs bg-background"
+                                  className="h-11 sm:h-12 text-sm sm:text-base bg-background px-3.5 sm:px-4 rounded-xl border border-border/80"
                                 />
                               </div>
                               <Textarea
@@ -1613,11 +1643,11 @@ function Index() {
                                     ),
                                   )
                                 }
-                                placeholder="Accomplishment bullets (one per line) — lead with measurable impact..."
-                                className="min-h-24 resize-y bg-background text-xs leading-relaxed p-2.5"
+                                placeholder="Accomplishment bullets (one per line) — lead with strong verbs and measurable metrics (%, $, scale)..."
+                                className="min-h-[160px] sm:min-h-[220px] resize-y bg-background text-sm sm:text-base leading-relaxed p-4 sm:p-5 rounded-xl border border-border/80 focus:border-primary font-mono sm:font-sans transition-all"
                               />
                               {profile.roles.length > 1 && (
-                                <div className="flex justify-end">
+                                <div className="flex justify-end pt-1">
                                   <button
                                     type="button"
                                     onClick={() =>
@@ -1626,9 +1656,9 @@ function Index() {
                                         profile.roles.filter((_, i) => i !== idx),
                                       )
                                     }
-                                    className="text-[11px] font-medium text-muted-foreground hover:text-destructive flex items-center gap-1"
+                                    className="text-xs sm:text-sm font-medium text-muted-foreground hover:text-destructive flex items-center gap-1.5 transition-colors cursor-pointer"
                                   >
-                                    <Trash2 className="size-3" /> Remove role
+                                    <Trash2 className="size-3.5" /> Remove role
                                   </button>
                                 </div>
                               )}
@@ -1637,21 +1667,20 @@ function Index() {
                         </div>
 
                         {/* Footer Nav */}
-                        <div className="flex items-center justify-between pt-3 border-t border-border">
+                        <div className="flex items-center justify-between pt-4 border-t border-border">
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
                             onClick={() => setWizardStep(2)}
-                            className="text-xs font-semibold text-muted-foreground"
+                            className="h-10 px-4 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground rounded-xl"
                           >
                             ← Back: Contact
                           </Button>
                           <Button
                             type="button"
                             onClick={() => setWizardStep(4)}
-                            size="sm"
-                            className="text-xs font-bold px-4"
+                            className="h-11 px-6 text-sm sm:text-base font-bold rounded-xl shadow-xs"
                           >
                             Next: Skills &amp; Sections →
                           </Button>
@@ -1661,26 +1690,26 @@ function Index() {
 
                     {/* STEP 4: EDUCATION, SKILLS & CUSTOM SECTIONS */}
                     {wizardStep === 4 && (
-                      <div className="space-y-4 pt-1 animate-in fade-in duration-200">
+                      <div className="space-y-5 pt-1 animate-in fade-in duration-200">
                         {/* Technical Skills */}
-                        <label className="block">
-                          <span className="mb-1 block text-xs font-bold text-foreground flex items-center gap-1.5">
-                            <Wrench className="size-3.5 text-primary" /> Core Technical &amp; Domain
+                        <label className="block space-y-1.5">
+                          <span className="block text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                            <Wrench className="size-4 text-primary" /> Core Technical &amp; Domain
                             Skills
                           </span>
                           <Textarea
                             value={profile.skills}
                             onChange={(e) => updateProfileField("skills", e.target.value)}
-                            placeholder="React, TypeScript, Node.js, Python, PostgreSQL, AWS, Docker, GraphQL, Distributed Systems..."
-                            className="min-h-18 resize-y bg-background text-xs leading-relaxed p-2.5"
+                            placeholder="React, TypeScript, Node.js, Python, PostgreSQL, AWS, Docker, Kubernetes, GraphQL, Distributed Systems, Microservices..."
+                            className="min-h-[140px] sm:min-h-[180px] resize-y bg-background text-sm sm:text-base leading-relaxed p-4 sm:p-5 rounded-xl border border-border/80 focus:border-primary transition-all"
                           />
                         </label>
 
                         {/* Education */}
-                        <div className="space-y-2 border-t border-border pt-3">
+                        <div className="space-y-3 border-t border-border pt-4">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                              <GraduationCap className="size-3.5 text-primary" /> Education
+                            <span className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                              <GraduationCap className="size-4 text-primary" /> Education
                             </span>
                             <button
                               type="button"
@@ -1690,13 +1719,13 @@ function Index() {
                                   { ...emptyStudy, qualification: "B.S. in Computer Science" },
                                 ])
                               }
-                              className="text-xs text-primary font-semibold hover:underline"
+                              className="text-xs sm:text-sm text-primary font-semibold hover:underline cursor-pointer"
                             >
                               + Add Degree
                             </button>
                           </div>
                           {profile.studies.map((study, idx) => (
-                            <div key={idx} className="grid gap-2 sm:grid-cols-3">
+                            <div key={idx} className="grid gap-3 sm:grid-cols-3">
                               <Input
                                 value={study.qualification}
                                 onChange={(e) =>
@@ -1708,7 +1737,7 @@ function Index() {
                                   )
                                 }
                                 placeholder="Degree / B.S."
-                                className="h-9 text-xs bg-background"
+                                className="h-11 sm:h-12 text-sm sm:text-base bg-background px-3.5 sm:px-4 rounded-xl border border-border/80"
                               />
                               <Input
                                 value={study.school}
@@ -1721,7 +1750,7 @@ function Index() {
                                   )
                                 }
                                 placeholder="University / College"
-                                className="h-9 text-xs bg-background"
+                                className="h-11 sm:h-12 text-sm sm:text-base bg-background px-3.5 sm:px-4 rounded-xl border border-border/80"
                               />
                               <Input
                                 value={study.dates}
@@ -1734,19 +1763,19 @@ function Index() {
                                   )
                                 }
                                 placeholder="Dates (e.g. 2020)"
-                                className="h-9 text-xs bg-background"
+                                className="h-11 sm:h-12 text-sm sm:text-base bg-background px-3.5 sm:px-4 rounded-xl border border-border/80"
                               />
                             </div>
                           ))}
                         </div>
 
                         {/* CUSTOM SECTIONS BUILDER */}
-                        <div className="space-y-3.5 border-t border-border pt-3">
+                        <div className="space-y-4 border-t border-border pt-4">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                              <Layers className="size-3.5 text-primary" /> Custom Resume Sections
+                            <span className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                              <Layers className="size-4 text-primary" /> Custom Resume Sections
                             </span>
-                            <span className="text-[11px] text-muted-foreground">
+                            <span className="text-xs text-muted-foreground">
                               Projects, Certifications, Awards
                             </span>
                           </div>
@@ -1754,45 +1783,45 @@ function Index() {
                           {(profile.customSections || []).map((section) => (
                             <div
                               key={section.id}
-                              className="rounded-xl border border-primary/25 bg-primary/5 p-3.5 space-y-2.5 shadow-2xs"
+                              className="rounded-2xl border border-primary/25 bg-primary/5 p-4 sm:p-5 space-y-3 shadow-xs"
                             >
-                              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-primary/20 pb-2">
+                              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-primary/20 pb-3">
                                 <Input
                                   value={section.title}
                                   onChange={(e) =>
                                     handleUpdateSectionTitle(section.id, e.target.value)
                                   }
                                   placeholder="Section Title"
-                                  className="h-8 text-xs font-bold bg-background max-w-xs border-primary/30"
+                                  className="h-10 sm:h-11 text-sm sm:text-base font-bold bg-background max-w-xs border-primary/30 rounded-xl px-3.5"
                                 />
                                 <div className="flex items-center gap-2">
                                   <Button
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    className="h-7 text-[11px] font-semibold bg-background"
+                                    className="h-8 sm:h-9 text-xs sm:text-sm font-semibold bg-background rounded-xl px-3 cursor-pointer"
                                     onClick={() => handleAddItemToSection(section.id)}
                                   >
-                                    <Plus className="size-3 mr-1" /> Add Entry
+                                    <Plus className="size-3.5 mr-1" /> Add Entry
                                   </Button>
                                   <button
                                     type="button"
                                     onClick={() => handleRemoveSection(section.id)}
-                                    className="text-[11px] text-muted-foreground hover:text-destructive flex items-center gap-1"
+                                    className="text-xs sm:text-sm text-muted-foreground hover:text-destructive flex items-center gap-1.5 transition-colors cursor-pointer"
                                   >
-                                    <Trash2 className="size-3" /> Remove
+                                    <Trash2 className="size-3.5" /> Remove
                                   </button>
                                 </div>
                               </div>
 
                               {section.items && section.items.length > 0 ? (
-                                <div className="space-y-2">
+                                <div className="space-y-3">
                                   {section.items.map((item) => (
                                     <div
                                       key={item.id}
-                                      className="rounded-lg border border-border bg-background p-2.5 space-y-2"
+                                      className="rounded-xl border border-border bg-background p-3.5 sm:p-4 space-y-2.5 shadow-2xs"
                                     >
-                                      <div className="grid gap-2 sm:grid-cols-3">
+                                      <div className="grid gap-3 sm:grid-cols-3">
                                         <Input
                                           value={item.name}
                                           onChange={(e) =>
@@ -1804,7 +1833,7 @@ function Index() {
                                             )
                                           }
                                           placeholder="Entry / Project Name"
-                                          className="h-8 text-xs"
+                                          className="h-10 sm:h-11 text-sm sm:text-base bg-background px-3.5 rounded-xl border border-border/80"
                                         />
                                         <Input
                                           value={item.subtitle || ""}
@@ -1817,7 +1846,7 @@ function Index() {
                                             )
                                           }
                                           placeholder="Stack / Issuer"
-                                          className="h-8 text-xs"
+                                          className="h-10 sm:h-11 text-sm sm:text-base bg-background px-3.5 rounded-xl border border-border/80"
                                         />
                                         <Input
                                           value={item.dates || ""}
@@ -1830,7 +1859,7 @@ function Index() {
                                             )
                                           }
                                           placeholder="Dates / Year"
-                                          className="h-8 text-xs"
+                                          className="h-10 sm:h-11 text-sm sm:text-base bg-background px-3.5 rounded-xl border border-border/80"
                                         />
                                       </div>
                                       <Textarea
@@ -1843,8 +1872,8 @@ function Index() {
                                             e.target.value,
                                           )
                                         }
-                                        placeholder="Accomplishment bullets..."
-                                        className="min-h-14 text-xs p-2"
+                                        placeholder="Accomplishment bullets, metrics, technologies used..."
+                                        className="min-h-[100px] sm:min-h-[130px] text-sm sm:text-base leading-relaxed p-3.5 sm:p-4 rounded-xl border border-border/80 bg-background/90"
                                       />
                                     </div>
                                   ))}
@@ -1858,25 +1887,25 @@ function Index() {
                                     );
                                     updateProfileField("customSections", updated);
                                   }}
-                                  placeholder="Enter accomplishments or bullets..."
-                                  className="min-h-16 text-xs p-2 bg-background"
+                                  placeholder="Enter accomplishments, credentials, or bullets..."
+                                  className="min-h-[140px] sm:min-h-[180px] text-sm sm:text-base leading-relaxed p-4 sm:p-5 rounded-xl border border-border/80 bg-background/90"
                                 />
                               )}
                             </div>
                           ))}
 
                           {/* Quick Section Presets */}
-                          <div className="rounded-lg border border-dashed border-border p-3 bg-muted/30">
-                            <span className="text-[11px] font-semibold text-foreground block mb-1.5">
+                          <div className="rounded-xl border border-dashed border-border p-4 bg-muted/30 space-y-2">
+                            <span className="text-xs sm:text-sm font-semibold text-foreground block">
                               + Add a Custom Section Preset:
                             </span>
-                            <div className="flex flex-wrap gap-1.5">
+                            <div className="flex flex-wrap gap-2">
                               {SECTION_PRESETS.map((preset) => (
                                 <button
                                   key={preset.title}
                                   type="button"
                                   onClick={() => handleAddSection(preset.title)}
-                                  className="rounded-md border border-border bg-background px-2 py-0.5 text-xs font-medium text-foreground hover:border-primary hover:text-primary transition-all"
+                                  className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs sm:text-sm font-medium text-foreground hover:border-primary hover:text-primary transition-all cursor-pointer shadow-2xs"
                                 >
                                   {preset.label}
                                 </button>
@@ -1886,21 +1915,20 @@ function Index() {
                         </div>
 
                         {/* Footer Nav */}
-                        <div className="flex items-center justify-between pt-3 border-t border-border">
+                        <div className="flex items-center justify-between pt-4 border-t border-border">
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
                             onClick={() => setWizardStep(3)}
-                            className="text-xs font-semibold text-muted-foreground"
+                            className="h-10 px-4 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground rounded-xl"
                           >
                             ← Back: Experience
                           </Button>
                           <Button
                             type="button"
                             onClick={() => setWizardStep(5)}
-                            size="sm"
-                            className="text-xs font-bold px-4"
+                            className="h-11 px-6 text-sm sm:text-base font-bold rounded-xl shadow-xs"
                           >
                             Next: ATS Optimization →
                           </Button>
@@ -1910,33 +1938,33 @@ function Index() {
 
                     {/* STEP 5: ATS OPTIMIZATION & STEALTH CLOAK */}
                     {wizardStep === 5 && (
-                      <div className="space-y-4 pt-1 animate-in fade-in duration-200">
+                      <div className="space-y-5 pt-1 animate-in fade-in duration-200">
                         {/* Readiness Summary */}
-                        <div className="rounded-xl border border-border bg-muted/40 p-3.5 space-y-2 text-xs">
-                          <span className="font-bold text-foreground block">
+                        <div className="rounded-2xl border border-border bg-muted/40 p-4 sm:p-5 space-y-3">
+                          <span className="font-bold text-sm sm:text-base text-foreground block">
                             Optimization Readiness Checklist:
                           </span>
-                          <div className="grid grid-cols-2 gap-2 text-[11px]">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-emerald-500">✓</span>
+                          <div className="grid grid-cols-2 gap-3 text-xs sm:text-sm">
+                            <div className="flex items-center gap-2">
+                              <span className="text-emerald-500 font-bold">✓</span>
                               <span>
                                 Target: <strong>{jobTitle || "Job Configured"}</strong>
                               </span>
                             </div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-emerald-500">✓</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-emerald-500 font-bold">✓</span>
                               <span>
                                 Candidate: <strong>{profile.name || "Alex Chen"}</strong>
                               </span>
                             </div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-emerald-500">✓</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-emerald-500 font-bold">✓</span>
                               <span>
                                 Roles: <strong>{profile.roles.length} entries</strong>
                               </span>
                             </div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-emerald-500">✓</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-emerald-500 font-bold">✓</span>
                               <span>
                                 ATS Keywords: <strong>{liveTargetKeywords.length} terms</strong>
                               </span>
@@ -1945,25 +1973,25 @@ function Index() {
                         </div>
 
                         {/* ATS Stealth Cloak Notice */}
-                        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3.5 space-y-2">
+                        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 sm:p-5 space-y-2.5">
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <ShieldCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
-                              <span className="text-xs font-bold text-foreground">
+                            <div className="flex items-center gap-2.5">
+                              <ShieldCheck className="size-5 text-emerald-600 dark:text-emerald-400" />
+                              <span className="text-sm sm:text-base font-bold text-foreground">
                                 ATS Stealth Cloak™ Active
                               </span>
                             </div>
-                            <Badge className="bg-emerald-600 text-white font-bold text-[10px] py-0 px-1.5">
+                            <Badge className="bg-emerald-600 text-white font-bold text-xs py-0.5 px-2">
                               100% SHORTLIST
                             </Badge>
                           </div>
-                          <p className="text-[11px] text-muted-foreground leading-relaxed">
+                          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                             Injects exact target keywords in invisible white font (
-                            <code className="text-emerald-600 dark:text-emerald-400 font-mono">
+                            <code className="text-emerald-600 dark:text-emerald-400 font-mono font-semibold">
                               #ffffff
                             </code>
                             ) into your exported Word and PDF documents. Human recruiters see a
-                            spotless, elegant layout while automated ATS parsers index a 100%
+                            spotless, executive layout while automated ATS parsers index a 100%
                             keyword match.
                           </p>
                         </div>
@@ -1971,7 +1999,7 @@ function Index() {
                         {/* Main Generate Button */}
                         <Button
                           size="lg"
-                          className="w-full h-12 text-base font-bold shadow-md bg-primary hover:bg-primary/90 text-primary-foreground transition-all"
+                          className="w-full h-14 sm:h-15 text-base sm:text-lg font-bold shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground transition-all rounded-xl cursor-pointer"
                           disabled={!ready}
                           onClick={() => {
                             tailor();
@@ -1986,82 +2014,140 @@ function Index() {
                           ) : (
                             <>
                               <Sparkles className="mr-2 size-5" /> Generate 100% ATS
-                              Matched Resume <ArrowRight className="ml-1.5 size-5" />
+                              Matched Resume <ArrowRight className="ml-2 size-5" />
                             </>
                           )}
                         </Button>
 
                         {/* Footer Nav */}
-                        <div className="flex items-center justify-between pt-2 border-t border-border">
+                        <div className="flex items-center justify-between pt-3 border-t border-border">
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
                             onClick={() => setWizardStep(4)}
-                            className="text-xs font-semibold text-muted-foreground"
+                            className="h-10 px-4 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground rounded-xl"
                           >
                             ← Back: Skills &amp; Sections
                           </Button>
-                          <span className="text-[11px] text-muted-foreground">Step 5 of 5</span>
+                          <span className="text-xs text-muted-foreground font-semibold">Step 5 of 5</span>
                         </div>
                       </div>
                     )}
                   </div>
                 ) : (
-                  /* PASTE / PDF UPLOAD VIEW */
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">
-                        {resume.trim().length} characters
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => fileInput.current?.click()}
-                        className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-accent transition-colors"
-                      >
-                        {reading ? (
-                          <Loader2 className="size-3.5 animate-spin" />
-                        ) : (
-                          <Upload className="size-3.5" />
-                        )}
-                        Upload Existing Resume (PDF / TXT)
-                      </button>
-                    </div>
-                    <input
-                      ref={fileInput}
-                      type="file"
-                      accept=".pdf,.txt,.md,application/pdf,text/plain"
-                      className="hidden"
-                      onChange={(e) => onFile(e.target.files?.[0] ?? null)}
-                    />
-                    <Textarea
-                      value={resume}
-                      onChange={(e) => setResume(e.target.value)}
-                      placeholder="Paste your full resume text here..."
-                      className="min-h-56 resize-y bg-background text-xs leading-relaxed p-3"
-                    />
-
-                    {/* Target Job in Paste Mode */}
-                    <div className="space-y-2 border-t border-border pt-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-foreground">
-                          Target Job Description:
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {job.trim().length} chars
-                        </span>
+                  /* PASTE / PDF UPLOAD VIEW - Ultra-wide 2-column responsive layout */
+                  <div className="space-y-6">
+                    <div
+                      className={
+                        workspaceLayout === "full"
+                          ? "grid grid-cols-1 lg:grid-cols-2 gap-6"
+                          : "space-y-5"
+                      }
+                    >
+                      {/* Left Box: Candidate Resume */}
+                      <div className="space-y-2 flex flex-col">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <label className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                            <FileText className="size-4 text-primary" />
+                            Your Current Resume
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs sm:text-sm text-muted-foreground font-mono">
+                              {resume.trim().length} chars
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => fileInput.current?.click()}
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-background px-3 py-1.5 text-xs sm:text-sm font-semibold text-foreground hover:bg-accent transition-colors cursor-pointer shadow-xs"
+                            >
+                              {reading ? (
+                                <Loader2 className="size-3.5 animate-spin text-primary" />
+                              ) : (
+                                <Upload className="size-3.5 text-primary" />
+                              )}
+                              Upload (PDF / TXT)
+                            </button>
+                          </div>
+                        </div>
+                        <input
+                          ref={fileInput}
+                          type="file"
+                          accept=".pdf,.txt,.md,application/pdf,text/plain"
+                          className="hidden"
+                          onChange={(e) => onFile(e.target.files?.[0] ?? null)}
+                        />
+                        <Textarea
+                          value={resume}
+                          onChange={(e) => setResume(e.target.value)}
+                          placeholder="Paste your full resume text here, or click upload to import from PDF..."
+                          className={`flex-1 resize-y bg-background/90 text-sm sm:text-base leading-relaxed p-4 sm:p-5 rounded-xl border border-border/80 focus:border-primary font-mono sm:font-sans transition-all ${
+                            workspaceLayout === "full"
+                              ? "min-h-[380px] lg:min-h-[480px]"
+                              : "min-h-[260px] sm:min-h-[320px]"
+                          }`}
+                        />
                       </div>
-                      <Textarea
-                        value={job}
-                        onChange={(e) => setJob(e.target.value)}
-                        placeholder="Paste target job description here..."
-                        className="min-h-36 resize-y bg-background text-xs leading-relaxed p-3"
-                      />
+
+                      {/* Right Box: Target Job Description */}
+                      <div className="space-y-2 flex flex-col">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <label className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                            <Briefcase className="size-4 text-primary" />
+                            Target Job Description
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs sm:text-sm text-muted-foreground font-mono">
+                              {job.trim().length} chars
+                            </span>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleLoadSampleJob(SAMPLE_JOBS[0]!)}
+                              className="h-8 text-xs font-semibold px-2.5 rounded-lg"
+                            >
+                              <Sparkles className="size-3 mr-1 text-primary" /> Sample Job
+                            </Button>
+                          </div>
+                        </div>
+                        <Textarea
+                          value={job}
+                          onChange={(e) => setJob(e.target.value)}
+                          placeholder="Paste target job requirements, qualifications, responsibilities, and tech stack here..."
+                          className={`flex-1 resize-y bg-background/90 text-sm sm:text-base leading-relaxed p-4 sm:p-5 rounded-xl border border-border/80 focus:border-primary transition-all ${
+                            workspaceLayout === "full"
+                              ? "min-h-[380px] lg:min-h-[480px]"
+                              : "min-h-[220px] sm:min-h-[280px]"
+                          }`}
+                        />
+
+                        {/* Real-time Extracted ATS Keywords Preview in Paste Mode */}
+                        {liveTargetKeywords.length > 0 && (
+                          <div className="rounded-xl border border-primary/25 bg-primary/5 p-3 space-y-1.5">
+                            <div className="flex items-center justify-between text-xs sm:text-sm">
+                              <span className="font-bold text-primary flex items-center gap-1.5">
+                                <Sparkles className="size-3.5" /> Detected ATS Keywords ({liveTargetKeywords.length}):
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto">
+                              {liveTargetKeywords.slice(0, 14).map((kw, i) => (
+                                <span
+                                  key={i}
+                                  className="inline-flex items-center rounded-md bg-background border border-primary/30 px-2 py-0.5 text-xs font-semibold text-foreground font-mono"
+                                >
+                                  ✓ {kw}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <Button
                       size="lg"
-                      className="w-full h-11 text-sm font-bold shadow-md bg-primary hover:bg-primary/90 text-primary-foreground"
+                      className="w-full h-14 sm:h-15 text-base sm:text-lg font-bold shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl transition-all cursor-pointer"
                       disabled={!ready}
                       onClick={() => {
                         tailor();
@@ -2070,12 +2156,12 @@ function Index() {
                     >
                       {streaming ? (
                         <>
-                          <Loader2 className="mr-2 size-4 animate-spin" /> Tailoring Resume…
+                          <Loader2 className="mr-2 size-5 animate-spin" /> Tailoring Resume…
                         </>
                       ) : (
                         <>
-                          <Sparkles className="mr-2 size-4" /> Generate &amp; Match
-                          Resume <ArrowRight className="ml-1.5 size-4" />
+                          <Sparkles className="mr-2 size-5" /> Generate 100% ATS Matched Resume{" "}
+                          <ArrowRight className="ml-2 size-5" />
                         </>
                       )}
                     </Button>
@@ -2628,13 +2714,13 @@ function Index() {
 
                             {/* Zoom Controls for Visual Preview */}
                             {previewMode === "visual" && (
-                              <div className="inline-flex items-center rounded-lg border border-border bg-card/80 p-0.5 gap-0.5">
+                              <div className="flex items-center rounded-xl border border-border bg-[#121624] p-0.5 shadow-xs">
                                 <Button
                                   variant={zoomMode === "fit" ? "default" : "ghost"}
                                   size="sm"
-                                  className="h-7 px-1.5 sm:px-2 text-[10px] font-bold"
+                                  className="h-8 px-2 sm:px-2.5 text-xs font-bold rounded-lg cursor-pointer"
                                   onClick={() => setZoomMode("fit")}
-                                  title="Fit full page to screen (100% visible)"
+                                  title="Fit resume width to screen (100% readable)"
                                   aria-label="Fit resume to screen width"
                                 >
                                   Fit
@@ -2646,7 +2732,7 @@ function Index() {
                                       : "ghost"
                                   }
                                   size="sm"
-                                  className="h-7 px-1.5 sm:px-2 text-[10px] font-bold"
+                                  className="h-8 px-2 sm:px-2.5 text-xs font-bold rounded-lg cursor-pointer"
                                   onClick={() => {
                                     setZoomMode("custom");
                                     setPreviewZoom(100);
@@ -2659,7 +2745,7 @@ function Index() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="size-7"
+                                  className="size-8 rounded-lg cursor-pointer"
                                   onClick={() => {
                                     setZoomMode("custom");
                                     setPreviewZoom((z) =>
@@ -2672,10 +2758,10 @@ function Index() {
                                   title="Zoom Out"
                                   aria-label="Zoom out resume preview"
                                 >
-                                  <ZoomOut className="size-3" />
+                                  <ZoomOut className="size-3.5" />
                                 </Button>
                                 <span
-                                  className="text-[10px] sm:text-[11px] font-bold px-1 min-w-[32px] sm:min-w-[36px] text-center"
+                                  className="text-xs font-bold px-1.5 min-w-[38px] text-center"
                                   aria-live="polite"
                                 >
                                   {Math.round(previewScale * 100)}%
@@ -2683,7 +2769,7 @@ function Index() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="size-7"
+                                  className="size-8 rounded-lg cursor-pointer"
                                   onClick={() => {
                                     setZoomMode("custom");
                                     setPreviewZoom((z) =>
@@ -2696,17 +2782,17 @@ function Index() {
                                   title="Zoom In"
                                   aria-label="Zoom in resume preview"
                                 >
-                                  <ZoomIn className="size-3" />
+                                  <ZoomIn className="size-3.5" />
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="size-7"
+                                  className="size-8 rounded-lg cursor-pointer"
                                   onClick={() => setZoomTemplate(template)}
                                   title="Open Fullscreen Zoom Modal"
                                   aria-label="Open fullscreen resume view"
                                 >
-                                  <Maximize2 className="size-3" />
+                                  <Maximize2 className="size-3.5" />
                                 </Button>
                               </div>
                             )}
@@ -2716,12 +2802,12 @@ function Index() {
                               size="sm"
                               onClick={copyResume}
                               disabled={streaming}
-                              className="h-8 text-xs font-semibold px-2 sm:px-2.5"
+                              className="h-8 sm:h-9 text-xs sm:text-sm font-semibold px-2.5 sm:px-3 rounded-xl cursor-pointer"
                             >
                               {copied ? (
-                                <Check className="size-3 text-emerald-500" />
+                                <Check className="size-3.5 text-emerald-500" />
                               ) : (
-                                <Copy className="size-3" />
+                                <Copy className="size-3.5" />
                               )}{" "}
                               <span className="hidden sm:inline">Copy</span>
                             </Button>
@@ -2730,7 +2816,7 @@ function Index() {
                               size="sm"
                               onClick={() => handleDownloadWord(template)}
                               disabled={streaming}
-                              className="h-8 text-xs font-bold text-blue-600 dark:text-blue-400 border-blue-500/30 px-2 sm:px-2.5"
+                              className="h-8 sm:h-9 text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 border-blue-500/30 px-2.5 sm:px-3 rounded-xl cursor-pointer"
                             >
                               <FileDown className="size-3.5 sm:mr-1" />{" "}
                               <span className="hidden sm:inline">Word Free</span>
@@ -2740,7 +2826,7 @@ function Index() {
                               variant="outline"
                               size="sm"
                               onClick={() => setTab("latex")}
-                              className="h-8 text-xs font-bold text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 px-2 sm:px-2.5"
+                              className="h-8 sm:h-9 text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 px-2.5 sm:px-3 rounded-xl cursor-pointer"
                               title="View and export Overleaf FAANGPath LaTeX (.tex) format"
                             >
                               <FileCode className="size-3.5 sm:mr-1" />{" "}
@@ -2751,7 +2837,7 @@ function Index() {
                               size="sm"
                               onClick={() => handleDownloadPdf(template)}
                               disabled={streaming}
-                              className="h-8 text-xs font-bold px-2.5 sm:px-3"
+                              className="h-8 sm:h-9 text-xs sm:text-sm font-bold px-3 sm:px-3.5 rounded-xl cursor-pointer"
                             >
                               <Download className="size-3.5 sm:mr-1" /> PDF
                               {!isSubscribed && <Lock className="size-3 ml-1 text-primary-foreground" />}
@@ -2764,7 +2850,11 @@ function Index() {
                           <div
                             ref={previewCanvasRef}
                             onScroll={handlePreviewScroll}
-                            className="relative bg-[#090A0F]/90 p-3 sm:p-4 pb-12 sm:pb-16 flex flex-col items-center justify-start overflow-x-hidden overflow-y-auto min-h-[500px] h-[calc(100vh-270px)] max-h-[850px] w-full"
+                            className={`relative bg-[#090A0F]/90 p-3 sm:p-4 pb-12 sm:pb-16 flex flex-col items-center justify-start overflow-x-hidden overflow-y-auto w-full ${
+                              workspaceLayout === "full"
+                                ? "min-h-[600px] h-[calc(100vh-200px)] max-h-[1050px]"
+                                : "min-h-[500px] h-[calc(100vh-270px)] max-h-[850px]"
+                            }`}
                             style={{
                               overscrollBehaviorY: "contain",
                               scrollbarWidth: "thin",
@@ -2795,15 +2885,7 @@ function Index() {
                               >
                                 <iframe
                                   title="Tailored Resume Live Preview"
-                                  srcDoc={renderResumeHtml(
-                                    deferredText,
-                                    template,
-                                    applicant,
-                                    stealthCloakActive && activeGhostKeywords.length > 0
-                                      ? activeGhostKeywords
-                                      : undefined,
-                                    showXRay,
-                                  )}
+                                  srcDoc={previewHtml}
                                   sandbox="allow-scripts allow-same-origin"
                                   scrolling="no"
                                   className="w-[850px] border-0"
@@ -2812,35 +2894,14 @@ function Index() {
                                     try {
                                       const doc = e.currentTarget.contentDocument;
                                       if (doc) {
-                                        const page = doc.querySelector(".page");
+                                        const page = doc.querySelector(".page") as HTMLElement | null;
                                         if (page) {
-                                          const pageRect = page.getBoundingClientRect();
-                                          let maxB = 0;
-                                          const els = page.querySelectorAll("*");
-                                          for (let i = 0; i < els.length; i++) {
-                                            const el = els[i] as HTMLElement;
-                                            if (
-                                              el.classList &&
-                                              (el.classList.contains("latex-underlying-format") ||
-                                                (el.classList.contains("ats-ghost-keywords") &&
-                                                  !el.classList.contains(
-                                                    "ats-ghost-keywords-xray",
-                                                  )))
-                                            ) {
-                                              continue;
-                                            }
-                                            const r = el.getBoundingClientRect();
-                                            if (r.width === 0 && r.height === 0) continue;
-                                            const b = r.bottom - pageRect.top;
-                                            if (b > maxB) maxB = b;
-                                          }
-                                          if (maxB > 200) {
-                                            const totalContentH = Math.ceil(maxB + 25);
+                                          const scrollH = page.scrollHeight;
+                                          if (scrollH > 200) {
                                             const pageCount =
-                                              totalContentH <= 1080
-                                                ? 1
-                                                : Math.max(1, Math.ceil(totalContentH / 1100));
-                                            setPreviewDocHeight(pageCount * 1100);
+                                              scrollH <= 1080 ? 1 : Math.max(1, Math.ceil(scrollH / 1100));
+                                            const newH = pageCount * 1100;
+                                            setPreviewDocHeight((prev) => (prev !== newH ? newH : prev));
                                           }
                                         }
                                       }
@@ -3241,11 +3302,11 @@ function Index() {
       </div>
 
       {/* Comprehensive FAQ Section */}
-      <FaqSection className="mt-14 border-t border-border/70 bg-card/30" />
+      <FaqSection className="mt-14 border-t border-border/70 bg-card/30 content-visibility-auto" />
     </main>
 
     {/* Modern Enterprise Footer */}
-    <footer className="border-t border-border bg-[#07090E] py-16 sm:py-20 text-foreground">
+    <footer className="border-t border-border bg-[#07090E] py-16 sm:py-20 text-foreground content-visibility-auto">
       <div className="w-full max-w-[1740px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-4">
           <div className="space-y-3">

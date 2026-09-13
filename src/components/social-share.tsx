@@ -13,7 +13,7 @@ export function SocialShare({ score = 100, roleTitle, className = "" }: SocialSh
   const [copied, setCopied] = useState(false);
 
   const shareUrl =
-    typeof window !== "undefined" ? window.location.origin : "https://cvfitt.fitt.workers.dev";
+    typeof window !== "undefined" ? window.location.origin : "https://cv.fitt.workers.dev";
   const shareText = `Just tailored my resume for ${roleTitle ? `"${roleTitle}"` : "my target role"} using CVFitt Enterprise — achieved a ${score}% ATS shortlist score! Highly recommended for any job seeker:`;
 
   const copyToClipboard = async () => {

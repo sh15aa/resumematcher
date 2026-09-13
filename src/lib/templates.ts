@@ -2073,31 +2073,57 @@ function orderSectionsForTemplate(sections: ResumeSection[], _templateId: string
 const htmlRenderCache = new Map<string, string>();
 const MAX_CACHE_SIZE = 150;
 
+export interface RenderResumeOptions {
+  isInteractive?: boolean;
+  includeLatexLayer?: boolean;
+}
+
 export function renderResumeHtml(
   resumeText: string,
   template: ResumeTemplate,
   fallbackName = "Your Name",
   ghostKeywords?: string[],
   showXRay = false,
+  options?: RenderResumeOptions,
 ): string {
   const isSample = !resumeText || resumeText.trim().length < 15;
   const effectiveText = isSample ? DEFAULT_SAMPLE_RESUME_TEXT : resumeText;
   const effectiveName =
     isSample && (fallbackName === "Your Name" || !fallbackName) ? "Alex Chen" : fallbackName;
 
+  const isInteractive = options?.isInteractive !== false;
+  const includeLatex = options?.includeLatexLayer !== false;
+
   // Ultra-Fast LRU Caching to prevent rendering lag across 32 templates
-  const cacheKey = `${template.id}:${effectiveText.length}:${effectiveName}:${ghostKeywords?.join(",") || ""}:${showXRay}:${effectiveText.slice(0, 40)}`;
+  const cacheKey = `${template.id}:${effectiveText.length}:${effectiveName}:${ghostKeywords?.join(",") || ""}:${showXRay}:${isInteractive}:${includeLatex}:${effectiveText.slice(0, 40)}`;
   const cached = htmlRenderCache.get(cacheKey);
   if (cached) return cached;
 
   const doc = parseResume(effectiveText);
   const header = headerHtml(doc, effectiveName);
 
-  // Generate underlying compile-ready Overleaf FAANGPath LaTeX format for the PDF payload
-  const latexPayload = generateOverleafFaangLatex(effectiveText, {
-    ghostKeywords,
-    stealthCloakActive: Boolean(ghostKeywords && ghostKeywords.length > 0),
-  });
+  // Generate underlying compile-ready Overleaf FAANGPath LaTeX format only when needed
+  let latexSemanticTag = "";
+  if (includeLatex) {
+    const latexPayload = generateOverleafFaangLatex(effectiveText, {
+      ghostKeywords,
+      stealthCloakActive: Boolean(ghostKeywords && ghostKeywords.length > 0),
+    });
+
+    latexSemanticTag = `
+      <!--
+      %======================================================================
+      % UNDERLYING OVERLEAF FAANGPATH LATEX RESUME FORMAT (pdfLaTeX 11pt)
+      % Ready to compile directly on Overleaf.com
+      %======================================================================
+      ${latexPayload.replace(/-->/g, "-- >")}
+      %======================================================================
+      -->
+      <div id="latex-underlying-format" class="latex-underlying-format" aria-hidden="true" style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: pre; border: 0; opacity: 0.001; pointer-events: none;">
+        ${escapeHtml(latexPayload)}
+      </div>
+    `;
+  }
 
   const ghostHtml =
     ghostKeywords && ghostKeywords.length > 0
@@ -2129,82 +2155,64 @@ export function renderResumeHtml(
     body = `${header}<div class="main">${orderedSections.map((s) => renderSection(s, template)).join("")}${ghostHtml}</div>`;
   }
 
-  // Machine-readable LaTeX semantic layer embedded directly behind the PDF
-  const latexSemanticTag = `
-    <!--
-    %======================================================================
-    % UNDERLYING OVERLEAF FAANGPATH LATEX RESUME FORMAT (pdfLaTeX 11pt)
-    % Ready to compile directly on Overleaf.com
-    %======================================================================
-    ${latexPayload.replace(/-->/g, "-- >")}
-    %======================================================================
-    -->
-    <div id="latex-underlying-format" class="latex-underlying-format" aria-hidden="true" style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: pre; border: 0; opacity: 0.001; pointer-events: none;">
-      ${escapeHtml(latexPayload)}
-    </div>
-  `;
-
-  const heightReporterScript = `
+  // O(1) Height Reporter Script with zero layout thrashing (only for live interactive preview)
+  const heightReporterScript = isInteractive
+    ? `
     <script>
       (function() {
+        var lastReportedH = 0;
+        var rafId = null;
+
         function sendHeight() {
           try {
             var page = document.querySelector('.page');
-            var maxBottom = 0;
-            if (page) {
-              var pageRect = page.getBoundingClientRect();
-              var allElements = page.querySelectorAll('*');
-              for (var i = 0; i < allElements.length; i++) {
-                var el = allElements[i];
-                if (el.classList && (el.classList.contains('latex-underlying-format') || (el.classList.contains('ats-ghost-keywords') && !el.classList.contains('ats-ghost-keywords-xray')))) {
-                  continue;
-                }
-                var r = el.getBoundingClientRect();
-                if (r.width === 0 && r.height === 0) continue;
-                var bottomFromPageTop = r.bottom - pageRect.top;
-                if (bottomFromPageTop > maxBottom) maxBottom = bottomFromPageTop;
-              }
-            }
+            if (!page) return;
 
-            // Clean 25px bottom clearance inside letter boundary
-            var totalContentH = Math.ceil(maxBottom + 25);
-            var pageCount = totalContentH <= 1080 ? 1 : Math.max(1, Math.ceil(totalContentH / 1100));
+            // O(1) layout measurement without querySelectorAll('*') reflow loops
+            var totalH = page.scrollHeight;
+            var main = page.querySelector('.main') || page;
+            var lastEl = main.lastElementChild;
+            while (lastEl && (lastEl.classList.contains('latex-underlying-format') || (lastEl.classList.contains('ats-ghost-keywords') && !lastEl.classList.contains('ats-ghost-keywords-xray')))) {
+              lastEl = lastEl.previousElementSibling;
+            }
+            var contentBottom = lastEl ? (lastEl.offsetTop + lastEl.offsetHeight + 25) : totalH;
+            var effectiveH = Math.max(contentBottom, totalH);
+
+            var pageCount = effectiveH <= 1080 ? 1 : Math.max(1, Math.ceil(effectiveH / 1100));
             var h = pageCount * 1100;
 
-            if (window.parent) {
+            if (h !== lastReportedH && window.parent) {
+              lastReportedH = h;
               window.parent.postMessage({
                 type: 'RESUME_DOC_HEIGHT',
                 height: h,
                 pageCount: pageCount,
-                contentBottom: totalContentH
+                contentBottom: effectiveH
               }, '*');
             }
           } catch(e) {}
         }
 
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', sendHeight);
+        function scheduleHeight() {
+          if (rafId) cancelAnimationFrame(rafId);
+          rafId = requestAnimationFrame(sendHeight);
+        }
+
+        if (document.readyState === 'complete') {
+          scheduleHeight();
         } else {
-          sendHeight();
+          window.addEventListener('load', scheduleHeight, { once: true });
         }
-        window.addEventListener('load', sendHeight);
-        if (document.fonts) {
-          if (document.fonts.ready) {
-            document.fonts.ready.then(sendHeight);
-          }
-          if (document.fonts.addEventListener) {
-            document.fonts.addEventListener('loadingdone', sendHeight);
-          }
+
+        if (document.fonts && document.fonts.ready) {
+          document.fonts.ready.then(scheduleHeight);
         }
+
         if (window.ResizeObserver) {
-          var ro = new ResizeObserver(sendHeight);
+          var ro = new ResizeObserver(scheduleHeight);
           var p = document.querySelector('.page');
           if (p) ro.observe(p);
         }
-        setTimeout(sendHeight, 50);
-        setTimeout(sendHeight, 200);
-        setTimeout(sendHeight, 500);
-        setTimeout(sendHeight, 1000);
 
         // Forward vertical mousewheel / trackpad scrolling up to the parent canvas
         window.addEventListener('wheel', function(e) {
@@ -2214,7 +2222,8 @@ export function renderResumeHtml(
         }, { passive: true });
       })();
     </script>
-  `;
+  `
+    : "";
 
   const finalHtml = `<!doctype html>
 <html><head><meta charset="utf-8" />

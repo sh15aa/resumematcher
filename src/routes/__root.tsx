@@ -169,10 +169,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "100% ATS match guarantee, exact keyword infiltration, stealth white-font cloaking, 32 FAANG & Overleaf templates, Word (.doc) and vector PDF downloads.",
       },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://cvfitt.fitt.workers.dev/" },
+      { property: "og:url", content: "https://cv.fitt.workers.dev/" },
       { property: "og:site_name", content: "CVFitt Enterprise" },
       { property: "og:locale", content: "en_US" },
-      { property: "og:image", content: "https://cvfitt.fitt.workers.dev/og-image.png" },
+      { property: "og:image", content: "https://cv.fitt.workers.dev/og-image.png" },
       { property: "og:image:width", content: "1200" },
       { property: "og:image:height", content: "630" },
       { property: "og:image:alt", content: "CVFitt Enterprise — 100% ATS Resume Matcher and Tailoring Engine" },
@@ -186,11 +186,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "Beat automated ATS filters with exact keyword infiltration and 32 FAANG-proven executive resume templates.",
       },
-      { name: "twitter:image", content: "https://cvfitt.fitt.workers.dev/og-image.png" },
+      { name: "twitter:image", content: "https://cv.fitt.workers.dev/og-image.png" },
       { name: "twitter:creator", content: "@cvfitt" },
     ],
     links: [
-      { rel: "canonical", href: "https://cvfitt.fitt.workers.dev/" },
+      { rel: "canonical", href: "https://cv.fitt.workers.dev/" },
       {
         rel: "stylesheet",
         href: appCss,
@@ -213,10 +213,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "@graph": [
             {
               "@type": ["SoftwareApplication", "WebApplication"],
-              "@id": "https://cvfitt.fitt.workers.dev/#software",
+              "@id": "https://cv.fitt.workers.dev/#software",
               name: "CVFitt Enterprise",
               alternateName: "ResumeMatcher ATS Optimization Engine",
-              url: "https://cvfitt.fitt.workers.dev/",
+              url: "https://cv.fitt.workers.dev/",
               applicationCategory: "BusinessApplication",
               operatingSystem: "All (Web Browser)",
               browserRequirements: "Requires JavaScript. Requires HTML5.",
@@ -260,10 +260,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
             },
             {
               "@type": "Organization",
-              "@id": "https://cvfitt.fitt.workers.dev/#organization",
+              "@id": "https://cv.fitt.workers.dev/#organization",
               name: "CVFitt Enterprise Inc.",
-              url: "https://cvfitt.fitt.workers.dev/",
-              logo: "https://cvfitt.fitt.workers.dev/favicon.svg",
+              url: "https://cv.fitt.workers.dev/",
+              logo: "https://cv.fitt.workers.dev/favicon.svg",
               sameAs: [
                 "https://twitter.com/cvfitt",
                 "https://github.com/sh15aa/resumematcher",
@@ -271,7 +271,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
             },
             {
               "@type": "FAQPage",
-              "@id": "https://cvfitt.fitt.workers.dev/#faq",
+              "@id": "https://cv.fitt.workers.dev/#faq",
               mainEntity: [
                 {
                   "@type": "Question",

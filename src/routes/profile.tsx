@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { ArrowLeft, ArrowRight, Plus, Save, Trash2, UserRound } from "lucide-react";
 import { toast } from "sonner";
 
@@ -37,7 +37,7 @@ export const Route = createFileRoute("/profile")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: [{ rel: "canonical", href: "https://cvfitt.fitt.workers.dev/profile" }],
+    links: [{ rel: "canonical", href: "https://cv.fitt.workers.dev/profile" }],
   }),
   component: ProfilePage,
 });
@@ -78,7 +78,7 @@ function ProfilePage() {
     setProfile((current) => ({ ...current, [key]: value }));
   }
 
-  const preview = profileToResume(profile);
+  const preview = useMemo(() => profileToResume(profile), [profile]);
 
   function persist() {
     saveProfile(profile);
@@ -175,7 +175,7 @@ function ProfilePage() {
                   value={profile.about}
                   onChange={(event) => set("about", event.target.value)}
                   placeholder="Two or three sentences about what you do and what you're known for."
-                  className="min-h-28 bg-background text-sm leading-6"
+                  className="min-h-36 bg-background text-sm sm:text-base leading-relaxed p-4 rounded-xl border border-border/80"
                 />
               </label>
             </section>
@@ -246,7 +246,7 @@ function ProfilePage() {
                         placeholder={
                           "Led the reporting redesign used by 12,000 people a week\nRan the research that shaped billing"
                         }
-                        className="min-h-24 bg-background text-sm leading-6"
+                        className="min-h-32 bg-background text-sm sm:text-base leading-relaxed p-4 rounded-xl border border-border/80 font-mono sm:font-sans"
                       />
                     </label>
                     {profile.roles.length > 1 && (
@@ -327,7 +327,7 @@ function ProfilePage() {
                   value={profile.skills}
                   onChange={(event) => set("skills", event.target.value)}
                   placeholder="Figma, design systems, user research, accessibility"
-                  className="min-h-20 bg-background text-sm leading-6"
+                  className="min-h-28 bg-background text-sm sm:text-base leading-relaxed p-4 rounded-xl border border-border/80"
                 />
               </label>
               <label className="mt-4 block">
@@ -338,7 +338,7 @@ function ProfilePage() {
                   value={profile.certifications}
                   onChange={(event) => set("certifications", event.target.value)}
                   placeholder={"Google UX Certificate, 2022"}
-                  className="min-h-20 bg-background text-sm leading-6"
+                  className="min-h-28 bg-background text-sm sm:text-base leading-relaxed p-4 rounded-xl border border-border/80"
                 />
               </label>
             </section>

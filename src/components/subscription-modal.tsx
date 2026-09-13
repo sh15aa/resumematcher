@@ -225,9 +225,9 @@ export function SubscriptionModal({ open, onOpenChange, featureReason }: Subscri
           key: activeKey,
           amount: amountPaise,
           currency: currencyCode === "INR" ? "INR" : "USD",
-          name: "CVFitt Enterprise",
-          description: `Enterprise Pro (${billingCycle === "annual" ? "Annual" : "Monthly"}) — 100% ATS Match & All 32 Templates`,
-          image: "https://cvfitt.fitt.workers.dev/favicon.ico",
+          name: "CVFitt Enterprise Pro",
+          description: `Unlock all 32 FAANG & Overleaf templates. ${featureReason || ""}`,
+          image: "https://cv.fitt.workers.dev/favicon.ico",
           prefill: {
             name: cardName || user?.email?.split("@")[0] || "Alex Chen",
             email: user?.email || email || "alex.chen@example.com",

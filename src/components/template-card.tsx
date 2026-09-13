@@ -1,4 +1,4 @@
-import React, { memo, useState, useEffect, useRef } from "react";
+import React, { memo, useState, useEffect, useRef, useMemo } from "react";
 import { Check, Crown, Download, FileDown, Lock, ShieldCheck, Star, ZoomIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +37,18 @@ export const TemplateCard = memo(function TemplateCard({
     (!resumeText || resumeText.trim().length < 15) && (!applicant || applicant === "Your Name")
       ? "Alex Chen"
       : applicant;
+
+  const srcDoc = useMemo(() => {
+    if (!isVisible) return "";
+    return renderResumeHtml(
+      effectiveResumeText,
+      template,
+      effectiveApplicant,
+      undefined,
+      false,
+      { isInteractive: false, includeLatexLayer: false },
+    );
+  }, [isVisible, effectiveResumeText, template, effectiveApplicant]);
 
   useEffect(() => {
     if (!cardRef.current) return;
@@ -80,7 +92,7 @@ export const TemplateCard = memo(function TemplateCard({
           {isVisible ? (
             <iframe
               title={`${template.name} preview`}
-              srcDoc={renderResumeHtml(effectiveResumeText, template, effectiveApplicant)}
+              srcDoc={srcDoc}
               loading="lazy"
               sandbox="allow-scripts"
               scrolling="no"
