@@ -102,17 +102,26 @@ export function TemplateZoomModal({
     updateDims();
     const ro = new ResizeObserver(updateDims);
     ro.observe(canvasRef.current);
+    window.addEventListener("resize", updateDims);
     return () => {
       if (rafId) cancelAnimationFrame(rafId);
       ro.disconnect();
+      window.removeEventListener("resize", updateDims);
     };
   }, []);
 
   const fitScale = useMemo(() => {
-    if (containerWidth > 0) {
-      const availW = Math.max(160, containerWidth - (containerWidth < 768 ? 16 : 48));
-      const scaleW = availW / 850;
+    if (typeof window !== "undefined") {
+      const screenW = window.innerWidth;
+      const maxMobileAvail = screenW < 768 ? Math.max(160, screenW - 32) : 850;
+      const effectiveW =
+        containerWidth > 0 ? Math.min(containerWidth - 16, maxMobileAvail) : maxMobileAvail;
+      const scaleW = effectiveW / 850;
       return Number(Math.min(1.05, Math.max(0.15, scaleW)).toFixed(3));
+    }
+    if (containerWidth > 0) {
+      const availW = Math.max(160, containerWidth - 16);
+      return Number(Math.min(1.05, Math.max(0.15, availW / 850)).toFixed(3));
     }
     return 0.85;
   }, [containerWidth]);
@@ -301,11 +310,11 @@ export function TemplateZoomModal({
             style={{
               width: `${Math.round(850 * effectiveScale)}px`,
               height: `${Math.round(zoomDocHeight * effectiveScale)}px`,
-              maxWidth: "100%",
+              minWidth: `${Math.round(850 * effectiveScale)}px`,
               position: "relative",
               overflow: "hidden",
             }}
-            className="mx-auto rounded shadow-2xl bg-white transition-all duration-150 mb-4 w-full max-w-full transform-gpu"
+            className="mx-auto rounded shadow-2xl bg-white transition-all duration-150 mb-4 shrink-0 transform-gpu"
           >
             <div
               style={{

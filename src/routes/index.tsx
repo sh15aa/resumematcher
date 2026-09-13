@@ -308,7 +308,13 @@ function Index() {
 
   const fileInput = useRef<HTMLInputElement>(null);
   const outputRef = useRef<HTMLDivElement>(null);
+  const builderRef = useRef<HTMLElement>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const goToStep = useCallback((step: 1 | 2 | 3 | 4 | 5) => {
+    setWizardStep(step);
+    builderRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
 
   useEffect(() => {
     setHistory(loadHistory());
@@ -421,22 +427,22 @@ function Index() {
     updateProfileField("customSections", updated);
   }
 
-  function handleLoadSampleDetails() {
+  function handleLoadSampleDetails(silent = false) {
     setProfile(SAMPLE_PROFILE);
     saveProfile(SAMPLE_PROFILE);
     setResume(profileToResume(SAMPLE_PROFILE));
-    toast.success("Loaded full sample candidate profile (Alex Chen).");
+    if (!silent) toast.success("Loaded full sample candidate profile (Alex Chen).");
   }
 
-  function handleLoadSampleJob(sample: (typeof SAMPLE_JOBS)[number]) {
+  function handleLoadSampleJob(sample: (typeof SAMPLE_JOBS)[number], silent = false) {
     setJob(sample.text);
     setJobTitle(sample.title);
-    toast.success(`Loaded "${sample.title}" posting.`);
+    if (!silent) toast.success(`Loaded "${sample.title}" posting.`);
   }
 
   function handleLoadAllDemo() {
-    handleLoadSampleDetails();
-    handleLoadSampleJob(SAMPLE_JOBS[0]!);
+    handleLoadSampleDetails(true);
+    handleLoadSampleJob(SAMPLE_JOBS[0]!, true);
     toast.success("Demo profile & job ready! Click 'Generate & Match Resume'.");
   }
 
@@ -498,19 +504,29 @@ function Index() {
     updateDims();
     const ro = new ResizeObserver(updateDims);
     ro.observe(previewCanvasRef.current);
+    window.addEventListener("resize", updateDims);
     return () => {
       if (rafId) cancelAnimationFrame(rafId);
       ro.disconnect();
+      window.removeEventListener("resize", updateDims);
     };
   }, [tab, previewMode]);
 
   // Responsive fit scale: dynamically scales document to match available canvas width
   // so paper fits 100% of the screen width on mobile (<768px) with zero horizontal clipping.
   const fitScale = useMemo(() => {
-    if (canvasWidth > 0) {
-      const availW = Math.max(160, canvasWidth - (canvasWidth < 768 ? 16 : 32));
-      const scaleW = availW / 850;
+    if (typeof window !== "undefined") {
+      const screenW = window.innerWidth;
+      // Account for mobile page horizontal margins: px-4 (32px) + canvas wrapper p-2 (16px) = 48px
+      const maxMobileAvail = screenW < 768 ? Math.max(160, screenW - 48) : 850;
+      const effectiveW =
+        canvasWidth > 0 ? Math.min(canvasWidth - 16, maxMobileAvail) : maxMobileAvail;
+      const scaleW = effectiveW / 850;
       return Number(Math.min(1.0, Math.max(0.15, scaleW)).toFixed(3));
+    }
+    if (canvasWidth > 0) {
+      const availW = Math.max(160, canvasWidth - 16);
+      return Number(Math.min(1.0, Math.max(0.15, availW / 850)).toFixed(3));
     }
     return 0.85;
   }, [canvasWidth]);
@@ -1127,15 +1143,11 @@ function Index() {
               </Button>
               <Button
                 onClick={() => {
-                  if (!resume.trim() || !job.trim()) {
-                    handleLoadAllDemo();
-                  }
-                  outputRef.current?.scrollIntoView({ behavior: "smooth" });
-                  if (ready) tailor();
+                  builderRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }}
                 size="sm"
                 aria-label="Start ATS resume optimization process"
-                className="h-9 text-xs font-semibold px-4 shadow-sm bg-primary hover:bg-primary/90 text-primary-foreground w-full sm:w-auto"
+                className="h-9 text-xs font-semibold px-4 shadow-sm bg-primary hover:bg-primary/90 text-primary-foreground w-full sm:w-auto cursor-pointer"
               >
                 Start ATS Optimization <ArrowRight className="size-3.5 ml-1.5" />
               </Button>
@@ -1153,11 +1165,13 @@ function Index() {
         >
           {/* Left Workspace Column: Inputs & Job Target */}
           <section
+            ref={builderRef}
+            id="builder"
             aria-labelledby="wizard-heading"
             className={
               workspaceLayout === "split"
-                ? "lg:col-span-5 xl:col-span-5 2xl:col-span-5 space-y-6"
-                : "space-y-6 w-full max-w-[1400px] mx-auto"
+                ? "lg:col-span-5 xl:col-span-5 2xl:col-span-5 space-y-6 min-w-0"
+                : "space-y-6 w-full max-w-[1400px] mx-auto min-w-0"
             }
           >
             {/* Step-by-Step Guided Wizard Workspace */}
@@ -1265,7 +1279,7 @@ function Index() {
                         <button
                           key={item.step}
                           type="button"
-                          onClick={() => setWizardStep(item.step as 1 | 2 | 3 | 4 | 5)}
+                          onClick={() => goToStep(item.step as 1 | 2 | 3 | 4 | 5)}
                           aria-label={item.fullLabel}
                           className={`rounded-xl py-2 px-1.5 min-h-[44px] sm:min-h-0 flex items-center justify-center text-center truncate transition-all cursor-pointer ${
                             wizardStep === item.step
@@ -1411,8 +1425,8 @@ function Index() {
                         </Button>
                         <Button
                           type="button"
-                          onClick={() => setWizardStep(2)}
-                          className="h-11 px-6 text-sm sm:text-base font-bold rounded-xl shadow-xs"
+                          onClick={() => goToStep(2)}
+                          className="h-11 px-6 text-sm sm:text-base font-bold rounded-xl shadow-xs cursor-pointer"
                         >
                           Next: Contact Details →
                         </Button>
@@ -1521,15 +1535,15 @@ function Index() {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => setWizardStep(1)}
-                          className="h-10 px-4 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground rounded-xl"
+                          onClick={() => goToStep(1)}
+                          className="h-10 px-4 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground rounded-xl cursor-pointer"
                         >
                           ← Back: Target Job
                         </Button>
                         <Button
                           type="button"
-                          onClick={() => setWizardStep(3)}
-                          className="h-11 px-6 text-sm sm:text-base font-bold rounded-xl shadow-xs"
+                          onClick={() => goToStep(3)}
+                          className="h-11 px-6 text-sm sm:text-base font-bold rounded-xl shadow-xs cursor-pointer"
                         >
                           Next: Work Experience →
                         </Button>
@@ -1684,15 +1698,15 @@ function Index() {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => setWizardStep(2)}
-                          className="h-10 px-4 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground rounded-xl"
+                          onClick={() => goToStep(2)}
+                          className="h-10 px-4 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground rounded-xl cursor-pointer"
                         >
                           ← Back: Contact
                         </Button>
                         <Button
                           type="button"
-                          onClick={() => setWizardStep(4)}
-                          className="h-11 px-6 text-sm sm:text-base font-bold rounded-xl shadow-xs"
+                          onClick={() => goToStep(4)}
+                          className="h-11 px-6 text-sm sm:text-base font-bold rounded-xl shadow-xs cursor-pointer"
                         >
                           Next: Skills &amp; Sections →
                         </Button>
@@ -1932,15 +1946,15 @@ function Index() {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => setWizardStep(3)}
-                          className="h-10 px-4 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground rounded-xl"
+                          onClick={() => goToStep(3)}
+                          className="h-10 px-4 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground rounded-xl cursor-pointer"
                         >
                           ← Back: Experience
                         </Button>
                         <Button
                           type="button"
-                          onClick={() => setWizardStep(5)}
-                          className="h-11 px-6 text-sm sm:text-base font-bold rounded-xl shadow-xs"
+                          onClick={() => goToStep(5)}
+                          className="h-11 px-6 text-sm sm:text-base font-bold rounded-xl shadow-xs cursor-pointer"
                         >
                           Next: ATS Optimization →
                         </Button>
@@ -1984,53 +1998,60 @@ function Index() {
                         </div>
                       </div>
 
+                      {/* Main Generate Button Section */}
+                      <div className="space-y-2">
+                        <Button
+                          size="lg"
+                          className="w-full h-auto min-h-14 sm:h-15 text-sm sm:text-base md:text-lg font-bold shadow-xl bg-primary hover:bg-primary/90 text-primary-foreground transition-all rounded-xl cursor-pointer px-4 py-3.5 whitespace-normal text-center"
+                          disabled={!ready}
+                          onClick={() => {
+                            tailor();
+                            outputRef.current?.scrollIntoView({ behavior: "smooth" });
+                          }}
+                        >
+                          {streaming ? (
+                            <div className="flex items-center justify-center flex-wrap gap-2">
+                              <Loader2 className="size-5 animate-spin shrink-0" />
+                              <span>Infiltrating &amp; Tailoring Resume…</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center flex-wrap gap-2">
+                              <Sparkles className="size-5 shrink-0" />
+                              <span>Generate 100% ATS Matched Resume</span>
+                              <ArrowRight className="size-5 shrink-0" />
+                            </div>
+                          )}
+                        </Button>
+                        {!ready && (
+                          <p className="text-xs text-amber-500 dark:text-amber-400 text-center font-medium">
+                            Please provide candidate information (Step 2) and a target job (Step 1)
+                            to generate.
+                          </p>
+                        )}
+                      </div>
+
                       {/* ATS Stealth Cloak Notice */}
-                      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 sm:p-5 space-y-2.5">
+                      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 sm:p-5 space-y-2">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2.5">
-                            <ShieldCheck className="size-5 text-emerald-600 dark:text-emerald-400" />
-                            <span className="text-sm sm:text-base font-bold text-foreground">
-                              ATS Stealth Cloak™ Active
+                            <ShieldCheck className="size-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                            <span className="text-xs sm:text-sm font-bold text-foreground">
+                              ATS Stealth Cloak™ Armed &amp; Ready
                             </span>
                           </div>
-                          <Badge className="bg-emerald-600 text-white font-bold text-xs py-0.5 px-2">
+                          <Badge className="bg-emerald-600 text-white font-bold text-[10px] sm:text-xs py-0.5 px-2">
                             100% SHORTLIST
                           </Badge>
                         </div>
-                        <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                          Injects exact target keywords in invisible white font (
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          Injects target keywords in invisible white font (
                           <code className="text-emerald-600 dark:text-emerald-400 font-mono font-semibold">
                             #ffffff
                           </code>
-                          ) into your exported Word and PDF documents. Human recruiters see a
-                          spotless, executive layout while automated ATS parsers index a 100%
-                          keyword match.
+                          ) into Word and PDF exports. Recruiters see a spotless executive layout
+                          while automated parsers index a 100% keyword match.
                         </p>
                       </div>
-
-                      {/* Main Generate Button */}
-                      <Button
-                        size="lg"
-                        className="w-full sm:w-auto h-auto min-h-14 sm:h-15 text-sm sm:text-base md:text-lg font-bold shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground transition-all rounded-xl cursor-pointer px-4 py-3 whitespace-normal text-center"
-                        disabled={!ready}
-                        onClick={() => {
-                          tailor();
-                          outputRef.current?.scrollIntoView({ behavior: "smooth" });
-                        }}
-                      >
-                        {streaming ? (
-                          <div className="flex items-center justify-center flex-wrap gap-2">
-                            <Loader2 className="size-5 animate-spin shrink-0" />
-                            <span>Infiltrating &amp; Tailoring Resume…</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-center flex-wrap gap-2">
-                            <Sparkles className="size-5 shrink-0" />
-                            <span>Generate 100% ATS Matched Resume</span>
-                            <ArrowRight className="size-5 shrink-0" />
-                          </div>
-                        )}
-                      </Button>
 
                       {/* Footer Nav */}
                       <div className="flex items-center justify-between pt-3 border-t border-border">
@@ -2038,8 +2059,8 @@ function Index() {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => setWizardStep(4)}
-                          className="h-10 px-4 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground rounded-xl"
+                          onClick={() => goToStep(4)}
+                          className="h-10 px-4 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground rounded-xl cursor-pointer"
                         >
                           ← Back: Skills &amp; Sections
                         </Button>
@@ -2633,10 +2654,10 @@ function Index() {
                       <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center justify-between gap-2.5 border-b border-border bg-card/70 px-3 sm:px-5 py-2.5 backdrop-blur-xs w-full max-w-full">
                         <div className="flex flex-wrap items-center gap-2 min-w-0">
                           {/* Direct Template Selector Dropdown */}
-                          <div className="flex items-center gap-1.5 bg-background/90 border border-border rounded-xl px-2.5 py-1 shadow-2xs">
+                          <div className="flex items-center gap-1.5 bg-background/90 border border-border rounded-xl px-2.5 py-1 shadow-2xs max-w-full min-w-0">
                             <label
                               htmlFor="resume-template-select"
-                              className="text-[11px] font-bold text-muted-foreground whitespace-nowrap"
+                              className="text-[11px] font-bold text-muted-foreground whitespace-nowrap shrink-0"
                             >
                               Template:
                             </label>
@@ -2648,7 +2669,7 @@ function Index() {
                                 const selected = TEMPLATES.find((t) => t.id === e.target.value);
                                 if (selected) handleSelectTemplate(selected);
                               }}
-                              className="bg-transparent text-xs font-bold text-foreground focus:outline-none cursor-pointer pr-1"
+                              className="bg-transparent text-xs font-bold text-foreground focus:outline-none cursor-pointer pr-1 truncate max-w-[160px] sm:max-w-[280px]"
                             >
                               <optgroup label="✨ Free Templates">
                                 {TEMPLATES.filter((t) => t.isFree).map((t) => (
@@ -2876,7 +2897,7 @@ function Index() {
                         <div
                           ref={previewCanvasRef}
                           onScroll={handlePreviewScroll}
-                          className={`relative bg-[#090A0F]/90 p-2 sm:p-4 pb-12 sm:pb-16 flex flex-col items-center justify-start overflow-x-auto overflow-y-auto w-full max-w-full ${
+                          className={`relative bg-[#090A0F]/90 p-2 sm:p-4 pb-12 sm:pb-16 flex flex-col items-center justify-start overflow-x-auto overflow-y-auto w-full max-w-full min-w-0 ${
                             workspaceLayout === "full"
                               ? "min-h-[600px] h-[calc(100vh-200px)] max-h-[1050px]"
                               : "min-h-[500px] h-[calc(100vh-270px)] max-h-[850px]"
@@ -2890,11 +2911,11 @@ function Index() {
                             style={{
                               width: `${Math.round(850 * previewScale)}px`,
                               height: `${Math.round(previewDocHeight * previewScale)}px`,
-                              maxWidth: "100%",
+                              minWidth: `${Math.round(850 * previewScale)}px`,
                               position: "relative",
                               overflow: "hidden",
                             }}
-                            className="mx-auto rounded-lg shadow-2xl shadow-black/80 bg-white transition-[height] duration-150 mb-4 shrink-0 w-full max-w-full transform-gpu"
+                            className="mx-auto rounded-lg shadow-2xl shadow-black/80 bg-white transition-[height] duration-150 mb-4 shrink-0 transform-gpu"
                           >
                             <div
                               style={{

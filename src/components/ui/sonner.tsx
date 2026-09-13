@@ -60,6 +60,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       position="top-center"
       visibleToasts={1}
+      expand={false}
       duration={3000}
       swipeDirections={["top", "right", "left"]}
       closeButton
@@ -67,11 +68,11 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         duration: 3000,
         style: {
-          maxWidth: "90vw",
+          maxWidth: "92vw",
         },
         classNames: {
           toast:
-            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg max-w-[90vw] sm:max-w-md mx-auto w-full text-xs sm:text-sm",
+            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg max-w-[92vw] sm:max-w-md mx-auto w-full text-xs sm:text-sm",
           description: "group-[.toast]:text-muted-foreground",
           actionButton: "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
           cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
