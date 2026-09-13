@@ -48,10 +48,10 @@ export function CookieConsent() {
     <div
       role="dialog"
       aria-label="Cookie consent preferences"
-      className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-2xl rounded-2xl border border-border/80 bg-card/95 p-5 shadow-2xl backdrop-blur-md animate-in slide-in-from-bottom-5 duration-300"
+      className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-2xl rounded-2xl border border-border bg-[#121624]/90 p-5 shadow-2xl backdrop-blur-md animate-in slide-in-from-bottom-5 duration-300"
     >
       <div className="flex items-start gap-4">
-        <div className="hidden sm:flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <div className="hidden sm:flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
           <Cookie className="size-5" />
         </div>
 

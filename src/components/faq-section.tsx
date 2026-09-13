@@ -4,7 +4,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { HelpCircle, Sparkles, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { HelpCircle, ShieldCheck } from "lucide-react";
 
 export function FaqSection({ className = "" }: { className?: string }) {
   const faqs = [
@@ -39,39 +39,39 @@ export function FaqSection({ className = "" }: { className?: string }) {
   ];
 
   return (
-    <section aria-labelledby="faq-heading" className={`py-12 ${className}`}>
+    <section aria-labelledby="faq-heading" className={`py-20 sm:py-24 ${className}`}>
       <div className="mx-auto max-w-4xl px-4 sm:px-6">
-        <div className="text-center mb-8">
-          <div className="inline-flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary mb-3 ring-1 ring-primary/20">
+        <div className="text-center mb-10">
+          <div className="inline-flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary mb-3.5 ring-1 ring-primary/20">
             <HelpCircle className="size-5" />
           </div>
           <h2
             id="faq-heading"
-            className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground"
+            className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight hero-gradient-text"
           >
             Frequently Asked Questions
           </h2>
-          <p className="mt-2 text-sm text-muted-foreground max-w-lg mx-auto">
+          <p className="mt-2.5 text-xs sm:text-sm text-muted-foreground max-w-lg mx-auto leading-relaxed">
             Everything you need to know about our ATS matching engine, ghost keyword infiltration,
             and document exports.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-xs">
-          <Accordion type="single" collapsible className="w-full space-y-2">
+        <div className="rounded-2xl border border-border bg-card p-5 sm:p-7 shadow-xs">
+          <Accordion type="single" collapsible className="w-full space-y-2.5">
             {faqs.map((faq, index) => (
               <AccordionItem
                 key={index}
                 value={`item-${index}`}
-                className="border border-border/60 rounded-xl px-4 py-1 data-[state=open]:bg-muted/30 transition-colors"
+                className="border border-border/60 rounded-xl px-4 py-1 data-[state=open]:bg-muted/40 transition-colors"
               >
-                <AccordionTrigger className="text-left font-semibold text-sm sm:text-base hover:no-underline py-3">
+                <AccordionTrigger className="text-left font-semibold text-sm sm:text-base hover:no-underline py-3.5 cursor-pointer">
                   <span className="flex items-center gap-2.5">
-                    <span className="size-2 rounded-full bg-primary shrink-0" />
+                    <span className="size-1.5 rounded-full bg-primary shrink-0" />
                     {faq.q}
                   </span>
                 </AccordionTrigger>
-                <AccordionContent className="text-xs sm:text-sm text-muted-foreground leading-relaxed pl-5 pb-3">
+                <AccordionContent className="text-xs sm:text-sm text-muted-foreground leading-relaxed pl-4 pb-3.5">
                   {faq.a}
                 </AccordionContent>
               </AccordionItem>
@@ -80,7 +80,7 @@ export function FaqSection({ className = "" }: { className?: string }) {
         </div>
 
         {/* Guarantee Banner */}
-        <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+        <div className="mt-8 flex items-center justify-center gap-2 text-xs text-muted-foreground">
           <ShieldCheck className="size-4 text-emerald-500" />
           <span>Have more questions? Reach our 24/7 technical team at support@cvfitt.ai</span>
         </div>

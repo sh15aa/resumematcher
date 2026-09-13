@@ -17,7 +17,7 @@ export function CVFittLogo({
     <div className={`inline-flex items-center gap-2.5 ${className}`}>
       <div
         style={{ width: size, height: size }}
-        className="relative flex-shrink-0 rounded-xl overflow-hidden shadow-xs ring-1 ring-primary/30 group transition-transform hover:scale-105"
+        className="relative flex-shrink-0 rounded-xl overflow-hidden shadow-xs ring-1 ring-white/10 group transition-all duration-200 hover:ring-primary/40 hover:scale-105"
       >
         <svg
           viewBox="0 0 64 64"
@@ -25,32 +25,34 @@ export function CVFittLogo({
           height={size}
           className="w-full h-full"
           xmlns="http://www.w3.org/2000/svg"
+          role="img"
+          aria-label="CVFitt — 100% ATS Resume Matcher Logo"
         >
           <defs>
             <linearGradient id="cvfittBg" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#1e3a8a" />
-              <stop offset="45%" stopColor="#2563eb" />
-              <stop offset="100%" stopColor="#0284c7" />
+              <stop offset="0%" stopColor="#121624" />
+              <stop offset="60%" stopColor="#181e33" />
+              <stop offset="100%" stopColor="#252d4a" />
             </linearGradient>
             <linearGradient id="cvfittAccent" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#34d399" />
+              <stop offset="0%" stopColor="#10b981" />
               <stop offset="100%" stopColor="#059669" />
             </linearGradient>
             <linearGradient id="cvfittSparkle" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#fbbf24" />
-              <stop offset="100%" stopColor="#f59e0b" />
+              <stop offset="0%" stopColor="#818cf8" />
+              <stop offset="100%" stopColor="#6366f1" />
             </linearGradient>
             <linearGradient id="cvfittCvBadge" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#38bdf8" />
-              <stop offset="100%" stopColor="#2563eb" />
+              <stop offset="0%" stopColor="#818cf8" />
+              <stop offset="100%" stopColor="#6366f1" />
             </linearGradient>
             <filter id="cvfittGlow" x="-20%" y="-20%" width="140%" height="140%">
               <feDropShadow
                 dx="0"
                 dy="1.5"
                 stdDeviation="1.5"
-                floodColor="#0f172a"
-                floodOpacity="0.3"
+                floodColor="#000000"
+                floodOpacity="0.4"
               />
             </filter>
           </defs>
@@ -67,8 +69,8 @@ export function CVFittLogo({
             rx="14"
             fill="none"
             stroke="#ffffff"
-            strokeOpacity="0.15"
-            strokeWidth="1.2"
+            strokeOpacity="0.12"
+            strokeWidth="1"
           />
 
           {/* Main CV Sheet with folded corner */}
@@ -98,7 +100,7 @@ export function CVFittLogo({
             </text>
 
             {/* Content bars */}
-            <rect x="18" y="23" width="26" height="2" rx="1" fill="#3b82f6" />
+            <rect x="18" y="23" width="26" height="2" rx="1" fill="#6366f1" />
             <rect x="18" y="27.5" width="26" height="2" rx="1" fill="#94a3b8" />
             <rect x="18" y="32" width="19" height="2" rx="1" fill="#cbd5e1" />
             <rect x="18" y="36.5" width="22" height="2" rx="1" fill="#cbd5e1" />
@@ -135,8 +137,8 @@ export function CVFittLogo({
       </div>
 
       {showText && (
-        <span className={`tracking-tight text-foreground ${textSize}`}>
-          CV<span className="text-primary font-black">Fitt</span>
+        <span className={`tracking-tight text-foreground font-semibold ${textSize}`}>
+          CV<span className="text-primary font-black ml-0.5">Fitt</span>
         </span>
       )}
     </div>

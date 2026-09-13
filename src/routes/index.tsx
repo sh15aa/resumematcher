@@ -35,9 +35,11 @@ import {
   ExternalLink,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ResumeMatcherLogo } from "@/components/ui/logo";
+import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -284,6 +286,7 @@ function Index() {
   const [coverLetter, setCoverLetter] = useState("");
   const [coverBusy, setCoverBusy] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [historyOpenMobile, setHistoryOpenMobile] = useState(false);
   const [entryId, setEntryId] = useState<string | null>(null);
   const [tab, setTab] = useState("resume");
   const [wizardStep, setWizardStep] = useState<1 | 2 | 3 | 4 | 5>(1);
@@ -878,8 +881,16 @@ function Index() {
   }
 
   return (
-    <main className="min-h-screen bg-background text-foreground flex flex-col justify-between antialiased w-full max-w-full overflow-x-hidden">
+    <div className="min-h-screen bg-background text-foreground flex flex-col justify-between antialiased w-full max-w-full overflow-x-hidden">
       <Toaster position="top-right" />
+
+      {/* Accessible Skip Navigation Link (WCAG 2.1 AA) */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2.5 focus:bg-primary focus:text-primary-foreground focus:rounded-xl focus:shadow-xl focus:ring-2 focus:ring-primary-foreground font-semibold text-xs transition-all"
+      >
+        Skip to main content
+      </a>
 
       {/* Supabase Auth Modal */}
       <AuthModal
@@ -913,28 +924,28 @@ function Index() {
         onDownloadLatex={handleDownloadLatex}
       />
 
-      <div className="w-full max-w-full overflow-x-hidden">
-        {/* Modern Minimal Header */}
-        <header className="border-b border-border/70 bg-card/85 backdrop-blur-md sticky top-0 z-40 w-full overflow-x-hidden">
+      {/* Modern Minimal Header */}
+      <header className="border-b border-border bg-[#090A0F]/75 backdrop-blur-md sticky top-0 z-40 w-full overflow-x-hidden">
           <div className="w-full max-w-[1740px] mx-auto flex items-center justify-between px-3 sm:px-6 lg:px-8 xl:px-12 h-14">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <ResumeMatcherLogo size={32} />
-              <span className="hidden sm:inline-flex rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary border border-primary/15">
+              <span className="hidden sm:inline-flex rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary border border-primary/20">
                 32 Templates (Overleaf + FAANG)
               </span>
             </div>
 
             <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
               {/* Workspace Layout Toggle */}
-              <div className="hidden md:inline-flex items-center rounded-lg border border-border/70 bg-muted/40 p-0.5">
+              <div className="hidden md:inline-flex items-center rounded-xl border border-border bg-[#121624] p-0.5">
                 <button
                   type="button"
                   onClick={() => setWorkspaceLayout("split")}
-                  className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
+                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-all cursor-pointer ${
                     workspaceLayout === "split"
                       ? "bg-card text-foreground shadow-xs font-semibold"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
+                  aria-label="Switch to split workspace layout"
                   title="Split View"
                 >
                   <Columns className="size-3.5" /> Split
@@ -942,11 +953,12 @@ function Index() {
                 <button
                   type="button"
                   onClick={() => setWorkspaceLayout("full")}
-                  className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
+                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-all cursor-pointer ${
                     workspaceLayout === "full"
                       ? "bg-card text-foreground shadow-xs font-semibold"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
+                  aria-label="Switch to full-width editor layout"
                   title="Full Width Editor"
                 >
                   <Maximize className="size-3.5" /> Full Width
@@ -956,13 +968,13 @@ function Index() {
               {/* User Account / Auth State */}
               {user ? (
                 <div className="flex items-center gap-1.5 sm:gap-2">
-                  <div className="flex items-center gap-1.5 rounded-full border border-border/80 bg-muted/40 py-1 px-2 text-xs">
+                  <div className="flex items-center gap-1.5 rounded-full border border-border bg-muted/50 py-1 px-2.5 text-xs">
                     <span className="size-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
                     <span className="font-medium text-foreground max-w-[90px] sm:max-w-[130px] truncate">
                       {user.email}
                     </span>
                     {isSubscribed && (
-                      <span className="rounded bg-amber-500/10 px-1.5 py-0.2 text-[10px] font-bold text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                      <span className="rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary border border-primary/25">
                         PRO
                       </span>
                     )}
@@ -982,11 +994,11 @@ function Index() {
               ) : (
                 <div className="flex items-center gap-1 sm:gap-2">
                   {isSubscribed ? (
-                    <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-1 px-2 sm:px-2.5 gap-1 shadow-xs">
+                    <span className="inline-flex items-center rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-semibold text-xs py-1 px-2.5 gap-1.5 shadow-xs">
                       <Crown className="size-3.5 fill-current" />{" "}
                       <span className="hidden sm:inline">Pro Active</span>
                       <span className="sm:hidden">Pro</span>
-                    </Badge>
+                    </span>
                   ) : (
                     <>
                       <Button
@@ -998,9 +1010,9 @@ function Index() {
                           );
                           setSubModalOpen(true);
                         }}
-                        className="h-8 text-xs font-semibold px-2.5 sm:px-3 gap-1 shadow-xs"
+                        className="h-8 text-xs font-semibold px-2.5 sm:px-3 gap-1.5 shadow-xs"
                       >
-                        <Crown className="size-3.5 text-amber-300" />{" "}
+                        <Crown className="size-3.5 text-primary-foreground" />{" "}
                         <span className="hidden sm:inline">Upgrade to </span>Pro
                       </Button>
                       <button
@@ -1009,7 +1021,7 @@ function Index() {
                           setAuthModalMode("sign_in");
                           setAuthModalOpen(true);
                         }}
-                        className="text-xs text-muted-foreground hover:text-foreground font-medium px-1.5 sm:px-2 py-1 transition-colors"
+                        className="text-xs text-muted-foreground hover:text-foreground font-medium px-1.5 sm:px-2 py-1 transition-colors cursor-pointer"
                       >
                         Sign In
                       </button>
@@ -1022,7 +1034,7 @@ function Index() {
                 variant="outline"
                 size="sm"
                 onClick={handleLoadAllDemo}
-                className="h-8 border-border/70 hover:bg-accent text-xs font-medium px-2 sm:px-2.5"
+                className="h-8 border-border hover:bg-accent text-xs font-medium px-2 sm:px-2.5"
               >
                 <Sparkles className="size-3.5 text-primary sm:mr-1" />{" "}
                 <span className="hidden sm:inline">Demo</span>
@@ -1035,7 +1047,7 @@ function Index() {
                 className="h-8 text-xs font-medium px-2 sm:px-2.5"
               >
                 <Link to="/profile">
-                  <UserRound className="size-3.5 sm:mr-1" />{" "}
+                  <UserRound className="size-3.5 sm:mr-1 text-primary" />{" "}
                   <span className="hidden sm:inline">Profile</span>
                 </Link>
               </Button>
@@ -1043,42 +1055,43 @@ function Index() {
           </div>
         </header>
 
-        {/* Wide Full-Width Fluid Container (No Wasted Empty Margins on Laptops) */}
-        <div className="w-full max-w-[1740px] mx-auto px-3 sm:px-6 lg:px-8 xl:px-12 pt-4 sm:pt-6 overflow-x-hidden">
+        {/* Wide Full-Width Fluid Container */}
+        <main id="main-content" className="w-full max-w-[1740px] mx-auto px-3 sm:px-6 lg:px-8 xl:px-12 pt-6 sm:pt-8 overflow-x-hidden">
           {/* Clear CTA & Trust Hero Banner */}
-          <div className="mb-6 rounded-2xl border border-primary/25 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-4 sm:p-6 shadow-xs overflow-hidden">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              <div className="space-y-1.5">
+          <section aria-labelledby="hero-title" className="mb-8 rounded-2xl border border-border bg-card/75 p-5 sm:p-7 shadow-xs overflow-hidden">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+              <div className="space-y-2 max-w-3xl">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-400">
                     <ShieldCheck className="size-3.5" /> 100% ATS SHORTLIST GUARANTEE
                   </span>
-                  <span className="text-xs text-muted-foreground hidden sm:inline">•</span>
-                  <span className="text-xs font-semibold text-foreground">
+                  <span className="text-xs text-slate-700 hidden sm:inline">•</span>
+                  <span className="text-xs font-medium text-slate-300">
                     32 FAANG &amp; Overleaf Templates
                   </span>
-                  <span className="text-xs text-muted-foreground hidden sm:inline">•</span>
+                  <span className="text-xs text-slate-700 hidden sm:inline">•</span>
                   <span className="text-xs text-muted-foreground">
                     Overleaf LaTeX (.tex), Word &amp; Vector PDF
                   </span>
                 </div>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-foreground">
+                <h1 id="hero-title" className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight hero-gradient-text">
                   Match Your Resume &amp; Infiltrate Automated ATS Filters
                 </h1>
                 <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl leading-relaxed">
                   Extract exact technical keywords from any job posting, weave them into executive
                   accomplishment bullets, and activate the{" "}
-                  <strong className="text-foreground">ATS Stealth Cloak™</strong> (white-font
+                  <strong className="text-slate-200 font-semibold">ATS Stealth Cloak™</strong> (white-font
                   keyword injection) to guarantee a 100% bot match.
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+              <div className="flex flex-wrap items-center gap-3 shrink-0">
                 <Button
                   onClick={handleLoadAllDemo}
                   variant="outline"
                   size="sm"
-                  className="h-9 text-xs font-semibold px-3"
+                  aria-label="Load sample job posting and candidate profile"
+                  className="h-9 text-xs font-semibold px-3.5"
                 >
                   <Sparkles className="size-3.5 mr-1.5 text-primary" /> Load Sample Job &amp;
                   Candidate
@@ -1092,13 +1105,14 @@ function Index() {
                     if (ready) tailor();
                   }}
                   size="sm"
-                  className="h-9 text-xs font-bold px-4 shadow-sm bg-primary hover:bg-primary/90 text-primary-foreground"
+                  aria-label="Start ATS resume optimization process"
+                  className="h-9 text-xs font-semibold px-4 shadow-sm bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   Start ATS Optimization <ArrowRight className="size-3.5 ml-1.5" />
                 </Button>
               </div>
             </div>
-          </div>
+          </section>
 
           {/* Dynamic Grid: Fills the entire laptop display effortlessly */}
           <div
@@ -1110,6 +1124,7 @@ function Index() {
           >
             {/* Left Workspace Column: Inputs & Job Target */}
             <section
+              aria-labelledby="wizard-heading"
               className={
                 workspaceLayout === "split"
                   ? "lg:col-span-5 xl:col-span-5 2xl:col-span-5 space-y-6"
@@ -1125,7 +1140,7 @@ function Index() {
                       <span className="flex size-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                         {inputMode === "form" ? wizardStep : "✎"}
                       </span>
-                      <h2 className="text-sm sm:text-base font-bold text-foreground">
+                      <h2 id="wizard-heading" className="text-sm sm:text-base font-bold text-foreground">
                         {inputMode === "form" ? (
                           <>
                             {wizardStep === 1 && "Step 1: Target Role & Job Posting"}
@@ -1163,7 +1178,8 @@ function Index() {
                     <button
                       type="button"
                       onClick={() => setInputMode("form")}
-                      className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
+                      aria-label="Switch to guided wizard input mode"
+                      className={`rounded-md px-2.5 py-1.5 min-h-[44px] sm:min-h-0 text-xs font-semibold transition-all flex items-center ${
                         inputMode === "form"
                           ? "bg-primary text-primary-foreground shadow-2xs"
                           : "bg-muted text-muted-foreground hover:bg-accent"
@@ -1174,7 +1190,8 @@ function Index() {
                     <button
                       type="button"
                       onClick={() => setInputMode("paste")}
-                      className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
+                      aria-label="Switch to paste or PDF upload input mode"
+                      className={`rounded-md px-2.5 py-1.5 min-h-[44px] sm:min-h-0 text-xs font-semibold transition-all flex items-center ${
                         inputMode === "paste"
                           ? "bg-primary text-primary-foreground shadow-2xs"
                           : "bg-muted text-muted-foreground hover:bg-accent"
@@ -1187,6 +1204,7 @@ function Index() {
                       variant="ghost"
                       size="sm"
                       onClick={handleLoadAllDemo}
+                      aria-label="Load demo resume and job data"
                       className="h-7 px-2 text-xs text-primary hover:bg-primary/10 font-semibold"
                     >
                       <Sparkles className="size-3 mr-1" /> Demo Data
@@ -1210,7 +1228,8 @@ function Index() {
                             key={item.step}
                             type="button"
                             onClick={() => setWizardStep(item.step as any)}
-                            className={`rounded-md py-1 px-1 text-center truncate transition-all ${
+                            aria-label={item.fullLabel}
+                            className={`rounded-md py-2.5 sm:py-1 px-1 min-h-[44px] sm:min-h-0 flex items-center justify-center text-center truncate transition-all ${
                               wizardStep === item.step
                                 ? "bg-primary text-primary-foreground font-bold shadow-2xs"
                                 : wizardStep > item.step
@@ -1966,7 +1985,7 @@ function Index() {
                             </>
                           ) : (
                             <>
-                              <Sparkles className="mr-2 size-5 text-amber-300" /> Generate 100% ATS
+                              <Sparkles className="mr-2 size-5" /> Generate 100% ATS
                               Matched Resume <ArrowRight className="ml-1.5 size-5" />
                             </>
                           )}
@@ -2055,7 +2074,7 @@ function Index() {
                         </>
                       ) : (
                         <>
-                          <Sparkles className="mr-2 size-4 text-amber-300" /> Generate &amp; Match
+                          <Sparkles className="mr-2 size-4" /> Generate &amp; Match
                           Resume <ArrowRight className="ml-1.5 size-4" />
                         </>
                       )}
@@ -2075,29 +2094,66 @@ function Index() {
                 }}
               />
 
-              {/* Saved Generations History */}
+              {/* Saved Generations History - Collapsible Drawer on Mobile */}
               {history.length > 0 && (
-                <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-xs">
-                  <div className="flex items-center justify-between border-b border-border pb-2.5">
-                    <h3 className="inline-flex items-center gap-1.5 text-xs font-bold text-foreground">
+                <aside
+                  aria-labelledby="history-heading"
+                  className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-xs"
+                >
+                  <div
+                    className="flex items-center justify-between border-b border-border pb-2.5 cursor-pointer sm:cursor-default select-none"
+                    onClick={() => setHistoryOpenMobile((prev) => !prev)}
+                  >
+                    <h3
+                      id="history-heading"
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-foreground"
+                    >
                       <HistoryIcon className="size-3.5 text-muted-foreground" /> Saved Generations (
                       {history.length})
                     </h3>
-                    <button
-                      type="button"
-                      onClick={() => setHistory(clearHistory())}
-                      className="text-xs text-muted-foreground hover:text-destructive"
-                    >
-                      Clear all
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setHistory(clearHistory());
+                        }}
+                        aria-label="Clear all saved generations"
+                        className="text-xs text-muted-foreground hover:text-destructive p-1"
+                      >
+                        Clear all
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setHistoryOpenMobile((prev) => !prev)}
+                        className="sm:hidden p-1 text-muted-foreground hover:text-foreground"
+                        aria-label={
+                          historyOpenMobile ? "Collapse saved generations" : "Expand saved generations"
+                        }
+                        aria-expanded={historyOpenMobile}
+                      >
+                        <ChevronDown
+                          className={cn(
+                            "size-4 transition-transform duration-200",
+                            historyOpenMobile && "rotate-180",
+                          )}
+                        />
+                      </button>
+                    </div>
                   </div>
-                  <ul className="mt-2 divide-y divide-border/60">
+                  <ul
+                    className={cn(
+                      "mt-2 divide-y divide-border/60 transition-all",
+                      !historyOpenMobile && "hidden sm:block",
+                    )}
+                  >
                     {history.map((entry) => (
                       <li key={entry.id} className="flex items-center justify-between gap-3 py-2">
                         <button
                           type="button"
                           onClick={() => restore(entry)}
-                          className="min-w-0 flex-1 text-left group"
+                          aria-label={`Restore saved resume: ${entry.title}`}
+                          className="min-w-0 flex-1 text-left group min-h-[44px] sm:min-h-0 flex flex-col justify-center"
                         >
                           <p className="truncate text-xs font-bold text-foreground group-hover:text-primary">
                             {entry.title}
@@ -2112,22 +2168,23 @@ function Index() {
                         </button>
                         <button
                           type="button"
-                          aria-label="Delete entry"
+                          aria-label={`Delete entry ${entry.title}`}
                           onClick={() => setHistory(deleteEntry(entry.id))}
-                          className="text-muted-foreground hover:text-destructive p-1"
+                          className="text-muted-foreground hover:text-destructive p-2 sm:p-1 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center rounded-lg"
                         >
                           <Trash2 className="size-3.5" />
                         </button>
                       </li>
                     ))}
                   </ul>
-                </div>
+                </aside>
               )}
             </section>
 
             {/* Right Workspace Column: Tailored Resume & 32 Templates Showcase */}
             <section
               ref={outputRef}
+              aria-labelledby="output-heading"
               className={
                 workspaceLayout === "split"
                   ? "lg:col-span-7 xl:col-span-7 2xl:col-span-7 space-y-6"
@@ -2142,21 +2199,21 @@ function Index() {
 
               {/* Empty state when no resume generated yet: Clean Minimalist View with Banner Ad */}
               {!text && !error && (
-                <div className="flex h-full min-h-[460px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border/80 bg-card/60 p-8 text-center shadow-xs">
-                  <div className="flex size-16 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-inner">
-                    <Award className="size-9" />
+                <div className="flex h-full min-h-[460px] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center shadow-xs">
+                  <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/20 shadow-inner mb-4">
+                    <Award className="size-7" />
                   </div>
-                  <h3 className="mt-4 text-xl sm:text-2xl font-bold text-foreground">
+                  <h2 id="output-heading" className="mt-2 text-xl sm:text-2xl font-bold hero-gradient-text">
                     Your Tailored Executive Resume Lands Here
-                  </h3>
+                  </h2>
                   <p className="mt-2 max-w-md text-xs sm:text-sm text-muted-foreground leading-relaxed">
                     Fill in candidate details on the left, paste a target job posting, and click
                     Generate. The AI scores keywords, matches competencies, and renders 32 templates
                     with full Overleaf LaTeX (.tex) support.
                   </p>
-                  <div className="mt-5 flex flex-wrap gap-2.5 justify-center">
-                    <Button onClick={handleLoadAllDemo} size="sm" className="font-medium text-xs">
-                      <Sparkles className="mr-1.5 size-3.5 text-amber-300" /> Try with Demo Data
+                  <div className="mt-6 flex flex-wrap gap-2.5 justify-center">
+                    <Button onClick={handleLoadAllDemo} size="sm" className="font-semibold text-xs shadow-xs">
+                      <Sparkles className="mr-1.5 size-3.5 text-primary" /> Try with Demo Data
                     </Button>
                   </div>
                 </div>
@@ -2166,7 +2223,7 @@ function Index() {
                 <>
                   {/* ATS Match Score Header Card */}
                   {result && (
-                    <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-xs">
+                    <div className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-xs">
                       <div className="flex items-baseline justify-between gap-4">
                         <div>
                           <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -2185,19 +2242,19 @@ function Index() {
                       </div>
                       <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-muted">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-primary to-blue-600 transition-all duration-700"
+                          className="h-full rounded-full bg-gradient-to-r from-primary via-indigo-400 to-emerald-400 transition-all duration-700"
                           style={{ width: `${result.match_score}%` }}
                         />
                       </div>
                       {/* Interactive ATS Fit Score Breakdown */}
                       <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-border/60 text-center">
-                        <div className="rounded-lg bg-muted/40 p-2 border border-border/50">
+                        <div className="rounded-xl bg-muted/40 p-2 border border-border/50">
                           <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
                             ATS Infiltration
                           </p>
-                          <p className="text-sm font-extrabold text-emerald-500">100% Guaranteed</p>
+                          <p className="text-sm font-extrabold text-emerald-400">100% Guaranteed</p>
                         </div>
-                        <div className="rounded-lg bg-muted/40 p-2 border border-border/50">
+                        <div className="rounded-xl bg-muted/40 p-2 border border-border/50">
                           <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
                             Core Match
                           </p>
@@ -2205,17 +2262,17 @@ function Index() {
                             {Math.min(100, Math.max(85, result.match_score))}%
                           </p>
                         </div>
-                        <div className="rounded-lg bg-muted/40 p-2 border border-border/50">
+                        <div className="rounded-xl bg-muted/40 p-2 border border-border/50">
                           <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
                             Vector Layout
                           </p>
-                          <p className="text-sm font-extrabold text-blue-500">100% Pass</p>
+                          <p className="text-sm font-extrabold text-blue-400">100% Pass</p>
                         </div>
-                        <div className="rounded-lg bg-muted/40 p-2 border border-border/50">
+                        <div className="rounded-xl bg-muted/40 p-2 border border-border/50">
                           <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
                             Action Impact
                           </p>
-                          <p className="text-sm font-extrabold text-amber-500">96% FAANG</p>
+                          <p className="text-sm font-extrabold text-indigo-400">96% FAANG</p>
                         </div>
                       </div>
 
@@ -2253,7 +2310,7 @@ function Index() {
                       <div className="mt-3.5 border-t border-border/60 pt-3">
                         <div className="flex items-center justify-between mb-1.5">
                           <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                            <Sparkles className="size-3 text-amber-500" /> FAANG Executive Action
+                            <Sparkles className="size-3 text-primary" /> FAANG Executive Action
                             Verbs:
                           </p>
                           <span className="text-[10px] text-muted-foreground">Click to copy</span>
@@ -2295,7 +2352,7 @@ function Index() {
                           onClick={() => handleDownloadWord(template)}
                           className="h-8 border-border text-foreground hover:bg-accent font-bold text-xs"
                         >
-                          <FileDown className="size-3.5 mr-1 text-blue-600" /> Word (.doc) Free
+                          <FileDown className="size-3.5 mr-1 text-primary" /> Word (.doc) Free
                         </Button>
                         <Button
                           variant="outline"
@@ -2306,21 +2363,21 @@ function Index() {
                               outputRef.current.scrollIntoView({ behavior: "smooth" });
                             }
                           }}
-                          className="h-8 border-emerald-600/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10 font-bold text-xs"
+                          className="h-8 border-emerald-600/30 text-emerald-400 hover:bg-emerald-500/10 font-bold text-xs"
                           title="View & Export Overleaf FAANGPath LaTeX (.tex) format"
                         >
-                          <FileCode className="size-3.5 mr-1 text-emerald-600" /> Overleaf LaTeX
+                          <FileCode className="size-3.5 mr-1 text-emerald-400" /> Overleaf LaTeX
                           (.tex)
                         </Button>
                         <Button
                           size="sm"
                           onClick={() => handleDownloadPdf(template)}
                           disabled={streaming}
-                          className="h-8 bg-primary hover:bg-primary/90 font-bold text-xs text-primary-foreground"
+                          className="h-8 bg-primary hover:bg-primary/90 font-bold text-xs text-primary-foreground shadow-xs"
                         >
                           <Download className="size-3.5 mr-1" />
                           {isSubscribed ? "Download PDF" : "Download PDF (Pro)"}
-                          {!isSubscribed && <Lock className="size-3 ml-1 text-amber-300" />}
+                          {!isSubscribed && <Lock className="size-3 ml-1 text-primary-foreground" />}
                         </Button>
                         <Button
                           variant="ghost"
@@ -2335,7 +2392,7 @@ function Index() {
                   )}
 
                   {/* ⚡ 100% ATS SHORTLIST SECRET WEAPON: GHOST KEYWORDS (WHITE-FONT INJECTION) */}
-                  <div className="rounded-2xl border-2 border-emerald-500/35 bg-emerald-500/5 p-4 sm:p-5 shadow-xs space-y-3">
+                  <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/15 p-4 sm:p-5 shadow-xs space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-start gap-3">
                         <div className="size-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5">
@@ -2419,38 +2476,38 @@ function Index() {
 
                   {/* Tabs: Resume, 31 Templates, Gaps, Cover Letter */}
                   <Tabs value={tab} onValueChange={setTab} className="w-full">
-                    <TabsList className="w-full grid grid-cols-5 h-11 bg-muted/80 p-1 rounded-lg">
+                    <TabsList className="w-full flex sm:grid sm:grid-cols-5 overflow-x-auto scrollbar-none h-12 sm:h-11 bg-card/80 border border-border/80 p-1 rounded-xl">
                       <TabsTrigger
                         value="resume"
-                        className="text-xs font-bold px-1 sm:px-2.5 truncate"
+                        className="text-xs font-bold px-2 sm:px-2.5 truncate shrink-0 sm:shrink min-w-[76px] sm:min-w-0"
                       >
                         <span className="hidden sm:inline">🎯 Live Resume</span>
                         <span className="sm:hidden">🎯 Resume</span>
                       </TabsTrigger>
                       <TabsTrigger
                         value="latex"
-                        className="text-xs font-bold px-1 sm:px-2.5 truncate"
+                        className="text-xs font-bold px-2 sm:px-2.5 truncate shrink-0 sm:shrink min-w-[76px] sm:min-w-0"
                       >
                         <span className="hidden sm:inline">📜 LaTeX (.tex)</span>
                         <span className="sm:hidden">📜 LaTeX</span>
                       </TabsTrigger>
                       <TabsTrigger
                         value="templates"
-                        className="text-xs font-bold px-1 sm:px-2.5 truncate"
+                        className="text-xs font-bold px-2 sm:px-2.5 truncate shrink-0 sm:shrink min-w-[76px] sm:min-w-0"
                       >
                         <span className="hidden sm:inline">🎨 32 Templates</span>
                         <span className="sm:hidden">🎨 Templates</span>
                       </TabsTrigger>
                       <TabsTrigger
                         value="original"
-                        className="text-xs font-bold px-1 sm:px-2.5 truncate"
+                        className="text-xs font-bold px-2 sm:px-2.5 truncate shrink-0 sm:shrink min-w-[76px] sm:min-w-0"
                       >
                         <span className="hidden sm:inline">🔍 ATS Gaps</span>
                         <span className="sm:hidden">🔍 Gaps</span>
                       </TabsTrigger>
                       <TabsTrigger
                         value="cover"
-                        className="text-xs font-bold px-1 sm:px-2.5 truncate"
+                        className="text-xs font-bold px-2 sm:px-2.5 truncate shrink-0 sm:shrink min-w-[76px] sm:min-w-0"
                       >
                         <span className="hidden sm:inline">✉️ Cover Letter</span>
                         <span className="sm:hidden">✉️ Letter</span>
@@ -2459,16 +2516,21 @@ function Index() {
 
                     {/* TAB 1: TAILORED RESUME PREVIEW WITH ZOOM CONTROLS */}
                     <TabsContent value="resume" className="mt-4 space-y-4">
-                      <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
+                      <div className="rounded-2xl border border-border bg-card shadow-xs overflow-hidden">
                         {/* Sub-header Toolbar */}
-                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/40 px-3 sm:px-5 py-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-card/70 px-3 sm:px-5 py-2.5 backdrop-blur-xs">
                           <div className="flex flex-wrap items-center gap-2 min-w-0">
                             {/* Direct Template Selector Dropdown */}
-                            <div className="flex items-center gap-1.5 bg-background/90 border border-border rounded-lg px-2.5 py-1 shadow-2xs">
-                              <span className="text-[11px] font-bold text-muted-foreground whitespace-nowrap">
+                            <div className="flex items-center gap-1.5 bg-background/90 border border-border rounded-xl px-2.5 py-1 shadow-2xs">
+                              <label
+                                htmlFor="resume-template-select"
+                                className="text-[11px] font-bold text-muted-foreground whitespace-nowrap"
+                              >
                                 Template:
-                              </span>
+                              </label>
                               <select
+                                id="resume-template-select"
+                                aria-label="Choose resume template"
                                 value={template.id}
                                 onChange={(e) => {
                                   const selected = TEMPLATES.find((t) => t.id === e.target.value);
@@ -2503,7 +2565,7 @@ function Index() {
 
                             {/* Multi-Page Navigation Controls when totalPages > 1 */}
                             {previewMode === "visual" && totalPages > 1 && (
-                              <div className="inline-flex items-center rounded-lg border border-primary/30 bg-primary/5 px-2 py-1 gap-1.5 shadow-2xs">
+                              <div className="inline-flex items-center rounded-xl border border-primary/30 bg-primary/5 px-2.5 py-1 gap-1.5 shadow-2xs">
                                 <span className="text-[11px] font-bold text-primary whitespace-nowrap">
                                   Page {currentPage} of {totalPages}
                                 </span>
@@ -2514,6 +2576,7 @@ function Index() {
                                     disabled={currentPage <= 1}
                                     className="p-0.5 rounded hover:bg-primary/20 text-primary disabled:opacity-30 disabled:hover:bg-transparent"
                                     title="Previous Page"
+                                    aria-label="Previous resume page"
                                   >
                                     <ChevronLeft className="size-3.5" />
                                   </button>
@@ -2523,6 +2586,7 @@ function Index() {
                                     disabled={currentPage >= totalPages}
                                     className="p-0.5 rounded hover:bg-primary/20 text-primary disabled:opacity-30 disabled:hover:bg-transparent"
                                     title="Next Page"
+                                    aria-label="Next resume page"
                                   >
                                     <ChevronRight className="size-3.5" />
                                   </button>
@@ -2533,11 +2597,12 @@ function Index() {
 
                           <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
                             {/* Toggle Preview Mode */}
-                            <div className="mr-0.5 sm:mr-1 inline-flex rounded-md border border-border bg-background p-0.5">
+                            <div className="mr-0.5 sm:mr-1 inline-flex rounded-lg border border-border bg-card/80 p-0.5">
                               <button
                                 type="button"
                                 onClick={() => setPreviewMode("visual")}
-                                className={`flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold transition-all ${
+                                aria-label="Visual resume preview mode"
+                                className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold transition-all ${
                                   previewMode === "visual"
                                     ? "bg-primary text-primary-foreground shadow-2xs"
                                     : "text-muted-foreground hover:text-foreground"
@@ -2549,7 +2614,8 @@ function Index() {
                               <button
                                 type="button"
                                 onClick={() => setPreviewMode("text")}
-                                className={`flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold transition-all ${
+                                aria-label="Plain text resume preview mode"
+                                className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold transition-all ${
                                   previewMode === "text"
                                     ? "bg-primary text-primary-foreground shadow-2xs"
                                     : "text-muted-foreground hover:text-foreground"
@@ -2562,13 +2628,14 @@ function Index() {
 
                             {/* Zoom Controls for Visual Preview */}
                             {previewMode === "visual" && (
-                              <div className="inline-flex items-center rounded-md border border-border bg-background p-0.5 gap-0.5">
+                              <div className="inline-flex items-center rounded-lg border border-border bg-card/80 p-0.5 gap-0.5">
                                 <Button
                                   variant={zoomMode === "fit" ? "default" : "ghost"}
                                   size="sm"
                                   className="h-7 px-1.5 sm:px-2 text-[10px] font-bold"
                                   onClick={() => setZoomMode("fit")}
                                   title="Fit full page to screen (100% visible)"
+                                  aria-label="Fit resume to screen width"
                                 >
                                   Fit
                                 </Button>
@@ -2585,6 +2652,7 @@ function Index() {
                                     setPreviewZoom(100);
                                   }}
                                   title="100% scale"
+                                  aria-label="Set resume zoom to 100 percent"
                                 >
                                   100%
                                 </Button>
@@ -2602,10 +2670,14 @@ function Index() {
                                     );
                                   }}
                                   title="Zoom Out"
+                                  aria-label="Zoom out resume preview"
                                 >
                                   <ZoomOut className="size-3" />
                                 </Button>
-                                <span className="text-[10px] sm:text-[11px] font-bold px-1 min-w-[32px] sm:min-w-[36px] text-center">
+                                <span
+                                  className="text-[10px] sm:text-[11px] font-bold px-1 min-w-[32px] sm:min-w-[36px] text-center"
+                                  aria-live="polite"
+                                >
                                   {Math.round(previewScale * 100)}%
                                 </span>
                                 <Button
@@ -2622,6 +2694,7 @@ function Index() {
                                     );
                                   }}
                                   title="Zoom In"
+                                  aria-label="Zoom in resume preview"
                                 >
                                   <ZoomIn className="size-3" />
                                 </Button>
@@ -2631,6 +2704,7 @@ function Index() {
                                   className="size-7"
                                   onClick={() => setZoomTemplate(template)}
                                   title="Open Fullscreen Zoom Modal"
+                                  aria-label="Open fullscreen resume view"
                                 >
                                   <Maximize2 className="size-3" />
                                 </Button>
@@ -2656,7 +2730,7 @@ function Index() {
                               size="sm"
                               onClick={() => handleDownloadWord(template)}
                               disabled={streaming}
-                              className="h-8 text-xs font-bold text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-900 px-2 sm:px-2.5"
+                              className="h-8 text-xs font-bold text-blue-600 dark:text-blue-400 border-blue-500/30 px-2 sm:px-2.5"
                             >
                               <FileDown className="size-3.5 sm:mr-1" />{" "}
                               <span className="hidden sm:inline">Word Free</span>
@@ -2666,7 +2740,7 @@ function Index() {
                               variant="outline"
                               size="sm"
                               onClick={() => setTab("latex")}
-                              className="h-8 text-xs font-bold text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 px-2 sm:px-2.5"
+                              className="h-8 text-xs font-bold text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 px-2 sm:px-2.5"
                               title="View and export Overleaf FAANGPath LaTeX (.tex) format"
                             >
                               <FileCode className="size-3.5 sm:mr-1" />{" "}
@@ -2680,7 +2754,7 @@ function Index() {
                               className="h-8 text-xs font-bold px-2.5 sm:px-3"
                             >
                               <Download className="size-3.5 sm:mr-1" /> PDF
-                              {!isSubscribed && <Lock className="size-3 ml-1 text-amber-300" />}
+                              {!isSubscribed && <Lock className="size-3 ml-1 text-primary-foreground" />}
                             </Button>
                           </div>
                         </div>
@@ -2690,7 +2764,7 @@ function Index() {
                           <div
                             ref={previewCanvasRef}
                             onScroll={handlePreviewScroll}
-                            className="relative bg-slate-100/70 dark:bg-slate-950/70 p-3 sm:p-4 pb-12 sm:pb-16 flex flex-col items-center justify-start overflow-x-hidden overflow-y-auto min-h-[500px] h-[calc(100vh-270px)] max-h-[850px] w-full"
+                            className="relative bg-[#090A0F]/90 p-3 sm:p-4 pb-12 sm:pb-16 flex flex-col items-center justify-start overflow-x-hidden overflow-y-auto min-h-[500px] h-[calc(100vh-270px)] max-h-[850px] w-full"
                             style={{
                               overscrollBehaviorY: "contain",
                               scrollbarWidth: "thin",
@@ -2704,7 +2778,7 @@ function Index() {
                                 position: "relative",
                                 overflow: "hidden",
                               }}
-                              className="mx-auto rounded-lg shadow-xl bg-white transition-[height] duration-150 mb-4 shrink-0"
+                              className="mx-auto rounded-lg shadow-2xl shadow-black/80 bg-white transition-[height] duration-150 mb-4 shrink-0"
                             >
                               <div
                                 style={{
@@ -2801,7 +2875,7 @@ function Index() {
 
                             {/* Minimal bottom pagination indicator for multi-page resumes */}
                             {totalPages > 1 && (
-                              <div className="sticky bottom-4 z-20 flex items-center gap-2 bg-background/90 backdrop-blur-md border border-border px-3 py-1 rounded-full shadow-lg text-xs font-semibold text-foreground">
+                              <div className="sticky bottom-4 z-20 flex items-center gap-2 bg-card/90 backdrop-blur-md border border-border px-3 py-1 rounded-full shadow-lg text-xs font-semibold text-foreground">
                                 <span className="text-[11px] text-muted-foreground">
                                   Page {currentPage} of {totalPages}
                                 </span>
@@ -2836,7 +2910,7 @@ function Index() {
 
                       {/* What changed explanation */}
                       {result && result.changes.length > 0 && (
-                        <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-xs">
+                        <div className="rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-xs">
                           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                             <Check className="size-3.5 text-emerald-500" /> Strategic Optimizations
                             Made
@@ -2858,15 +2932,15 @@ function Index() {
 
                     {/* TAB 2: OVERLEAF FAANGPATH LATEX SOURCE ENGINE (.TEX) */}
                     <TabsContent value="latex" className="mt-4 space-y-4">
-                      <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-xs space-y-4">
+                      <div className="rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-xs space-y-4">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-border/80">
                           <div>
                             <div className="flex flex-wrap items-center gap-2">
                               <h3 className="text-sm sm:text-base font-bold text-foreground flex items-center gap-1.5">
-                                <FileCode className="size-4 text-emerald-600 dark:text-emerald-400" />
+                                <FileCode className="size-4 text-emerald-500" />
                                 Overleaf FAANGPath LaTeX Source Engine
                               </h3>
-                              <Badge className="bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 text-[10px] font-bold py-0.5 px-2">
+                              <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/25 text-[10px] font-bold py-0.5 px-2">
                                 Overleaf.com Ready (pdfLaTeX 11pt)
                               </Badge>
                             </div>
@@ -2894,9 +2968,9 @@ function Index() {
                                     );
                                   }
                                 }}
-                                className="h-8 text-xs font-semibold gap-1.5 border-emerald-600/30 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                                className="h-8 text-xs font-semibold gap-1.5 border-border hover:border-border/80 hover:bg-accent"
                               >
-                                <Sparkles className="size-3.5 text-amber-500" />
+                                <Sparkles className="size-3.5 text-primary" />
                                 Switch to Overleaf FAANG Template
                               </Button>
                             )}
@@ -2918,7 +2992,7 @@ function Index() {
                             <Button
                               size="sm"
                               onClick={handleDownloadLatex}
-                              className="h-8 text-xs font-bold gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                              className="h-8 text-xs font-bold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs"
                             >
                               <Download className="size-3.5" />
                               Download resume.tex
@@ -2928,7 +3002,7 @@ function Index() {
                               href="https://www.overleaf.com/project"
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background hover:bg-accent px-2.5 py-1.5 text-xs font-semibold text-foreground transition-colors"
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card hover:bg-accent px-2.5 py-1.5 text-xs font-semibold text-foreground transition-colors shadow-2xs"
                             >
                               <span>Open Overleaf</span>
                               <ExternalLink className="size-3 text-muted-foreground" />
@@ -2937,26 +3011,26 @@ function Index() {
                         </div>
 
                         {/* Overleaf Code Window */}
-                        <div className="rounded-lg border border-slate-800 bg-slate-950 text-slate-100 font-mono text-xs overflow-hidden shadow-inner">
-                          <div className="flex items-center justify-between px-4 py-2 border-b border-slate-800 bg-slate-900/90 text-[11px] text-slate-400">
+                        <div className="rounded-xl border border-border bg-[#05070B] text-slate-100 font-mono text-xs overflow-hidden shadow-inner">
+                          <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-[#0B0F17] text-[11px] text-muted-foreground">
                             <div className="flex items-center gap-2">
-                              <span className="size-2.5 rounded-full bg-red-500/80 inline-block" />
-                              <span className="size-2.5 rounded-full bg-yellow-500/80 inline-block" />
-                              <span className="size-2.5 rounded-full bg-green-500/80 inline-block" />
+                              <span className="size-2.5 rounded-full bg-rose-500/80 inline-block" />
+                              <span className="size-2.5 rounded-full bg-amber-500/80 inline-block" />
+                              <span className="size-2.5 rounded-full bg-emerald-500/80 inline-block" />
                               <span className="ml-2 font-semibold text-slate-200">main.tex</span>
-                              <span className="text-[10px] text-slate-500">
+                              <span className="text-[10px] text-muted-foreground">
                                 ({generatedLatex ? generatedLatex.split("\n").length : 0} lines ·{" "}
                                 {generatedLatex ? new Blob([generatedLatex]).size : 0} bytes)
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="hidden sm:inline text-slate-400 text-[10px]">
+                              <span className="hidden sm:inline text-muted-foreground text-[10px]">
                                 Document Class: article [letterpaper, 11pt]
                               </span>
                               <button
                                 type="button"
                                 onClick={copyLatex}
-                                className="hover:text-white px-2 py-0.5 rounded bg-slate-800 text-[10px] flex items-center gap-1"
+                                className="hover:text-foreground px-2 py-0.5 rounded bg-muted/60 text-[10px] flex items-center gap-1 text-muted-foreground transition-colors"
                               >
                                 {copiedLatex ? (
                                   <Check className="size-3 text-emerald-400" />
@@ -2968,13 +3042,13 @@ function Index() {
                             </div>
                           </div>
 
-                          <pre className="p-4 sm:p-5 overflow-x-auto max-h-[580px] overflow-y-auto leading-relaxed text-[11.5px] sm:text-xs text-slate-200 selection:bg-primary/40 selection:text-white">
+                          <pre className="p-4 sm:p-5 overflow-x-auto max-h-[580px] overflow-y-auto leading-relaxed text-[11.5px] sm:text-xs text-slate-200 selection:bg-primary/30 selection:text-white font-mono">
                             {generatedLatex ||
                               "% Enter candidate details on the left or generate to inspect LaTeX source..."}
                           </pre>
                         </div>
 
-                        <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3.5 text-xs text-muted-foreground flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div className="rounded-xl border border-emerald-500/20 bg-emerald-950/15 p-4 text-xs text-muted-foreground flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                           <div className="space-y-0.5">
                             <p className="font-semibold text-foreground flex items-center gap-1.5">
                               <Check className="size-3.5 text-emerald-500" /> How to use directly in
@@ -3004,7 +3078,7 @@ function Index() {
 
                     {/* TAB 3: 32 WORLD-CLASS TEMPLATES SHOWCASE */}
                     <TabsContent value="templates" className="mt-4 space-y-4">
-                      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 shadow-xs">
+                      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-xs">
                         <div>
                           <div className="flex items-center gap-2">
                             <h3 className="text-sm font-bold text-foreground">
@@ -3026,10 +3100,10 @@ function Index() {
                           <button
                             type="button"
                             onClick={() => setTemplateFilter("all")}
-                            className={`rounded-md px-2.5 py-1 text-xs font-bold transition-all ${
+                            className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
                               templateFilter === "all"
                                 ? "bg-primary text-primary-foreground shadow-2xs"
-                                : "bg-muted text-muted-foreground hover:bg-accent"
+                                : "bg-muted/70 text-muted-foreground hover:bg-accent hover:text-foreground"
                             }`}
                           >
                             All 32
@@ -3037,10 +3111,10 @@ function Index() {
                           <button
                             type="button"
                             onClick={() => setTemplateFilter("free")}
-                            className={`rounded-md px-2.5 py-1 text-xs font-bold transition-all ${
+                            className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
                               templateFilter === "free"
                                 ? "bg-primary text-primary-foreground shadow-2xs"
-                                : "bg-muted text-muted-foreground hover:bg-accent"
+                                : "bg-muted/70 text-muted-foreground hover:bg-accent hover:text-foreground"
                             }`}
                           >
                             Free (First 6)
@@ -3048,24 +3122,24 @@ function Index() {
                           <button
                             type="button"
                             onClick={() => setTemplateFilter("pro")}
-                            className={`rounded-md px-2.5 py-1 text-xs font-bold transition-all ${
+                            className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
                               templateFilter === "pro"
                                 ? "bg-primary text-primary-foreground shadow-2xs"
-                                : "bg-muted text-muted-foreground hover:bg-accent"
+                                : "bg-muted/70 text-muted-foreground hover:bg-accent hover:text-foreground"
                             }`}
                           >
-                            ⭐ Pro Exclusive (26)
+                            Pro Exclusive (26)
                           </button>
                           <button
                             type="button"
                             onClick={() => setTemplateFilter("award")}
-                            className={`rounded-md px-2.5 py-1 text-xs font-bold transition-all ${
+                            className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
                               templateFilter === "award"
                                 ? "bg-primary text-primary-foreground shadow-2xs"
-                                : "bg-muted text-muted-foreground hover:bg-accent"
+                                : "bg-muted/70 text-muted-foreground hover:bg-accent hover:text-foreground"
                             }`}
                           >
-                            🏆 Award Winners
+                            Award Winners
                           </button>
                         </div>
                       </div>
@@ -3100,8 +3174,8 @@ function Index() {
 
                     {/* TAB 4: COVER LETTER */}
                     <TabsContent value="cover" className="mt-4 space-y-4">
-                      <div className="rounded-xl border border-border bg-card shadow-xs">
-                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3">
+                      <div className="rounded-2xl border border-border bg-card shadow-xs overflow-hidden">
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-card/60 px-5 py-3.5">
                           <div>
                             <h3 className="text-sm font-bold text-foreground">
                               Matched Cover Letter
@@ -3132,11 +3206,11 @@ function Index() {
                               className="h-8 text-xs font-semibold"
                             >
                               <Download className="size-3.5 mr-1" /> PDF
-                              {!isSubscribed && <Lock className="size-3 ml-1 text-amber-400" />}
+                              {!isSubscribed && <Lock className="size-3 ml-1 text-primary" />}
                             </Button>
                           </div>
                         </div>
-                        <pre className="max-h-[500px] overflow-auto whitespace-pre-wrap px-5 py-4 font-sans text-xs sm:text-sm leading-relaxed text-foreground">
+                        <pre className="max-h-[500px] overflow-auto whitespace-pre-wrap px-5 py-4 font-sans text-xs sm:text-sm leading-relaxed text-foreground bg-card break-words">
                           {coverLetter ||
                             "Click 'Generate Cover Letter' to write a personalized letter aligned with this job posting."}
                           {coverBusy && (
@@ -3150,8 +3224,6 @@ function Index() {
               )}
             </section>
           </div>
-        </div>
-      </div>
 
       {/* Corporate Sticky / Bottom Banner Ad */}
       <BannerAd
@@ -3170,179 +3242,181 @@ function Index() {
 
       {/* Comprehensive FAQ Section */}
       <FaqSection className="mt-14 border-t border-border/70 bg-card/30" />
+    </main>
 
-      {/* Modern Enterprise Footer */}
-      <footer className="border-t border-border/80 bg-card/60 backdrop-blur-xs py-12 text-foreground">
-        <div className="w-full max-w-[1740px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xs shadow-xs">
-                  CV
-                </div>
-                <span className="font-bold text-base tracking-tight">CVFitt Enterprise</span>
+    {/* Modern Enterprise Footer */}
+    <footer className="border-t border-border bg-[#07090E] py-16 sm:py-20 text-foreground">
+      <div className="w-full max-w-[1740px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-4">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-8 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-indigo-600 text-primary-foreground font-bold text-xs shadow-xs border border-primary/30">
+                CV
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                The premier ATS resume matcher and keyword infiltration engine. Built strictly
-                around Big Tech and FAANG hiring formulas with 32 executive templates and Overleaf
-                LaTeX (.tex) support.
-              </p>
-              <div className="flex items-center gap-2 pt-1 text-xs text-muted-foreground">
-                <ShieldCheck className="size-4 text-emerald-500" />
-                <span>GDPR &amp; CCPA Compliant • Bank-grade Security</span>
-              </div>
+              <span className="font-bold text-base tracking-tight">CVFitt Enterprise</span>
             </div>
-
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
-                Document Studio
-              </h4>
-              <ul className="space-y-2 text-xs">
-                <li>
-                  <Link
-                    to="/"
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    ATS Resume Matcher &amp; Tailor
-                  </Link>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTab("latex");
-                      outputRef.current?.scrollIntoView({ behavior: "smooth" });
-                    }}
-                    className="text-muted-foreground hover:text-foreground transition-colors text-left"
-                  >
-                    Overleaf LaTeX (.tex) Engine
-                  </button>
-                </li>
-                <li>
-                  <Link
-                    to="/profile"
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Candidate Career Profile
-                  </Link>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTab("templates");
-                      outputRef.current?.scrollIntoView({ behavior: "smooth" });
-                    }}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    32 FAANG &amp; Overleaf Templates
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTab("cover");
-                      outputRef.current?.scrollIntoView({ behavior: "smooth" });
-                    }}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Executive Cover Letter Studio
-                  </button>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
-                Legal &amp; Trust
-              </h4>
-              <ul className="space-y-2 text-xs">
-                <li>
-                  <Link
-                    to="/privacy"
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Privacy Policy (GDPR / CCPA)
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/terms"
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Terms of Service
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/terms"
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    30-Day Money-Back Guarantee
-                  </Link>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSubReason("Upgrade to Pro for high-res vector PDFs & all 32 templates.");
-                      setSubModalOpen(true);
-                    }}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Enterprise Pro Pricing
-                  </button>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
-                100% Shortlist Weapon
-              </h4>
-              <div className="rounded-xl border border-border/80 bg-muted/30 p-3.5 text-xs space-y-2">
-                <p className="font-semibold text-foreground flex items-center gap-1.5">
-                  <span className="size-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  ATS Stealth Cloak™ Active
-                </p>
-                <p className="text-muted-foreground text-[11px] leading-relaxed">
-                  Automatic white-font injection guarantees 100% ATS token indexing across Workday,
-                  Greenhouse, Lever, Taleo, and iCIMS.
-                </p>
-              </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              The premier ATS resume matcher and keyword infiltration engine. Built strictly
+              around Big Tech and FAANG hiring formulas with 32 executive templates and Overleaf
+              LaTeX (.tex) support.
+            </p>
+            <div className="flex items-center gap-2 pt-1 text-xs text-muted-foreground">
+              <ShieldCheck className="size-4 text-emerald-500" />
+              <span>GDPR &amp; CCPA Compliant • Bank-grade Security</span>
             </div>
           </div>
 
-          <div className="mt-10 pt-6 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-            <p>© 2026 CVFitt Enterprise Inc. All rights reserved.</p>
-            <div className="flex items-center gap-4">
-              <Link to="/privacy" className="hover:text-foreground underline">
-                Privacy
-              </Link>
-              <Link to="/terms" className="hover:text-foreground underline">
-                Terms
-              </Link>
-              <button
-                type="button"
-                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-                className="hover:text-foreground underline"
-              >
-                Back to Top ↑
-              </button>
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
+              Document Studio
+            </h3>
+            <ul className="space-y-2 text-xs">
+              <li>
+                <Link
+                  to="/"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  ATS Resume Matcher &amp; Tailor
+                </Link>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTab("latex");
+                    outputRef.current?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="text-muted-foreground hover:text-foreground transition-colors text-left cursor-pointer"
+                >
+                  Overleaf LaTeX (.tex) Engine
+                </button>
+              </li>
+              <li>
+                <Link
+                  to="/profile"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Candidate Career Profile
+                </Link>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTab("templates");
+                    outputRef.current?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
+                  32 FAANG &amp; Overleaf Templates
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTab("cover");
+                    outputRef.current?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
+                  Executive Cover Letter Studio
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
+              Legal &amp; Trust
+            </h3>
+            <ul className="space-y-2 text-xs">
+              <li>
+                <Link
+                  to="/privacy"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Privacy Policy (GDPR / CCPA)
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/terms"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Terms of Service
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/terms"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  30-Day Money-Back Guarantee
+                </Link>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSubReason("Upgrade to Pro for high-res vector PDFs & all 32 templates.");
+                    setSubModalOpen(true);
+                  }}
+                  className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
+                  Enterprise Pro Pricing
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
+              100% Shortlist Weapon
+            </h3>
+            <div className="rounded-2xl border border-border/80 bg-card/60 p-4 text-xs space-y-2">
+              <p className="font-semibold text-foreground flex items-center gap-1.5">
+                <span className="size-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                ATS Stealth Cloak™ Active
+              </p>
+              <p className="text-muted-foreground text-[11px] leading-relaxed">
+                Automatic white-font injection guarantees 100% ATS token indexing across Workday,
+                Greenhouse, Lever, Taleo, and iCIMS.
+              </p>
             </div>
           </div>
         </div>
-      </footer>
 
-      {/* Floating Sticky Bottom Sponsor Banner (Mobile & Desktop) */}
-      <BannerAd
-        variant="sticky-bottom"
-        onUpgradeClick={() => {
-          setSubReason("Upgrade to Pro to remove all sponsor banners.");
-          setSubModalOpen(true);
-        }}
-      />
-    </main>
+        <div className="mt-12 pt-8 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+          <p>© 2026 CVFitt Enterprise Inc. All rights reserved.</p>
+          <div className="flex items-center gap-4">
+            <Link to="/privacy" className="hover:text-foreground transition-colors">
+              Privacy
+            </Link>
+            <Link to="/terms" className="hover:text-foreground transition-colors">
+              Terms
+            </Link>
+            <button
+              type="button"
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              aria-label="Scroll back to top of page"
+              className="hover:text-foreground transition-colors cursor-pointer"
+            >
+              Back to Top ↑
+            </button>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    {/* Floating Sticky Bottom Sponsor Banner (Mobile & Desktop) */}
+    <BannerAd
+      variant="sticky-bottom"
+      onUpgradeClick={() => {
+        setSubReason("Upgrade to Pro to remove all sponsor banners.");
+        setSubModalOpen(true);
+      }}
+    />
+  </div>
   );
 }

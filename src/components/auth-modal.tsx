@@ -141,9 +141,9 @@ export function AuthModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
       <div
-        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border/80 bg-card p-6 sm:p-8 shadow-2xl transition-all"
+        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-2xl transition-all"
         role="dialog"
         aria-modal="true"
       >
@@ -151,7 +151,7 @@ export function AuthModal({
         <button
           type="button"
           onClick={() => onOpenChange(false)}
-          className="absolute right-4 top-4 rounded-full p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+          className="absolute right-4 top-4 rounded-full p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors cursor-pointer"
           aria-label="Close modal"
         >
           <X className="size-4" />
@@ -162,10 +162,10 @@ export function AuthModal({
           <div className="inline-flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary mb-3 ring-1 ring-primary/20">
             <Lock className="size-5" />
           </div>
-          <h3 className="text-xl font-bold tracking-tight text-foreground">
+          <h3 className="text-xl font-bold tracking-tight text-foreground hero-gradient-text">
             {title || (mode === "sign_up" ? "Create Pro Account" : "Sign In to CVFitt")}
           </h3>
-          <p className="text-xs text-muted-foreground mt-1.5 max-w-xs mx-auto">
+          <p className="text-xs text-muted-foreground mt-1.5 max-w-xs mx-auto leading-relaxed">
             {subtitle ||
               (mode === "sign_up"
                 ? "Your subscriptions, custom sections, and saved templates are securely stored."
@@ -294,7 +294,7 @@ export function AuthModal({
               </>
             ) : mode === "sign_up" ? (
               <>
-                <Sparkles className="size-4 mr-2 text-amber-300" />
+                <Sparkles className="size-4 mr-2 text-primary-foreground" />
                 Create Free Account
               </>
             ) : (

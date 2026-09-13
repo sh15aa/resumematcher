@@ -16,4 +16,5 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
+Sitemap: https://cvfitt.fitt.workers.dev/sitemap.xml
 Sitemap: https://resumematcher.lovable.app/sitemap.xml

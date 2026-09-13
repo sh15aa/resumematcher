@@ -29,16 +29,16 @@ function PrivacyPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Top Header */}
-      <header className="sticky top-0 z-40 border-b border-border/80 bg-background/90 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-border bg-[#090A0F]/75 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6">
           <Link
             to="/"
-            className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
           >
-            <ArrowLeft className="size-4" /> Back to CVFitt
+            <ArrowLeft className="size-4 text-primary" /> Back to CVFitt
           </Link>
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-xs font-medium text-emerald-400">
               <Shield className="size-3" /> GDPR &amp; CCPA Compliant
             </span>
           </div>
@@ -46,13 +46,15 @@ function PrivacyPage() {
       </header>
 
       {/* Hero */}
-      <div className="border-b border-border/60 bg-gradient-to-b from-primary/5 via-transparent to-background py-12 px-4 sm:px-6">
+      <div className="border-b border-border/60 bg-gradient-to-b from-primary/10 via-card/30 to-background py-16 sm:py-20 px-4 sm:px-6">
         <div className="mx-auto max-w-3xl text-center">
           <div className="inline-flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary mb-4 ring-1 ring-primary/20">
             <Lock className="size-6" />
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Privacy Policy</h1>
-          <p className="mt-3 text-sm sm:text-base text-muted-foreground">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight hero-gradient-text">
+            Privacy Policy
+          </h1>
+          <p className="mt-3 text-xs sm:text-sm text-muted-foreground">
             Last Updated: September 12, 2026 • Effective Date: January 1, 2026
           </p>
         </div>

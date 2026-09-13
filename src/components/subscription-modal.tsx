@@ -400,9 +400,9 @@ export function SubscriptionModal({ open, onOpenChange, featureReason }: Subscri
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
       <div
-        className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-border/80 bg-card shadow-2xl transition-all"
+        className="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl transition-all"
         role="dialog"
         aria-modal="true"
       >
@@ -414,7 +414,7 @@ export function SubscriptionModal({ open, onOpenChange, featureReason }: Subscri
               setStep("plans");
               onOpenChange(false);
             }}
-            className="absolute right-4 top-4 rounded-full p-2 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            className="absolute right-4 top-4 rounded-full p-2 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors cursor-pointer"
             aria-label="Close"
           >
             <X className="size-4" />
@@ -422,7 +422,7 @@ export function SubscriptionModal({ open, onOpenChange, featureReason }: Subscri
 
           <div className="flex flex-wrap items-center justify-between gap-2 pr-8">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/25 px-2.5 py-0.5 text-[11px] font-semibold text-primary">
                 <Crown className="size-3.5 fill-current" /> Enterprise Pro
               </span>
               {user && (
@@ -555,14 +555,14 @@ export function SubscriptionModal({ open, onOpenChange, featureReason }: Subscri
                 </div>
 
                 {/* Pro Box */}
-                <div className="rounded-2xl border-2 border-primary bg-primary/5 p-4 text-xs space-y-2.5 relative shadow-xs">
+                <div className="rounded-2xl border border-primary/50 bg-gradient-to-b from-primary/10 to-primary/5 p-4 text-xs space-y-2.5 relative shadow-[0_0_24px_rgba(99,102,241,0.1)]">
                   <div className="absolute -top-2.5 right-3">
                     <Badge className="bg-primary text-primary-foreground text-[10px] py-0 px-2 font-semibold">
                       RECOMMENDED
                     </Badge>
                   </div>
                   <span className="font-semibold text-primary flex items-center gap-1.5 uppercase tracking-wider text-[10px]">
-                    <Crown className="size-3.5 text-amber-500" /> Enterprise Pro
+                    <Crown className="size-3.5 text-primary" /> Enterprise Pro
                   </span>
                   <p className="font-bold text-base text-foreground">{currentPriceFormatted}</p>
                   <ul className="space-y-1.5 text-foreground pt-1">
@@ -594,7 +594,7 @@ export function SubscriptionModal({ open, onOpenChange, featureReason }: Subscri
                     onClick={handlePlanProceed}
                     className="w-full h-11 font-bold text-sm shadow-sm transition-all"
                   >
-                    <Sparkles className="size-4 mr-2 text-amber-300" />
+                    <Sparkles className="size-4 mr-2" />
                     {user ? "Proceed to Secure Checkout" : "Create Account & Unlock Pro"} (
                     {currentPriceFormatted})
                   </Button>
@@ -698,7 +698,7 @@ export function SubscriptionModal({ open, onOpenChange, featureReason }: Subscri
                     </>
                   ) : authMode === "register" ? (
                     <>
-                      <Sparkles className="size-4 mr-2 text-amber-300" />
+                      <Sparkles className="size-4 mr-2" />
                       Create Account &amp; Proceed
                     </>
                   ) : (

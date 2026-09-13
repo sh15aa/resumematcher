@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { Download, FileDown, FileCode, Lock, Check, Star, X, ZoomIn, ZoomOut } from "lucide-react";
+import { Download, FileDown, FileCode, Lock, Check, ShieldCheck, Star, X, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { renderResumeHtml, type ResumeTemplate } from "@/lib/templates";
+import { DEFAULT_SAMPLE_RESUME_TEXT, renderResumeHtml, type ResumeTemplate } from "@/lib/templates";
 
 interface TemplateZoomModalProps {
   template: ResumeTemplate | null;
@@ -33,6 +33,13 @@ export function TemplateZoomModal({
   const canvasRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState<number>(0);
   const [containerHeight, setContainerHeight] = useState<number>(0);
+
+  const effectiveResumeText =
+    resumeText && resumeText.trim().length >= 15 ? resumeText : DEFAULT_SAMPLE_RESUME_TEXT;
+  const effectiveApplicant =
+    (!resumeText || resumeText.trim().length < 15) && (!applicant || applicant === "Your Name")
+      ? "Alex Chen"
+      : applicant;
 
   useEffect(() => {
     setIsFitMode(true);
@@ -109,30 +116,39 @@ export function TemplateZoomModal({
   if (!template) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200 overflow-x-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-200 overflow-x-hidden">
       <div className="relative flex flex-col w-full max-w-5xl h-[94vh] rounded-2xl border border-border bg-card shadow-2xl overflow-hidden">
         {/* Header Toolbar */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-border bg-muted/70 px-4 sm:px-6 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-border bg-card px-4 sm:px-6 py-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-base sm:text-lg font-bold text-foreground truncate">
                 {template.name}
               </h3>
               {template.isFree ? (
-                <Badge className="bg-emerald-600 text-white font-bold text-[10px] sm:text-xs">
+                <span className="rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] sm:text-xs font-semibold px-2 py-0.5">
                   FREE TIER
-                </Badge>
+                </span>
               ) : (
-                <Badge className="bg-blue-900 text-white font-bold text-[10px] sm:text-xs gap-1">
-                  <Lock className="size-3 text-amber-300" /> PRO EXCLUSIVE
-                </Badge>
+                <span className="rounded-md bg-white/5 border border-white/10 text-slate-200 text-[10px] sm:text-xs font-semibold px-2 py-0.5 inline-flex items-center gap-1">
+                  <Lock className="size-3 text-primary" /> PRO
+                </span>
               )}
-              <Badge variant="outline" className="text-[10px] font-semibold">
+              <span className="rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] sm:text-xs font-semibold px-2 py-0.5 inline-flex items-center gap-1">
+                <ShieldCheck className="size-3 text-emerald-400" />
+                {template.id === "overleaf-faang" ||
+                template.id === "google-swe" ||
+                template.id === "citadel-quant" ||
+                template.id === "harvard-hbs"
+                  ? "100% ATS Verified"
+                  : "99% ATS Verified"}
+              </span>
+              <Badge variant="outline" className="text-[10px] font-medium border-border/80">
                 📄 {Math.max(1, Math.ceil(zoomDocHeight / 1100))}{" "}
                 {Math.max(1, Math.ceil(zoomDocHeight / 1100)) === 1 ? "Page" : "Pages"} (Letter)
               </Badge>
-              <span className="text-xs font-bold text-amber-600 dark:text-amber-400 hidden sm:inline-flex items-center gap-1">
-                <Star className="size-3.5 fill-amber-500 text-amber-500" />
+              <span className="text-xs font-medium text-slate-300 hidden sm:inline-flex items-center gap-1">
+                <Star className="size-3.5 fill-slate-300 text-slate-300" />
                 {template.rating}
               </span>
             </div>
@@ -226,12 +242,12 @@ export function TemplateZoomModal({
             >
               <Download className="size-3.5 sm:mr-1" />
               <span>PDF</span>
-              {!isSubscribed && <Lock className="size-3 ml-1 text-amber-300" />}
+              {!isSubscribed && <Lock className="size-3 ml-1 text-primary" />}
             </Button>
 
             <Button
               size="sm"
-              className="h-8 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground px-2.5 sm:px-3"
+              className="h-8 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground px-2.5 sm:px-3"
               onClick={() => {
                 onSelect(template);
                 onClose();
@@ -257,7 +273,7 @@ export function TemplateZoomModal({
         {/* Scalable Full Preview Canvas - 100% Centered with Zero Horizontal Overflow on Mobile */}
         <div
           ref={canvasRef}
-          className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-200/60 dark:bg-slate-950/60 p-2 sm:p-4 pb-8 sm:pb-10 flex flex-col items-center justify-start w-full"
+          className="flex-1 overflow-x-hidden overflow-y-auto bg-[#090A0F] p-2 sm:p-4 pb-8 sm:pb-10 flex flex-col items-center justify-start w-full"
           style={{ overscrollBehaviorY: "contain", scrollbarWidth: "thin" }}
         >
           <div
@@ -285,7 +301,7 @@ export function TemplateZoomModal({
             >
               <iframe
                 title={`${template.name} Full Preview`}
-                srcDoc={renderResumeHtml(resumeText, template, applicant)}
+                srcDoc={renderResumeHtml(effectiveResumeText, template, effectiveApplicant)}
                 sandbox="allow-scripts allow-same-origin"
                 scrolling="no"
                 className="w-[850px] border-0"

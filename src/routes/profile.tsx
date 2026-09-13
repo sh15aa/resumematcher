@@ -37,6 +37,7 @@ export const Route = createFileRoute("/profile")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
+    links: [{ rel: "canonical", href: "https://cvfitt.fitt.workers.dev/profile" }],
   }),
   component: ProfilePage,
 });
@@ -95,34 +96,34 @@ function ProfilePage() {
   }
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-background text-foreground">
       <Toaster />
-      <div className="mx-auto w-full max-w-5xl px-5 py-12 md:px-8 md:py-16">
+      <div className="mx-auto w-full max-w-5xl px-5 py-16 md:px-8 md:py-24">
         <Link
           to="/"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+          className="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
         >
-          <ArrowLeft className="size-4" /> Back to the tailor
+          <ArrowLeft className="size-4 text-primary" /> Back to the tailor
         </Link>
 
         <header className="mt-6 max-w-2xl">
-          <p className="font-mono text-xs uppercase tracking-[0.22em] text-muted-foreground">
-            Your profile
+          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-primary font-semibold">
+            Career Profile Studio
           </p>
-          <h1 className="mt-3 text-4xl leading-[1.05] font-bold tracking-tight text-foreground md:text-5xl">
+          <h1 className="mt-3 text-3xl sm:text-4xl lg:text-5xl leading-[1.08] font-bold tracking-tight hero-gradient-text">
             Fill this in once, and every resume reads like you.
           </h1>
-          <p className="mt-4 text-base leading-relaxed text-muted-foreground">
+          <p className="mt-4 text-sm sm:text-base leading-relaxed text-muted-foreground">
             Your details stay on this device. They build the resume that the tailored PDF and cover
             letter are written from.
           </p>
         </header>
 
-        <div className="mt-10 grid gap-8 lg:grid-cols-[1.15fr_1fr]">
+        <div className="mt-12 grid gap-8 lg:grid-cols-[1.15fr_1fr] items-start">
           <div className="space-y-8">
-            <section className="rounded-xl border border-border bg-card p-5">
+            <section className="rounded-2xl border border-border bg-card p-6 sm:p-7 shadow-xs">
               <h2 className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
-                <UserRound className="size-4" /> Basics
+                <UserRound className="size-4 text-primary" /> Basics
               </h2>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <Field
@@ -179,7 +180,7 @@ function ProfilePage() {
               </label>
             </section>
 
-            <section className="rounded-xl border border-border bg-card p-5">
+            <section className="rounded-2xl border border-border bg-card p-6 sm:p-7 shadow-xs">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-foreground">Work experience</h2>
                 <Button
@@ -187,12 +188,12 @@ function ProfilePage() {
                   size="sm"
                   onClick={() => set("roles", [...profile.roles, { ...emptyRole }])}
                 >
-                  <Plus /> Add role
+                  <Plus className="size-3.5 mr-1" /> Add role
                 </Button>
               </div>
-              <div className="mt-4 space-y-5">
+              <div className="mt-5 space-y-5">
                 {profile.roles.map((role, index) => (
-                  <div key={index} className="rounded-lg border border-border p-4">
+                  <div key={index} className="rounded-xl border border-border/70 bg-muted/20 p-4 sm:p-5 space-y-3">
                     <div className="grid gap-3 sm:grid-cols-3">
                       <Field
                         label="Job title"
@@ -257,7 +258,8 @@ function ProfilePage() {
                             profile.roles.filter((_, i) => i !== index),
                           )
                         }
-                        className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive"
+                        aria-label={`Remove role ${role.title || index + 1}`}
+                        className="mt-2 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors cursor-pointer min-h-[44px] sm:min-h-0 py-2 sm:py-0"
                       >
                         <Trash2 className="size-3.5" /> Remove this role
                       </button>
@@ -267,7 +269,7 @@ function ProfilePage() {
               </div>
             </section>
 
-            <section className="rounded-xl border border-border bg-card p-5">
+            <section className="rounded-2xl border border-border bg-card p-6 sm:p-7 shadow-xs">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-foreground">Education & skills</h2>
                 <Button
@@ -275,12 +277,12 @@ function ProfilePage() {
                   size="sm"
                   onClick={() => set("studies", [...profile.studies, { ...emptyStudy }])}
                 >
-                  <Plus /> Add study
+                  <Plus className="size-3.5 mr-1" /> Add study
                 </Button>
               </div>
-              <div className="mt-4 space-y-4">
+              <div className="mt-5 space-y-4">
                 {profile.studies.map((study, index) => (
-                  <div key={index} className="grid gap-3 sm:grid-cols-3">
+                  <div key={index} className="grid gap-3 sm:grid-cols-3 rounded-xl border border-border/70 bg-muted/20 p-4">
                     <Field
                       label="Qualification"
                       value={study.qualification}
@@ -319,7 +321,7 @@ function ProfilePage() {
                   </div>
                 ))}
               </div>
-              <label className="mt-4 block">
+              <label className="mt-5 block">
                 <span className="mb-1.5 block text-sm font-medium text-foreground">Skills</span>
                 <Textarea
                   value={profile.skills}
@@ -341,11 +343,11 @@ function ProfilePage() {
               </label>
             </section>
 
-            <section className="rounded-xl border border-border bg-card p-5">
+            <section className="rounded-2xl border border-border bg-card p-6 sm:p-7 shadow-xs">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-sm font-semibold text-foreground">Custom Sections</h2>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     Add projects, publications, awards, or custom tabs.
                   </p>
                 </div>
@@ -364,12 +366,12 @@ function ProfilePage() {
                     ]);
                   }}
                 >
-                  <Plus /> Add section
+                  <Plus className="size-3.5 mr-1" /> Add section
                 </Button>
               </div>
-              <div className="mt-4 space-y-4">
+              <div className="mt-5 space-y-4">
                 {(profile.customSections || []).map((sec, idx) => (
-                  <div key={sec.id} className="rounded-lg border border-border p-4 space-y-3">
+                  <div key={sec.id} className="rounded-xl border border-border/70 bg-muted/20 p-4 space-y-3">
                     <div className="flex items-center justify-between gap-2">
                       <Input
                         value={sec.title}
@@ -392,7 +394,8 @@ function ProfilePage() {
                             profile.customSections.filter((_, i) => i !== idx),
                           )
                         }
-                        className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-1"
+                        aria-label={`Remove section ${sec.title || idx + 1}`}
+                        className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-1 cursor-pointer transition-colors min-h-[44px] sm:min-h-0 py-2 sm:py-0"
                       >
                         <Trash2 className="size-3.5" /> Remove
                       </button>
@@ -415,19 +418,19 @@ function ProfilePage() {
               </div>
             </section>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3 pt-2">
               <Button variant="outline" onClick={persist}>
-                <Save /> Save profile
+                <Save className="size-4 mr-1.5" /> Save profile
               </Button>
-              <Button onClick={useInTailor}>
-                Use this in the tailor <ArrowRight />
+              <Button onClick={useInTailor} className="shadow-xs">
+                Use this in the tailor <ArrowRight className="size-4 ml-1.5" />
               </Button>
             </div>
           </div>
 
           <aside className="lg:sticky lg:top-8 lg:self-start">
-            <div className="rounded-xl border border-border bg-card">
-              <div className="border-b border-border px-5 py-3">
+            <div className="rounded-2xl border border-border bg-card shadow-xs overflow-hidden">
+              <div className="border-b border-border bg-muted/40 px-5 py-3">
                 <h2 className="text-sm font-semibold text-foreground">Resume preview</h2>
               </div>
               <pre className="max-h-[640px] overflow-auto whitespace-pre-wrap px-5 py-4 font-sans text-sm leading-6 text-muted-foreground">

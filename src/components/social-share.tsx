@@ -50,14 +50,14 @@ export function SocialShare({ score = 100, roleTitle, className = "" }: SocialSh
 
   return (
     <div
-      className={`rounded-2xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs ${className}`}
+      className={`rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-xs ${className}`}
     >
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Share2 className="size-4 text-primary" /> Share With Peers &amp; Job Seekers
-          </h4>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
             Help fellow candidates beat applicant tracking systems and secure interview callbacks.
           </p>
         </div>
@@ -73,7 +73,7 @@ export function SocialShare({ score = 100, roleTitle, className = "" }: SocialSh
                 `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`,
               )
             }
-            className="h-8 text-xs font-semibold hover:bg-sky-500/10 hover:text-sky-600 hover:border-sky-500/40"
+            className="h-8 text-xs font-semibold hover:border-primary/50 hover:text-primary transition-all"
             aria-label="Share on LinkedIn"
           >
             LinkedIn
@@ -89,7 +89,7 @@ export function SocialShare({ score = 100, roleTitle, className = "" }: SocialSh
                 `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`,
               )
             }
-            className="h-8 text-xs font-semibold hover:bg-neutral-900/10 hover:border-neutral-700 dark:hover:bg-white/10"
+            className="h-8 text-xs font-semibold hover:border-primary/50 hover:text-primary transition-all"
             aria-label="Share on X (Twitter)"
           >
             X / Twitter
@@ -105,7 +105,7 @@ export function SocialShare({ score = 100, roleTitle, className = "" }: SocialSh
                 `https://api.whatsapp.com/send?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`,
               )
             }
-            className="h-8 text-xs font-semibold hover:bg-emerald-500/10 hover:text-emerald-600 hover:border-emerald-500/40"
+            className="h-8 text-xs font-semibold hover:border-emerald-500/50 hover:text-emerald-400 transition-all"
             aria-label="Share on WhatsApp"
           >
             <MessageCircle className="size-3.5 mr-1" /> WhatsApp
@@ -122,7 +122,7 @@ export function SocialShare({ score = 100, roleTitle, className = "" }: SocialSh
           >
             {copied ? (
               <>
-                <Check className="size-3.5 mr-1 text-emerald-500" /> Copied
+                <Check className="size-3.5 mr-1 text-emerald-400" /> Copied
               </>
             ) : (
               <>

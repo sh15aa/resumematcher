@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ExternalLink, X, ArrowUpRight, Sparkles, ShieldCheck } from "lucide-react";
+import { ExternalLink, X, ArrowUpRight, Sparkles } from "lucide-react";
 import { useSubscription } from "@/lib/subscription";
 
 interface BannerAdProps {
@@ -19,17 +19,17 @@ export function BannerAd({ variant = "bottom", onUpgradeClick, className = "" }:
     return (
       <aside
         aria-label="Sponsored Notification"
-        className={`fixed bottom-0 inset-x-0 z-40 border-t border-border/80 bg-background/95 backdrop-blur-md py-2 px-3 sm:px-6 shadow-lg transition-transform animate-in slide-in-from-bottom duration-300 ${className}`}
+        className={`fixed bottom-0 inset-x-0 z-40 border-t border-border bg-[#090A0F]/80 backdrop-blur-md py-2.5 px-3 sm:px-6 shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom ${className}`}
       >
         <div className="w-full max-w-[1720px] mx-auto flex items-center justify-between gap-2 sm:gap-4 text-xs">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="rounded bg-primary/10 border border-primary/20 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold text-primary shrink-0 uppercase tracking-wider">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="rounded-md bg-white/5 border border-white/10 px-2 py-0.5 text-[10px] font-medium text-slate-400 shrink-0 uppercase tracking-wider">
               Sponsored
             </span>
-            <p className="font-semibold text-foreground text-xs truncate">
+            <p className="font-medium text-slate-200 text-xs truncate">
               AWS &amp; Distributed Cloud Architecture Certification
             </p>
-            <span className="hidden lg:inline text-muted-foreground text-[11px] truncate">
+            <span className="hidden lg:inline text-slate-500 text-[11px] truncate">
               — Pass high-scale system design tests &amp; unlock $180k+ Staff roles.
             </span>
           </div>
@@ -39,7 +39,7 @@ export function BannerAd({ variant = "bottom", onUpgradeClick, className = "" }:
               href="https://aws.amazon.com/certification/"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground px-2.5 py-1 text-[11px] sm:text-xs font-bold transition-opacity shadow-2xs"
+              className="inline-flex items-center gap-1 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground px-2.5 py-1 text-xs font-semibold transition-all shadow-xs"
             >
               Learn More <ArrowUpRight className="size-3" />
             </a>
@@ -47,7 +47,7 @@ export function BannerAd({ variant = "bottom", onUpgradeClick, className = "" }:
               <button
                 type="button"
                 onClick={onUpgradeClick}
-                className="hidden md:inline-flex text-[11px] text-muted-foreground hover:text-foreground transition-colors font-medium"
+                className="hidden md:inline-flex text-[11px] text-muted-foreground hover:text-foreground transition-colors font-medium cursor-pointer"
               >
                 Hide ads with Pro
               </button>
@@ -55,7 +55,7 @@ export function BannerAd({ variant = "bottom", onUpgradeClick, className = "" }:
             <button
               type="button"
               onClick={() => setDismissed(true)}
-              className="text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors"
+              className="text-muted-foreground hover:text-foreground p-1 rounded-lg transition-colors cursor-pointer"
               title="Dismiss sponsor banner"
               aria-label="Dismiss banner"
             >
@@ -67,30 +67,29 @@ export function BannerAd({ variant = "bottom", onUpgradeClick, className = "" }:
     );
   }
 
-  // Full-width Bottom Ad Unit (Above the Footer)
+  // Full-width Bottom Ad Unit (Above the Footer) - Sleek seamless inline component
   if (variant === "bottom") {
     return (
       <aside
         aria-label="Sponsored Partner"
-        className={`w-full border-y border-border/80 bg-gradient-to-r from-card via-card/70 to-card py-4 px-4 sm:px-6 z-30 transition-all ${className}`}
+        className={`w-full border-y border-border bg-[#121624]/60 backdrop-blur-xs py-5 px-4 sm:px-6 z-30 transition-all ${className}`}
       >
-        <div className="w-full max-w-[1720px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
-          <div className="flex items-start sm:items-center gap-3 min-w-0">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0">
+        <div className="w-full max-w-[1720px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs">
+          <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+            <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary shrink-0">
               <Sparkles className="size-4" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="rounded bg-muted px-1.5 py-0.2 text-[9px] font-bold uppercase text-muted-foreground tracking-wider">
+                <span className="rounded-md bg-white/5 border border-white/10 px-1.5 py-0.5 text-[9px] font-medium uppercase text-slate-400 tracking-wider">
                   Partner Spotlight
                 </span>
-                <span className="font-bold text-foreground text-xs sm:text-sm">
+                <span className="font-semibold text-foreground text-xs sm:text-sm">
                   Executive Cloud &amp; Distributed Systems Engineering
                 </span>
               </div>
-              <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                Benchmark your skills against real-world FAANG interview rubrics with official
-                certifications.
+              <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                Benchmark your skills against real-world FAANG interview rubrics with official certifications.
               </p>
             </div>
           </div>
@@ -100,7 +99,7 @@ export function BannerAd({ variant = "bottom", onUpgradeClick, className = "" }:
               href="https://aws.amazon.com/certification/"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 rounded-lg bg-foreground text-background px-3 py-1.5 text-xs font-bold hover:opacity-90 transition-opacity shadow-xs"
+              className="inline-flex items-center gap-1 rounded-xl bg-card hover:bg-accent text-foreground border border-border px-3 py-1.5 text-xs font-semibold transition-all shadow-xs"
             >
               Explore Programs <ArrowUpRight className="size-3.5" />
             </a>
@@ -108,7 +107,7 @@ export function BannerAd({ variant = "bottom", onUpgradeClick, className = "" }:
               <button
                 type="button"
                 onClick={onUpgradeClick}
-                className="text-[11px] text-muted-foreground hover:text-foreground transition-colors font-medium"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors font-medium cursor-pointer"
               >
                 Hide ads with Pro
               </button>
@@ -116,7 +115,7 @@ export function BannerAd({ variant = "bottom", onUpgradeClick, className = "" }:
             <button
               type="button"
               onClick={() => setDismissed(true)}
-              className="text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors"
+              className="text-muted-foreground hover:text-foreground p-1 rounded-lg transition-colors cursor-pointer"
               title="Dismiss sponsor message"
               aria-label="Dismiss banner"
             >
@@ -131,7 +130,7 @@ export function BannerAd({ variant = "bottom", onUpgradeClick, className = "" }:
   // Minimal Sidebar / Inline Sponsor Card
   return (
     <div
-      className={`rounded-xl border border-border/70 bg-card/60 p-3.5 text-xs transition-all relative ${className}`}
+      className={`rounded-2xl border border-border bg-card/60 p-4 text-xs transition-all relative card-interactive ${className}`}
     >
       <div className="flex items-center justify-between mb-2">
         <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
@@ -140,7 +139,7 @@ export function BannerAd({ variant = "bottom", onUpgradeClick, className = "" }:
         <button
           type="button"
           onClick={() => setDismissed(true)}
-          className="text-muted-foreground hover:text-foreground p-0.5"
+          className="text-muted-foreground hover:text-foreground p-0.5 cursor-pointer"
           aria-label="Dismiss banner"
         >
           <X className="size-3" />
@@ -149,10 +148,10 @@ export function BannerAd({ variant = "bottom", onUpgradeClick, className = "" }:
       <p className="font-semibold text-foreground text-xs leading-snug">
         Master Executive System Design &amp; Cloud Architecture
       </p>
-      <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2">
+      <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
         Curated interview guides, mock architectural diagrams, and ATS optimization benchmarks.
       </p>
-      <div className="mt-3 flex items-center justify-between pt-2 border-t border-border/50 text-[11px]">
+      <div className="mt-3 flex items-center justify-between pt-2.5 border-t border-border/50 text-xs">
         <a
           href="https://aws.amazon.com/certification/"
           target="_blank"
@@ -165,7 +164,7 @@ export function BannerAd({ variant = "bottom", onUpgradeClick, className = "" }:
           <button
             type="button"
             onClick={onUpgradeClick}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground cursor-pointer text-[11px]"
           >
             Go Ad-Free
           </button>

@@ -1,8 +1,8 @@
 import React, { memo, useState, useEffect, useRef } from "react";
-import { Check, Crown, Download, FileDown, Lock, Star, ZoomIn } from "lucide-react";
+import { Check, Crown, Download, FileDown, Lock, ShieldCheck, Star, ZoomIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { renderResumeHtml, type ResumeTemplate } from "@/lib/templates";
+import { DEFAULT_SAMPLE_RESUME_TEXT, renderResumeHtml, type ResumeTemplate } from "@/lib/templates";
 
 interface TemplateCardProps {
   template: ResumeTemplate;
@@ -31,6 +31,13 @@ export const TemplateCard = memo(function TemplateCard({
   const [isVisible, setIsVisible] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
+  const effectiveResumeText =
+    resumeText && resumeText.trim().length >= 15 ? resumeText : DEFAULT_SAMPLE_RESUME_TEXT;
+  const effectiveApplicant =
+    (!resumeText || resumeText.trim().length < 15) && (!applicant || applicant === "Your Name")
+      ? "Alex Chen"
+      : applicant;
+
   useEffect(() => {
     if (!cardRef.current) return;
     const observer = new IntersectionObserver(
@@ -49,15 +56,15 @@ export const TemplateCard = memo(function TemplateCard({
   return (
     <div
       ref={cardRef}
-      className={`group relative flex flex-col rounded-2xl border-2 transition-all bg-card shadow-xs overflow-hidden ${
+      className={`group relative flex flex-col rounded-2xl border transition-all duration-200 bg-card shadow-xs overflow-hidden ${
         isSelected
-          ? "border-primary ring-2 ring-primary/20 shadow-md"
-          : "border-border hover:border-primary/60 hover:shadow-sm"
+          ? "border-primary ring-2 ring-primary/50 shadow-[0_0_28px_rgba(99,102,241,0.22)]"
+          : "border-border hover:border-primary/50 hover:-translate-y-[2px] hover:shadow-[0_12px_30px_rgba(99,102,241,0.1)]"
       }`}
     >
       {/* Full-Height Miniature Preview (Shows 100% of resume from top to bottom with ZERO scrollbars) */}
       <div
-        className="relative h-[400px] sm:h-[425px] overflow-hidden bg-slate-100 dark:bg-slate-900 border-b border-border flex items-center justify-center cursor-pointer select-none p-2"
+        className="relative h-[400px] sm:h-[425px] overflow-hidden bg-[#090A0F]/80 border-b border-border flex items-center justify-center cursor-pointer select-none p-2"
         onClick={() => onSelect(template)}
       >
         {/* Strictly-sized miniature document box to prevent any parent or card scrollbars */}
@@ -68,12 +75,12 @@ export const TemplateCard = memo(function TemplateCard({
             position: "relative",
             overflow: "hidden",
           }}
-          className="rounded shadow-xs bg-white pointer-events-none select-none"
+          className="rounded-lg shadow-md bg-white pointer-events-none select-none"
         >
           {isVisible ? (
             <iframe
               title={`${template.name} preview`}
-              srcDoc={renderResumeHtml(resumeText, template, applicant)}
+              srcDoc={renderResumeHtml(effectiveResumeText, template, effectiveApplicant)}
               loading="lazy"
               sandbox="allow-scripts"
               scrolling="no"
@@ -131,29 +138,35 @@ export const TemplateCard = memo(function TemplateCard({
 
         {/* Selected indicator */}
         {isSelected && (
-          <div className="absolute top-3 right-3 flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md">
+          <div className="absolute top-3 right-3 z-10 flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-2 ring-primary/40 animate-in zoom-in-75 duration-150">
             <Check className="size-4 stroke-[3]" />
           </div>
         )}
 
-        {/* Tier badge & Overleaf indicator */}
-        <div className="absolute top-3 left-3 flex items-center gap-1.5">
+        {/* Tier badge, ATS Score & Overleaf indicator */}
+        <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5 z-10 max-w-[calc(100%-80px)]">
           {template.isFree ? (
-            <Badge className="bg-emerald-600 text-white text-[11px] font-bold shadow-xs py-0.5 px-2.5">
+            <span className="rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-semibold py-0.5 px-2 backdrop-blur-md">
               FREE TIER
-            </Badge>
+            </span>
           ) : (
-            <Badge className="bg-blue-900 text-white text-[11px] font-bold shadow-xs py-0.5 px-2.5 gap-1.5">
-              <Crown className="size-3 text-amber-300" /> PRO EXCLUSIVE
-            </Badge>
+            <span className="rounded-md bg-[#121624]/90 border border-white/10 text-slate-200 text-[10px] font-semibold py-0.5 px-2 gap-1.5 inline-flex items-center backdrop-blur-md">
+              <Crown className="size-3 text-primary" /> PRO
+            </span>
           )}
+          <span className="rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-semibold py-0.5 px-2 inline-flex items-center gap-1 backdrop-blur-md shadow-xs">
+            <ShieldCheck className="size-3 text-emerald-400" />
+            {template.id === "overleaf-faang" ||
+            template.id === "google-swe" ||
+            template.id === "citadel-quant" ||
+            template.id === "harvard-hbs"
+              ? "100% ATS"
+              : "99% ATS"}
+          </span>
           {template.id === "overleaf-faang" && (
-            <Badge
-              variant="outline"
-              className="bg-slate-900/90 text-white border-white/30 text-[10px] font-bold py-0.5 px-2"
-            >
-              Official LaTeX
-            </Badge>
+            <span className="rounded-md bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-[10px] font-semibold py-0.5 px-2 backdrop-blur-md">
+              LaTeX Ready
+            </span>
           )}
         </div>
 
@@ -164,16 +177,16 @@ export const TemplateCard = memo(function TemplateCard({
             e.stopPropagation();
             onZoom(template);
           }}
-          className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-lg bg-slate-900/80 hover:bg-slate-900 text-white px-3 py-1.5 text-xs font-bold backdrop-blur-xs shadow-md transition-all"
+          className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-lg bg-[#090A0F]/85 hover:bg-[#121624] text-slate-200 border border-white/10 px-2.5 py-1 text-xs font-semibold backdrop-blur-md shadow-md transition-all cursor-pointer"
         >
-          <ZoomIn className="size-3.5" /> Full Zoom
+          <ZoomIn className="size-3.5 text-slate-400" /> Zoom
         </button>
 
         {/* Pro Lock overlay badge */}
         {isLocked && (
           <div className="absolute bottom-3 left-3">
-            <div className="rounded-lg bg-slate-900/90 px-3 py-1.5 text-xs font-bold text-white shadow-md flex items-center gap-1.5 border border-white/20">
-              <Lock className="size-3.5 text-amber-400" /> Unlock with Pro
+            <div className="rounded-lg bg-[#090A0F]/90 px-2.5 py-1 text-xs font-medium text-slate-300 shadow-md flex items-center gap-1.5 border border-white/10 backdrop-blur-md">
+              <Lock className="size-3.5 text-primary" /> Unlock with Pro
             </div>
           </div>
         )}
@@ -183,13 +196,22 @@ export const TemplateCard = memo(function TemplateCard({
       <div className="flex flex-1 flex-col justify-between p-4 sm:p-5 space-y-3">
         <div>
           <div className="flex items-center justify-between gap-1.5">
-            <span className="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
-              <Star className="size-3.5 fill-amber-500 text-amber-500" />
-              {template.rating} ({template.reviewCount})
+            <span className="text-xs font-medium text-slate-300 flex items-center gap-1">
+              <Star className="size-3.5 fill-slate-300 text-slate-300" />
+              {template.rating}{" "}
+              <span className="text-muted-foreground text-[11px]">({template.reviewCount})</span>
             </span>
-            <Badge variant="outline" className="text-[11px] font-semibold py-0.5 px-2">
-              {template.category}
-            </Badge>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">
+                ATS Grade A+
+              </span>
+              <Badge
+                variant="outline"
+                className="text-[10px] font-medium py-0.5 px-2 text-muted-foreground border-border/80"
+              >
+                {template.category}
+              </Badge>
+            </div>
           </div>
           <h4 className="font-bold text-base text-foreground mt-1.5">{template.name}</h4>
           <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed mt-0.5">
@@ -202,12 +224,12 @@ export const TemplateCard = memo(function TemplateCard({
             type="button"
             size="sm"
             variant={isSelected ? "default" : "outline"}
-            className="h-9 text-xs sm:text-sm flex-1 font-bold"
+            className="h-8 text-xs flex-1 font-semibold"
             onClick={() => onSelect(template)}
           >
             {isLocked ? (
               <>
-                <Lock className="size-3.5 mr-1 text-amber-500" /> Unlock Pro
+                <Lock className="size-3 mr-1 text-primary" /> Unlock Pro
               </>
             ) : isSelected ? (
               "Active Template"
@@ -220,23 +242,23 @@ export const TemplateCard = memo(function TemplateCard({
             type="button"
             size="sm"
             variant="secondary"
-            className="h-9 text-xs sm:text-sm px-3 font-semibold text-blue-700 dark:text-blue-300"
+            className="h-8 text-xs px-2.5 font-semibold"
             onClick={() => onDownloadWord(template)}
             title="Download Word format (.doc)"
           >
-            <FileDown className="size-4 mr-1" /> Word
+            <FileDown className="size-3.5 mr-1 text-primary" /> Word
           </Button>
 
           <Button
             type="button"
             size="sm"
             variant="outline"
-            className="h-9 text-xs sm:text-sm px-3 font-bold"
+            className="h-8 text-xs px-2.5 font-semibold"
             onClick={() => onDownloadPdf(template)}
             title="Download PDF"
           >
-            <Download className="size-4 mr-1" /> PDF
-            {!isSubscribed && <Lock className="size-3 text-amber-500 ml-1" />}
+            <Download className="size-3.5 mr-1" /> PDF
+            {!isSubscribed && <Lock className="size-3 text-primary ml-1" />}
           </Button>
         </div>
       </div>

@@ -802,38 +802,82 @@ function fontsHref(spec: string): string {
   return `https://fonts.googleapis.com/css2?${families}&display=swap`;
 }
 
+export const DEFAULT_SAMPLE_RESUME_TEXT = `Alex Chen
+alex.chen@example.com | +1 (415) 890-2341 | San Francisco, CA | linkedin.com/in/alexchen-dev | alexchen.dev
+
+SUMMARY
+Engineering leader with 7+ years of experience designing and scaling web platforms, distributed microservices, and enterprise cloud infrastructure. Proven track record driving 99.99% uptime, spearheading multi-cloud migrations, and mentoring high-velocity product engineering squads.
+
+EXPERIENCE
+Starlight Technologies | Senior Full-Stack Engineer | San Francisco, CA | 2022 – Present
+- Architected high-throughput web platform using React, TypeScript, and Node.js serving 800,000+ monthly active users.
+- Spearheaded migration to microservices on AWS (ECS, Lambda, RDS PostgreSQL), reducing infrastructure latency by 42%.
+- Instituted automated CI/CD deployment pipelines and comprehensive unit/integration test suites, increasing sprint release velocity by 35%.
+- Mentored 6 junior and mid-level engineers in system design, state management, and production debugging practices.
+
+Apex Cloud Systems | Software Engineer | San Francisco, CA | 2019 – 2022
+- Engineered scalable REST and GraphQL API services in Node.js and Python handling 10M+ daily transactions.
+- Developed responsive, accessible UI component library adopted across 6 cross-functional product squads.
+- Collaborated closely with product managers, UX designers, and QA engineers to deliver core customer-facing features on schedule.
+
+EDUCATION
+University of California, Berkeley | B.S. in Computer Science | Berkeley, CA | 2015 – 2019
+
+TECHNICAL SKILLS
+Languages: TypeScript, JavaScript, Python, Go, SQL, HTML5, CSS3
+Frameworks & Libraries: React, Next.js, Node.js, Express, Tailwind CSS, GraphQL
+Cloud & DevOps: AWS (ECS, Lambda, RDS, S3), Docker, Kubernetes, CI/CD, Redis, PostgreSQL
+Architecture: Microservices, REST APIs, Distributed Systems, Event-Driven Architecture, System Design
+
+CERTIFICATIONS & PROJECTS
+- AWS Certified Solutions Architect (Associate), 2023
+- Distributed Vector Indexing Engine (Rust, WebAssembly) — 15,000+ GitHub Stars`;
+
 function parseEntryDetails(text: string): {
   main: string;
   sub: string;
+  loc: string;
   date: string;
 } {
-  // Check for date in parenthesis at end, e.g. "(2022 – Present)" or "(2019 - 2022)" or "(2023)"
+  // 1. Check for date in parentheses at end, e.g. "(2022 – Present)" or "(2019 - 2022)" or "(2023)"
   const dateParenMatch = text.match(/\s*\(([^)]*(?:19\d\d|20\d\d|Present|Current)[^)]*)\)\s*$/i);
   if (dateParenMatch) {
     const date = dateParenMatch[1]!.trim();
     const remaining = text.slice(0, dateParenMatch.index).trim();
-    const parts = remaining.split(/\s*,\s*|\s+[—–-]\s+/);
-    if (parts.length >= 2) {
-      return { main: parts[0]!.trim(), sub: parts.slice(1).join(", ").trim(), date };
+    const parts = remaining.split(/\s*,\s*|\s+[—–]\s+/);
+    if (parts.length >= 3) {
+      return { main: parts[0]!.trim(), sub: parts[1]!.trim(), loc: parts.slice(2).join(", ").trim(), date };
     }
-    return { main: remaining, sub: "", date };
+    if (parts.length === 2) {
+      return { main: parts[0]!.trim(), sub: parts[1]!.trim(), loc: "", date };
+    }
+    return { main: remaining, sub: "", loc: "", date };
   }
 
-  // Check for comma or dash before year at end, e.g. ", 2019 – Present" or " - 2022" or ", 2023"
+  // 2. Check for comma or dash before year at end, e.g. ", 2019 – Present" or " - 2022" or ", 2023"
   const dateEndMatch = text.match(
     /[\s,–—-]+((?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s*)?(?:19\d\d|20\d\d)(?:\s*[-–—]\s*(?:Present|Current|(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s*)?(?:19\d\d|20\d\d)))?)\s*$/i,
   );
   if (dateEndMatch && dateEndMatch[1]) {
     const date = dateEndMatch[1].trim();
     const remaining = text.slice(0, dateEndMatch.index).trim();
-    const parts = remaining.split(/\s*,\s*|\s+[—–-]\s+/);
-    if (parts.length >= 2) {
-      return { main: parts[0]!.trim(), sub: parts.slice(1).join(", ").trim(), date };
+    const parts = remaining.split(/\s*,\s*|\s+[—–]\s+/);
+    if (parts.length >= 3) {
+      return { main: parts[0]!.trim(), sub: parts[1]!.trim(), loc: parts.slice(2).join(", ").trim(), date };
     }
-    return { main: remaining, sub: "", date };
+    if (parts.length === 2) {
+      return { main: parts[0]!.trim(), sub: parts[1]!.trim(), loc: "", date };
+    }
+    return { main: remaining, sub: "", loc: "", date };
   }
 
-  return { main: text, sub: "", date: "" };
+  // 3. Em-dash separation without explicit date
+  const dashParts = text.split(/\s+[—–]\s+/);
+  if (dashParts.length >= 2) {
+    return { main: dashParts[0]!.trim(), sub: dashParts.slice(1).join(" — ").trim(), loc: "", date: "" };
+  }
+
+  return { main: text, sub: "", loc: "", date: "" };
 }
 
 function renderBlocks(section: ResumeSection, template: ResumeTemplate): string {
@@ -879,7 +923,11 @@ function renderBlocks(section: ResumeSection, template: ResumeTemplate): string 
       }
 
       // 4. Structured entry with pipe/bullet delimiters
-      const parts = block.text.split(/\s+[|•·]\s+/);
+      const hasStructuredDelimiter = block.text.includes("|") || block.text.includes("•") || block.text.includes("·");
+      const parts = hasStructuredDelimiter
+        ? block.text.split(/\s+[|•·]\s+/)
+        : block.text.split(/\s+[—–]\s+/);
+
       if (parts.length >= 4) {
         // 2x2 FAANG Subheading Grid:
         // Line 1: Organization/Company (Left) ................. Dates (Right)
@@ -900,25 +948,48 @@ function renderBlocks(section: ResumeSection, template: ResumeTemplate): string 
           <div class="entry-row sub-row"><span class="entry-sub italic">${escapeHtml(l2Left)}</span>${l2Right ? `<span class="entry-loc italic">${escapeHtml(l2Right)}</span>` : ""}</div>
         </div>`;
       } else if (parts.length === 3) {
-        const l1Left = parts[0]?.trim() || "";
-        const l1Right = parts[2]?.trim() || "";
-        const l2Left = parts[1]?.trim() || "";
+        let l1Left = parts[0]?.trim() || "";
+        let l1Right = parts[2]?.trim() || "";
+        let l2Left = parts[1]?.trim() || "";
+        let l2Right = "";
+
+        // If part 1 has dates and part 2 doesn't
+        if (/\d{4}/.test(parts[1] || "") && !/\d{4}/.test(parts[2] || "")) {
+          l1Right = parts[1]!.trim();
+          l2Left = parts[2]?.trim() || "";
+        }
+
+        // Check if l2Left contains role and location separated by comma
+        const subParts = l2Left.split(/\s*,\s*/);
+        if (subParts.length >= 2 && !l2Right) {
+          l2Left = subParts[0]!.trim();
+          l2Right = subParts.slice(1).join(", ").trim();
+        }
+
         html += `<div class="entry-subheading">
           <div class="entry-row"><span class="entry-main font-bold">${escapeHtml(l1Left)}</span><span class="entry-date">${escapeHtml(l1Right)}</span></div>
-          <div class="entry-row sub-row"><span class="entry-sub italic">${escapeHtml(l2Left)}</span></div>
+          <div class="entry-row sub-row"><span class="entry-sub italic">${escapeHtml(l2Left)}</span>${l2Right ? `<span class="entry-loc italic">${escapeHtml(l2Right)}</span>` : ""}</div>
         </div>`;
       } else if (parts.length === 2) {
         const left = parts[0]?.trim() || "";
         const right = parts[1]?.trim() || "";
-        html += `<div class="entry-subheading">
-          <div class="entry-row"><span class="entry-main font-bold">${escapeHtml(left)}</span><span class="entry-date">${escapeHtml(right)}</span></div>
-        </div>`;
+        const rightIsDate = /\d{4}|present|current/i.test(right);
+        if (rightIsDate) {
+          html += `<div class="entry-subheading">
+            <div class="entry-row"><span class="entry-main font-bold">${escapeHtml(left)}</span><span class="entry-date">${escapeHtml(right)}</span></div>
+          </div>`;
+        } else {
+          html += `<div class="entry-subheading">
+            <div class="entry-row"><span class="entry-main font-bold">${escapeHtml(left)}</span></div>
+            <div class="entry-row sub-row"><span class="entry-sub italic">${escapeHtml(right)}</span></div>
+          </div>`;
+        }
       } else {
         const parsed = parseEntryDetails(block.text);
         if (parsed.date) {
           html += `<div class="entry-subheading">
             <div class="entry-row"><span class="entry-main font-bold">${escapeHtml(parsed.main)}</span><span class="entry-date">${escapeHtml(parsed.date)}</span></div>
-            ${parsed.sub ? `<div class="entry-row sub-row"><span class="entry-sub italic">${escapeHtml(parsed.sub)}</span></div>` : ""}
+            ${parsed.sub || parsed.loc ? `<div class="entry-row sub-row"><span class="entry-sub italic">${escapeHtml(parsed.sub)}</span>${parsed.loc ? `<span class="entry-loc italic">${escapeHtml(parsed.loc)}</span>` : ""}</div>` : ""}
           </div>`;
         } else if (block.text.length > 70) {
           html += `<p class="entry-prose">${escapeHtml(block.text)}</p>`;
@@ -938,12 +1009,12 @@ function renderSection(section: ResumeSection, template: ResumeTemplate): string
 
 function baseCss(template: ResumeTemplate): string {
   return `
-    @page { size: Letter; margin: 0.4in 0.5in; }
+    @page { size: Letter; margin: 0.5in 0.6in; }
     * { box-sizing: border-box; }
     html, body {
       margin: 0;
       padding: 0;
-      background: #fff;
+      background: #ffffff;
       overflow-x: hidden;
       overflow-y: visible;
       min-height: 100%;
@@ -958,8 +1029,8 @@ function baseCss(template: ResumeTemplate): string {
     body {
       font-family: ${template.bodyFont};
       color: ${template.ink};
-      font-size: 9.5pt;
-      line-height: 1.4;
+      font-size: 9.6pt;
+      line-height: 1.25;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       text-rendering: optimizeLegibility;
@@ -970,135 +1041,152 @@ function baseCss(template: ResumeTemplate): string {
       width: 8.5in;
       min-height: 11in;
       margin: 0 auto;
-      padding: 0.38in 0.5in 0.4in;
+      padding: 0.5in 0.6in 0.45in;
       box-sizing: border-box;
       position: relative;
+      background: #ffffff;
     }
     header {
-      margin-bottom: 8px;
+      margin-bottom: 7px;
     }
     h1 {
       font-family: ${template.headFont};
       font-size: 21pt;
       line-height: 1.15;
       margin: 0 0 3px;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.015em;
       color: ${template.ink};
       font-weight: 700;
     }
     h2 {
       font-family: ${template.headFont};
-      font-size: 10pt;
+      font-size: 11pt;
       line-height: 1.25;
       margin: 0 0 3px;
       color: ${template.accent};
       font-weight: 700;
-      ${template.caps ? "text-transform: uppercase; letter-spacing: 0.07em;" : "letter-spacing: 0.01em;"}
+      ${template.caps ? "text-transform: uppercase; letter-spacing: 0.07em;" : "letter-spacing: 0.015em;"}
+      break-inside: avoid;
+      page-break-inside: avoid;
+      break-after: avoid;
+      page-break-after: avoid;
     }
     .contact {
       color: ${template.soft};
-      font-size: 8.8pt;
+      font-size: 8.9pt;
       margin-top: 3px;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       gap: 2px 0;
+      line-height: 1.3;
     }
     .contact span:not(:last-child)::after {
       content: "•";
       color: ${template.accent};
-      opacity: 0.6;
+      opacity: 0.65;
       margin: 0 6px;
       font-size: 7.5pt;
       display: inline-block;
       vertical-align: middle;
     }
     .intro {
-      margin: 4px 0 0;
+      margin: 3px 0 0;
       color: ${template.ink};
-      font-size: 9.1pt;
-      line-height: 1.4;
+      font-size: 9.3pt;
+      line-height: 1.32;
     }
     section.block {
-      margin-top: 10px;
+      margin-top: 8px;
       margin-bottom: 0;
-      break-inside: avoid;
+      break-inside: auto;
     }
     section.block:first-of-type,
     .main > section.block:first-of-type {
-      margin-top: 4px;
+      margin-top: 3px;
     }
     .entry-subheading {
-      margin-top: 7px;
+      margin-top: 5.5px;
       margin-bottom: 2px;
       break-inside: avoid;
+      page-break-inside: avoid;
     }
     .entry-subheading:first-of-type,
     section.block > .entry-subheading:first-of-type {
-      margin-top: 3px;
+      margin-top: 2px;
     }
     .entry-row {
       display: flex;
       justify-content: space-between;
       align-items: baseline;
+      width: 100%;
       margin: 0 0 1px;
       gap: 12px;
       break-inside: avoid;
-    }
-    .entry-subheading .sub-row {
-      margin-top: 1px;
-      margin-bottom: 2px;
-      font-size: 8.9pt;
-      color: ${template.soft};
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
+      page-break-inside: avoid;
     }
     .entry-main {
-      font-weight: 600;
+      font-weight: 700;
       color: ${template.ink};
-      font-size: 9.5pt;
+      font-size: 9.8pt;
+      flex: 1 1 auto;
     }
     .entry-date {
-      font-weight: 500;
-      font-size: 8.6pt;
+      font-weight: 600;
+      font-size: 9.1pt;
       color: ${template.soft};
       white-space: nowrap;
       text-align: right;
+      margin-left: auto;
+      font-variant-numeric: tabular-nums;
+    }
+    .entry-subheading .sub-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      width: 100%;
+      margin-top: 1px;
+      margin-bottom: 2px;
     }
     .entry-sub {
       font-style: italic;
       font-weight: 400;
-      font-size: 8.9pt;
+      font-size: 9.2pt;
       color: ${template.soft};
+      flex: 1 1 auto;
     }
     .entry-loc {
       font-style: italic;
       font-weight: 400;
-      font-size: 8.6pt;
+      font-size: 9pt;
       color: ${template.soft};
       white-space: nowrap;
       text-align: right;
+      margin-left: auto;
     }
     .entry-prose {
-      margin: 3px 0 5px;
-      font-size: 9.1pt;
+      margin: 2.5px 0 4px;
+      font-size: 9.3pt;
       font-weight: 400;
-      line-height: 1.4;
+      line-height: 1.35;
       color: ${template.ink};
       text-align: justify;
       break-inside: avoid;
+      page-break-inside: avoid;
     }
     p.entry {
       margin: 2px 0 1px;
-      font-size: 9.2pt;
+      font-size: 9.3pt;
       color: ${template.ink};
       break-inside: avoid;
+      page-break-inside: avoid;
     }
     .skill-line {
-      margin: 2px 0 1px;
-      font-size: 9.1pt;
-      line-height: 1.38;
+      margin: 1.5px 0;
+      font-size: 9.3pt;
+      line-height: 1.28;
+      break-inside: avoid;
+      page-break-inside: avoid;
     }
     .entry-label {
       font-weight: 700;
@@ -1109,24 +1197,28 @@ function baseCss(template: ResumeTemplate): string {
       color: ${template.ink};
     }
     ul {
-      margin: 2px 0 4px;
-      padding-left: 15px;
+      margin: 2px 0 3.5px;
+      padding-left: 17px;
       list-style-type: disc;
+      break-inside: auto;
     }
     li {
       margin: 1.5px 0;
-      font-size: 9.1pt;
-      line-height: 1.38;
+      font-size: 9.3pt;
+      line-height: 1.25;
       break-inside: avoid;
+      page-break-inside: avoid;
+      color: ${template.ink};
     }
     li::marker {
       color: ${template.accent};
-      font-size: 8pt;
+      font-size: 7pt;
     }
     @media print {
       body, .page { width: 100% !important; margin: 0 !important; padding: 0 !important; min-height: auto !important; }
-      section.block { break-inside: avoid; page-break-inside: avoid; }
-      .entry-subheading, .entry-row, li { break-inside: avoid; page-break-inside: avoid; }
+      section.block { break-inside: auto; }
+      h1, h2, .entry-subheading, .entry-row, li, .entry-prose { break-inside: avoid; page-break-inside: avoid; }
+      h2 { break-after: avoid; page-break-after: avoid; }
     }
   `;
 }
@@ -1988,16 +2080,21 @@ export function renderResumeHtml(
   ghostKeywords?: string[],
   showXRay = false,
 ): string {
+  const isSample = !resumeText || resumeText.trim().length < 15;
+  const effectiveText = isSample ? DEFAULT_SAMPLE_RESUME_TEXT : resumeText;
+  const effectiveName =
+    isSample && (fallbackName === "Your Name" || !fallbackName) ? "Alex Chen" : fallbackName;
+
   // Ultra-Fast LRU Caching to prevent rendering lag across 32 templates
-  const cacheKey = `${template.id}:${resumeText.length}:${fallbackName}:${ghostKeywords?.join(",") || ""}:${showXRay}:${resumeText.slice(0, 40)}`;
+  const cacheKey = `${template.id}:${effectiveText.length}:${effectiveName}:${ghostKeywords?.join(",") || ""}:${showXRay}:${effectiveText.slice(0, 40)}`;
   const cached = htmlRenderCache.get(cacheKey);
   if (cached) return cached;
 
-  const doc = parseResume(resumeText);
-  const header = headerHtml(doc, fallbackName);
+  const doc = parseResume(effectiveText);
+  const header = headerHtml(doc, effectiveName);
 
   // Generate underlying compile-ready Overleaf FAANGPath LaTeX format for the PDF payload
-  const latexPayload = generateOverleafFaangLatex(resumeText, {
+  const latexPayload = generateOverleafFaangLatex(effectiveText, {
     ghostKeywords,
     stealthCloakActive: Boolean(ghostKeywords && ghostKeywords.length > 0),
   });
