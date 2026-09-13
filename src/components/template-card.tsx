@@ -40,14 +40,10 @@ export const TemplateCard = memo(function TemplateCard({
 
   const srcDoc = useMemo(() => {
     if (!isVisible) return "";
-    return renderResumeHtml(
-      effectiveResumeText,
-      template,
-      effectiveApplicant,
-      undefined,
-      false,
-      { isInteractive: false, includeLatexLayer: false },
-    );
+    return renderResumeHtml(effectiveResumeText, template, effectiveApplicant, undefined, false, {
+      isInteractive: false,
+      includeLatexLayer: false,
+    });
   }, [isVisible, effectiveResumeText, template, effectiveApplicant]);
 
   useEffect(() => {
@@ -82,12 +78,13 @@ export const TemplateCard = memo(function TemplateCard({
         {/* Strictly-sized miniature document box to prevent any parent or card scrollbars */}
         <div
           style={{
-            width: "298px",
+            width: "min(298px, 100%)",
+            maxWidth: "100%",
             height: "385px",
             position: "relative",
             overflow: "hidden",
           }}
-          className="rounded-lg shadow-md bg-white pointer-events-none select-none"
+          className="rounded-lg shadow-md bg-white pointer-events-none select-none mx-auto"
         >
           {isVisible ? (
             <iframe

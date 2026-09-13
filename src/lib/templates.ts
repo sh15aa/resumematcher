@@ -846,7 +846,12 @@ function parseEntryDetails(text: string): {
     const remaining = text.slice(0, dateParenMatch.index).trim();
     const parts = remaining.split(/\s*,\s*|\s+[—–]\s+/);
     if (parts.length >= 3) {
-      return { main: parts[0]!.trim(), sub: parts[1]!.trim(), loc: parts.slice(2).join(", ").trim(), date };
+      return {
+        main: parts[0]!.trim(),
+        sub: parts[1]!.trim(),
+        loc: parts.slice(2).join(", ").trim(),
+        date,
+      };
     }
     if (parts.length === 2) {
       return { main: parts[0]!.trim(), sub: parts[1]!.trim(), loc: "", date };
@@ -863,7 +868,12 @@ function parseEntryDetails(text: string): {
     const remaining = text.slice(0, dateEndMatch.index).trim();
     const parts = remaining.split(/\s*,\s*|\s+[—–]\s+/);
     if (parts.length >= 3) {
-      return { main: parts[0]!.trim(), sub: parts[1]!.trim(), loc: parts.slice(2).join(", ").trim(), date };
+      return {
+        main: parts[0]!.trim(),
+        sub: parts[1]!.trim(),
+        loc: parts.slice(2).join(", ").trim(),
+        date,
+      };
     }
     if (parts.length === 2) {
       return { main: parts[0]!.trim(), sub: parts[1]!.trim(), loc: "", date };
@@ -874,7 +884,12 @@ function parseEntryDetails(text: string): {
   // 3. Em-dash separation without explicit date
   const dashParts = text.split(/\s+[—–]\s+/);
   if (dashParts.length >= 2) {
-    return { main: dashParts[0]!.trim(), sub: dashParts.slice(1).join(" — ").trim(), loc: "", date: "" };
+    return {
+      main: dashParts[0]!.trim(),
+      sub: dashParts.slice(1).join(" — ").trim(),
+      loc: "",
+      date: "",
+    };
   }
 
   return { main: text, sub: "", loc: "", date: "" };
@@ -923,7 +938,8 @@ function renderBlocks(section: ResumeSection, template: ResumeTemplate): string 
       }
 
       // 4. Structured entry with pipe/bullet delimiters
-      const hasStructuredDelimiter = block.text.includes("|") || block.text.includes("•") || block.text.includes("·");
+      const hasStructuredDelimiter =
+        block.text.includes("|") || block.text.includes("•") || block.text.includes("·");
       const parts = hasStructuredDelimiter
         ? block.text.split(/\s+[|•·]\s+/)
         : block.text.split(/\s+[—–]\s+/);

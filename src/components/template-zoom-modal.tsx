@@ -1,5 +1,16 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { Download, FileDown, FileCode, Lock, Check, ShieldCheck, Star, X, ZoomIn, ZoomOut } from "lucide-react";
+import {
+  Download,
+  FileDown,
+  FileCode,
+  Lock,
+  Check,
+  ShieldCheck,
+  Star,
+  X,
+  ZoomIn,
+  ZoomOut,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DEFAULT_SAMPLE_RESUME_TEXT, renderResumeHtml, type ResumeTemplate } from "@/lib/templates";
@@ -27,8 +38,6 @@ export function TemplateZoomModal({
   onDownloadPdf,
   onDownloadLatex,
 }: TemplateZoomModalProps) {
-  if (!template) return null;
-
   const [isFitMode, setIsFitMode] = useState(true);
   const [zoom, setZoom] = useState(100);
   const [zoomDocHeight, setZoomDocHeight] = useState(1100);
@@ -101,9 +110,9 @@ export function TemplateZoomModal({
 
   const fitScale = useMemo(() => {
     if (containerWidth > 0) {
-      const availW = Math.max(260, containerWidth - 48);
+      const availW = Math.max(160, containerWidth - (containerWidth < 768 ? 16 : 48));
       const scaleW = availW / 850;
-      return Number(Math.min(1.05, Math.max(0.45, scaleW)).toFixed(3));
+      return Number(Math.min(1.05, Math.max(0.15, scaleW)).toFixed(3));
     }
     return 0.85;
   }, [containerWidth]);
@@ -113,7 +122,7 @@ export function TemplateZoomModal({
       return fitScale;
     }
     if (containerWidth > 0) {
-      const avail = Math.max(280, containerWidth - 32);
+      const avail = Math.max(160, containerWidth - (containerWidth < 768 ? 16 : 32));
       const baseScale = Math.min(1, avail / 850);
       return Number((baseScale * (zoom / 100)).toFixed(3));
     }
@@ -124,6 +133,8 @@ export function TemplateZoomModal({
     setIsFitMode(true);
     if (fitScale > 0) setZoom(Math.round(fitScale * 100));
   };
+
+  if (!template) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-200 overflow-x-hidden">
@@ -167,7 +178,7 @@ export function TemplateZoomModal({
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full sm:w-auto overflow-x-auto no-scrollbar py-1">
             {/* Zoom Controls */}
             <div className="inline-flex items-center rounded-xl border border-border bg-[#121624] p-0.5 shadow-xs">
               <Button
@@ -283,7 +294,7 @@ export function TemplateZoomModal({
         {/* Scalable Full Preview Canvas - 100% Centered with Zero Horizontal Overflow on Mobile */}
         <div
           ref={canvasRef}
-          className="flex-1 overflow-x-hidden overflow-y-auto bg-[#090A0F] p-2 sm:p-4 pb-8 sm:pb-10 flex flex-col items-center justify-start w-full"
+          className="flex-1 overflow-x-auto overflow-y-auto bg-[#090A0F] p-2 sm:p-4 pb-8 sm:pb-10 flex flex-col items-center justify-start w-full max-w-full"
           style={{ overscrollBehaviorY: "contain", scrollbarWidth: "thin" }}
         >
           <div
@@ -294,7 +305,7 @@ export function TemplateZoomModal({
               position: "relative",
               overflow: "hidden",
             }}
-            className="mx-auto rounded shadow-2xl bg-white transition-all duration-150 mb-4"
+            className="mx-auto rounded shadow-2xl bg-white transition-all duration-150 mb-4 w-full max-w-full transform-gpu"
           >
             <div
               style={{
@@ -331,7 +342,9 @@ export function TemplateZoomModal({
                         }
                       }
                     }
-                  } catch {}
+                  } catch {
+                    // ignore iframe cross-origin access
+                  }
                 }}
               />
             </div>

@@ -49,9 +49,7 @@ export function SocialShare({ score = 100, roleTitle, className = "" }: SocialSh
   };
 
   return (
-    <div
-      className={`rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-xs ${className}`}
-    >
+    <div className={`rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-xs ${className}`}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">

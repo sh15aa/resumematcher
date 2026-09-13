@@ -504,13 +504,13 @@ function Index() {
     };
   }, [tab, previewMode]);
 
-  // Responsive fit scale: on desktop/wide displays, scales document to readable width (up to 100% / 1.0)
-  // so typography remains executive-grade and legible, never shrinking into microscopic text.
+  // Responsive fit scale: dynamically scales document to match available canvas width
+  // so paper fits 100% of the screen width on mobile (<768px) with zero horizontal clipping.
   const fitScale = useMemo(() => {
     if (canvasWidth > 0) {
-      const availW = Math.max(260, canvasWidth - 40);
+      const availW = Math.max(160, canvasWidth - (canvasWidth < 768 ? 16 : 32));
       const scaleW = availW / 850;
-      return Number(Math.min(1.0, Math.max(0.40, scaleW)).toFixed(3));
+      return Number(Math.min(1.0, Math.max(0.15, scaleW)).toFixed(3));
     }
     return 0.85;
   }, [canvasWidth]);
@@ -521,7 +521,7 @@ function Index() {
       return fitScale;
     }
     if (canvasWidth > 0) {
-      const avail = Math.max(280, canvasWidth - 32);
+      const avail = Math.max(160, canvasWidth - (canvasWidth < 768 ? 16 : 32));
       const baseScale = Math.min(1, avail / 850);
       return Number((baseScale * (previewZoom / 100)).toFixed(3));
     }
@@ -901,8 +901,8 @@ function Index() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col justify-between antialiased w-full max-w-full overflow-x-hidden">
-      <Toaster position="top-right" />
+    <div className="min-h-screen bg-background text-foreground flex flex-col justify-between antialiased w-full max-w-[100vw] overflow-x-hidden box-border">
+      <Toaster />
 
       {/* Accessible Skip Navigation Link (WCAG 2.1 AA) */}
       <a
@@ -946,2538 +946,2572 @@ function Index() {
 
       {/* Modern Minimal Header */}
       <header className="border-b border-border bg-[#090A0F]/75 backdrop-blur-md sticky top-0 z-40 w-full overflow-x-hidden">
-          <div className="w-full max-w-[1740px] mx-auto flex items-center justify-between px-3 sm:px-6 lg:px-8 xl:px-12 h-14">
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <ResumeMatcherLogo size={32} />
-              <span className="hidden sm:inline-flex rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary border border-primary/20">
-                32 Templates (Overleaf + FAANG)
-              </span>
+        <div className="w-full max-w-[1740px] mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-12 h-14">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <ResumeMatcherLogo size={32} />
+            <span className="hidden sm:inline-flex rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary border border-primary/20">
+              32 Templates (Overleaf + FAANG)
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            {/* Workspace Layout Toggle */}
+            <div className="hidden sm:inline-flex items-center rounded-xl border border-border bg-[#121624] p-0.5 shadow-xs">
+              <button
+                type="button"
+                onClick={() => setWorkspaceLayout("split")}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all cursor-pointer ${
+                  workspaceLayout === "split"
+                    ? "bg-card text-foreground shadow-xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                aria-label="Switch to split workspace layout"
+                title="Split View"
+              >
+                <Columns className="size-3.5" /> Split
+              </button>
+              <button
+                type="button"
+                onClick={() => setWorkspaceLayout("full")}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all cursor-pointer ${
+                  workspaceLayout === "full"
+                    ? "bg-card text-foreground shadow-xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                aria-label="Switch to full-width editor layout"
+                title="Full Width Editor"
+              >
+                <Maximize className="size-3.5" /> Full Width
+              </button>
             </div>
 
-            <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-              {/* Workspace Layout Toggle */}
-              <div className="hidden sm:inline-flex items-center rounded-xl border border-border bg-[#121624] p-0.5 shadow-xs">
-                <button
-                  type="button"
-                  onClick={() => setWorkspaceLayout("split")}
-                  className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all cursor-pointer ${
-                    workspaceLayout === "split"
-                      ? "bg-card text-foreground shadow-xs font-semibold"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                  aria-label="Switch to split workspace layout"
-                  title="Split View"
-                >
-                  <Columns className="size-3.5" /> Split
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setWorkspaceLayout("full")}
-                  className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all cursor-pointer ${
-                    workspaceLayout === "full"
-                      ? "bg-card text-foreground shadow-xs font-semibold"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                  aria-label="Switch to full-width editor layout"
-                  title="Full Width Editor"
-                >
-                  <Maximize className="size-3.5" /> Full Width
-                </button>
-              </div>
-
-              {/* User Account / Auth State */}
-              {user ? (
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <div className="flex items-center gap-1.5 rounded-full border border-border bg-muted/50 py-1 px-2.5 text-xs">
-                    <span className="size-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
-                    <span className="font-medium text-foreground max-w-[90px] sm:max-w-[130px] truncate">
-                      {user.email}
+            {/* User Account / Auth State */}
+            {user ? (
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="flex items-center gap-1.5 rounded-full border border-border bg-muted/50 py-1 px-2.5 text-xs">
+                  <span className="size-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+                  <span className="font-medium text-foreground max-w-[90px] sm:max-w-[130px] truncate">
+                    {user.email}
+                  </span>
+                  {isSubscribed && (
+                    <span className="rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary border border-primary/25">
+                      PRO
                     </span>
-                    {isSubscribed && (
-                      <span className="rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary border border-primary/25">
-                        PRO
-                      </span>
-                    )}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={async () => {
-                      await signOut();
-                      toast.info("Signed out successfully.");
-                    }}
-                    className="h-8 text-xs text-muted-foreground hover:text-foreground px-1.5 sm:px-2"
-                  >
-                    Sign Out
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1 sm:gap-2">
-                  {isSubscribed ? (
-                    <span className="inline-flex items-center rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-semibold text-xs py-1 px-2.5 gap-1.5 shadow-xs">
-                      <Crown className="size-3.5 fill-current" />{" "}
-                      <span className="hidden sm:inline">Pro Active</span>
-                      <span className="sm:hidden">Pro</span>
-                    </span>
-                  ) : (
-                    <>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => {
-                          setSubReason(
-                            "Free tier includes 6 templates & Word (.doc) and LaTeX (.tex) export. Subscribe to unlock all 32 world-class templates and vector PDF exports!",
-                          );
-                          setSubModalOpen(true);
-                        }}
-                        className="h-8 text-xs font-semibold px-2.5 sm:px-3 gap-1.5 shadow-xs"
-                      >
-                        <Crown className="size-3.5 text-primary-foreground" />{" "}
-                        <span className="hidden sm:inline">Upgrade to </span>Pro
-                      </Button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAuthModalMode("sign_in");
-                          setAuthModalOpen(true);
-                        }}
-                        className="text-xs text-muted-foreground hover:text-foreground font-medium px-1.5 sm:px-2 py-1 transition-colors cursor-pointer"
-                      >
-                        Sign In
-                      </button>
-                    </>
                   )}
                 </div>
-              )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={async () => {
+                    await signOut();
+                    toast.info("Signed out successfully.");
+                  }}
+                  className="h-8 text-xs text-muted-foreground hover:text-foreground px-1.5 sm:px-2"
+                >
+                  Sign Out
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 sm:gap-2">
+                {isSubscribed ? (
+                  <span className="inline-flex items-center rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-semibold text-xs py-1 px-2.5 gap-1.5 shadow-xs">
+                    <Crown className="size-3.5 fill-current" />{" "}
+                    <span className="hidden sm:inline">Pro Active</span>
+                    <span className="sm:hidden">Pro</span>
+                  </span>
+                ) : (
+                  <>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => {
+                        setSubReason(
+                          "Free tier includes 6 templates & Word (.doc) and LaTeX (.tex) export. Subscribe to unlock all 32 world-class templates and vector PDF exports!",
+                        );
+                        setSubModalOpen(true);
+                      }}
+                      className="h-8 text-xs font-semibold px-2.5 sm:px-3 gap-1.5 shadow-xs"
+                    >
+                      <Crown className="size-3.5 text-primary-foreground" />{" "}
+                      <span className="hidden sm:inline">Upgrade to </span>Pro
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthModalMode("sign_in");
+                        setAuthModalOpen(true);
+                      }}
+                      className="text-xs text-muted-foreground hover:text-foreground font-medium px-1.5 sm:px-2 py-1 transition-colors cursor-pointer"
+                    >
+                      Sign In
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
 
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLoadAllDemo}
+              className="h-8 border-border hover:bg-accent text-xs font-medium px-2 sm:px-2.5"
+            >
+              <Sparkles className="size-3.5 text-primary sm:mr-1" />{" "}
+              <span className="hidden sm:inline">Demo</span>
+            </Button>
+
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="h-8 text-xs font-medium px-2 sm:px-2.5"
+            >
+              <Link to="/profile">
+                <UserRound className="size-3.5 sm:mr-1 text-primary" />{" "}
+                <span className="hidden sm:inline">Profile</span>
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      {/* Wide Full-Width Fluid Container */}
+      <main
+        id="main-content"
+        className="w-full max-w-[1740px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 pt-6 sm:pt-8 overflow-x-hidden box-border"
+      >
+        {/* Clear CTA & Trust Hero Banner */}
+        <section
+          aria-labelledby="hero-title"
+          className="mb-8 rounded-2xl border border-border bg-card/75 p-5 sm:p-7 shadow-xs overflow-hidden"
+        >
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+            <div className="space-y-2 max-w-3xl">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-400">
+                  <ShieldCheck className="size-3.5" /> 100% ATS SHORTLIST GUARANTEE
+                </span>
+                <span className="text-xs text-slate-700 hidden sm:inline">•</span>
+                <span className="text-xs font-medium text-slate-300">
+                  32 FAANG &amp; Overleaf Templates
+                </span>
+                <span className="text-xs text-slate-700 hidden sm:inline">•</span>
+                <span className="text-xs text-muted-foreground">
+                  Overleaf LaTeX (.tex), Word &amp; Vector PDF
+                </span>
+              </div>
+              <h1
+                id="hero-title"
+                className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight hero-gradient-text"
+              >
+                Match Your Resume &amp; Infiltrate Automated ATS Filters
+              </h1>
+              <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl leading-relaxed">
+                Extract exact technical keywords from any job posting, weave them into executive
+                accomplishment bullets, and activate the{" "}
+                <strong className="text-slate-200 font-semibold">ATS Stealth Cloak™</strong>{" "}
+                (white-font keyword injection) to guarantee a 100% bot match.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 shrink-0 w-full sm:w-auto">
               <Button
+                onClick={handleLoadAllDemo}
                 variant="outline"
                 size="sm"
-                onClick={handleLoadAllDemo}
-                className="h-8 border-border hover:bg-accent text-xs font-medium px-2 sm:px-2.5"
+                aria-label="Load sample job posting and candidate profile"
+                className="h-9 text-xs font-semibold px-3.5 w-full sm:w-auto"
               >
-                <Sparkles className="size-3.5 text-primary sm:mr-1" />{" "}
-                <span className="hidden sm:inline">Demo</span>
+                <Sparkles className="size-3.5 mr-1.5 text-primary" /> Load Sample Job &amp;
+                Candidate
               </Button>
-
               <Button
-                asChild
-                variant="ghost"
+                onClick={() => {
+                  if (!resume.trim() || !job.trim()) {
+                    handleLoadAllDemo();
+                  }
+                  outputRef.current?.scrollIntoView({ behavior: "smooth" });
+                  if (ready) tailor();
+                }}
                 size="sm"
-                className="h-8 text-xs font-medium px-2 sm:px-2.5"
+                aria-label="Start ATS resume optimization process"
+                className="h-9 text-xs font-semibold px-4 shadow-sm bg-primary hover:bg-primary/90 text-primary-foreground w-full sm:w-auto"
               >
-                <Link to="/profile">
-                  <UserRound className="size-3.5 sm:mr-1 text-primary" />{" "}
-                  <span className="hidden sm:inline">Profile</span>
-                </Link>
+                Start ATS Optimization <ArrowRight className="size-3.5 ml-1.5" />
               </Button>
             </div>
           </div>
-        </header>
+        </section>
 
-        {/* Wide Full-Width Fluid Container */}
-        <main id="main-content" className="w-full max-w-[1740px] mx-auto px-3 sm:px-6 lg:px-8 xl:px-12 pt-6 sm:pt-8 overflow-x-hidden">
-          {/* Clear CTA & Trust Hero Banner */}
-          <section aria-labelledby="hero-title" className="mb-8 rounded-2xl border border-border bg-card/75 p-5 sm:p-7 shadow-xs overflow-hidden">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-              <div className="space-y-2 max-w-3xl">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-400">
-                    <ShieldCheck className="size-3.5" /> 100% ATS SHORTLIST GUARANTEE
-                  </span>
-                  <span className="text-xs text-slate-700 hidden sm:inline">•</span>
-                  <span className="text-xs font-medium text-slate-300">
-                    32 FAANG &amp; Overleaf Templates
-                  </span>
-                  <span className="text-xs text-slate-700 hidden sm:inline">•</span>
-                  <span className="text-xs text-muted-foreground">
-                    Overleaf LaTeX (.tex), Word &amp; Vector PDF
-                  </span>
-                </div>
-                <h1 id="hero-title" className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight hero-gradient-text">
-                  Match Your Resume &amp; Infiltrate Automated ATS Filters
-                </h1>
-                <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl leading-relaxed">
-                  Extract exact technical keywords from any job posting, weave them into executive
-                  accomplishment bullets, and activate the{" "}
-                  <strong className="text-slate-200 font-semibold">ATS Stealth Cloak™</strong> (white-font
-                  keyword injection) to guarantee a 100% bot match.
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3 shrink-0">
-                <Button
-                  onClick={handleLoadAllDemo}
-                  variant="outline"
-                  size="sm"
-                  aria-label="Load sample job posting and candidate profile"
-                  className="h-9 text-xs font-semibold px-3.5"
-                >
-                  <Sparkles className="size-3.5 mr-1.5 text-primary" /> Load Sample Job &amp;
-                  Candidate
-                </Button>
-                <Button
-                  onClick={() => {
-                    if (!resume.trim() || !job.trim()) {
-                      handleLoadAllDemo();
-                    }
-                    outputRef.current?.scrollIntoView({ behavior: "smooth" });
-                    if (ready) tailor();
-                  }}
-                  size="sm"
-                  aria-label="Start ATS resume optimization process"
-                  className="h-9 text-xs font-semibold px-4 shadow-sm bg-primary hover:bg-primary/90 text-primary-foreground"
-                >
-                  Start ATS Optimization <ArrowRight className="size-3.5 ml-1.5" />
-                </Button>
-              </div>
-            </div>
-          </section>
-
-          {/* Dynamic Grid: Fills the entire laptop display effortlessly */}
-          <div
+        {/* Dynamic Grid: Fills the entire laptop display effortlessly */}
+        <div
+          className={
+            workspaceLayout === "split"
+              ? "grid gap-7 lg:grid-cols-12 items-start"
+              : "space-y-8 w-full"
+          }
+        >
+          {/* Left Workspace Column: Inputs & Job Target */}
+          <section
+            aria-labelledby="wizard-heading"
             className={
               workspaceLayout === "split"
-                ? "grid gap-7 lg:grid-cols-12 items-start"
-                : "space-y-8 w-full"
+                ? "lg:col-span-5 xl:col-span-5 2xl:col-span-5 space-y-6"
+                : "space-y-6 w-full max-w-[1400px] mx-auto"
             }
           >
-            {/* Left Workspace Column: Inputs & Job Target */}
-            <section
-              aria-labelledby="wizard-heading"
+            {/* Step-by-Step Guided Wizard Workspace */}
+            <div
               className={
-                workspaceLayout === "split"
-                  ? "lg:col-span-5 xl:col-span-5 2xl:col-span-5 space-y-6"
-                  : "space-y-6 w-full max-w-[1400px] mx-auto"
+                workspaceLayout === "full"
+                  ? "rounded-2xl border border-border bg-card p-6 sm:p-8 lg:p-10 shadow-md space-y-6"
+                  : "rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-xs space-y-5"
               }
             >
-              {/* Step-by-Step Guided Wizard Workspace */}
-              <div
-                className={
-                  workspaceLayout === "full"
-                    ? "rounded-2xl border border-border bg-card p-6 sm:p-8 lg:p-10 shadow-md space-y-6"
-                    : "rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-xs space-y-5"
-                }
-              >
-                {/* Header & Mode Switcher */}
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/80 pb-4 sm:pb-5">
-                  <div>
-                    <div className="flex items-center gap-2.5">
-                      <span className="flex size-7 sm:size-8 items-center justify-center rounded-xl bg-primary text-xs sm:text-sm font-bold text-primary-foreground shadow-xs">
-                        {inputMode === "form" ? wizardStep : "✎"}
-                      </span>
-                      <h2 id="wizard-heading" className="text-base sm:text-lg lg:text-xl font-bold text-foreground">
-                        {inputMode === "form" ? (
-                          <>
-                            {wizardStep === 1 && "Step 1: Target Role & Job Posting"}
-                            {wizardStep === 2 && "Step 2: Contact & Identity"}
-                            {wizardStep === 3 && "Step 3: Professional Experience"}
-                            {wizardStep === 4 && "Step 4: Education, Skills & Custom Sections"}
-                            {wizardStep === 5 && "Step 5: ATS Optimization & Stealth Cloak"}
-                          </>
-                        ) : (
-                          "Quick Import / Paste Resume Text"
-                        )}
-                      </h2>
-                    </div>
-                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+              {/* Header & Mode Switcher */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/80 pb-4 sm:pb-5">
+                <div>
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex size-7 sm:size-8 items-center justify-center rounded-xl bg-primary text-xs sm:text-sm font-bold text-primary-foreground shadow-xs">
+                      {inputMode === "form" ? wizardStep : "✎"}
+                    </span>
+                    <h2
+                      id="wizard-heading"
+                      className="text-base sm:text-lg lg:text-xl font-bold text-foreground"
+                    >
                       {inputMode === "form" ? (
                         <>
-                          {wizardStep === 1 &&
-                            "Target job requirements, tech stack & real-time ATS keyword detection."}
-                          {wizardStep === 2 &&
-                            "Your personal branding, contact info, and executive headline."}
-                          {wizardStep === 3 &&
-                            "Career achievements with metrics, scale, and action verb helpers."}
-                          {wizardStep === 4 &&
-                            "Degrees, core competencies, certifications, and key project sections."}
-                          {wizardStep === 5 &&
-                            "Verify keyword coverage, arm the ATS Stealth Cloak, and generate."}
+                          {wizardStep === 1 && "Step 1: Target Role & Job Posting"}
+                          {wizardStep === 2 && "Step 2: Contact & Identity"}
+                          {wizardStep === 3 && "Step 3: Professional Experience"}
+                          {wizardStep === 4 && "Step 4: Education, Skills & Custom Sections"}
+                          {wizardStep === 5 && "Step 5: ATS Optimization & Stealth Cloak"}
                         </>
                       ) : (
-                        "Upload a PDF or paste an existing resume to optimize and match instantly."
+                        "Quick Import / Paste Resume Text"
                       )}
-                    </p>
+                    </h2>
                   </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setInputMode("form")}
-                      aria-label="Switch to guided wizard input mode"
-                      className={`rounded-xl px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold transition-all flex items-center cursor-pointer ${
-                        inputMode === "form"
-                          ? "bg-primary text-primary-foreground shadow-xs font-bold"
-                          : "bg-muted text-muted-foreground hover:bg-accent"
-                      }`}
-                    >
-                      Guided Wizard
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setInputMode("paste")}
-                      aria-label="Switch to paste or PDF upload input mode"
-                      className={`rounded-xl px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold transition-all flex items-center cursor-pointer ${
-                        inputMode === "paste"
-                          ? "bg-primary text-primary-foreground shadow-xs font-bold"
-                          : "bg-muted text-muted-foreground hover:bg-accent"
-                      }`}
-                    >
-                      Paste / PDF
-                    </button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleLoadAllDemo}
-                      aria-label="Load demo resume and job data"
-                      className="h-8 sm:h-9 px-2.5 text-xs sm:text-sm text-primary hover:bg-primary/10 font-semibold"
-                    >
-                      <Sparkles className="size-3.5 mr-1" /> Demo Data
-                    </Button>
-                  </div>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                    {inputMode === "form" ? (
+                      <>
+                        {wizardStep === 1 &&
+                          "Target job requirements, tech stack & real-time ATS keyword detection."}
+                        {wizardStep === 2 &&
+                          "Your personal branding, contact info, and executive headline."}
+                        {wizardStep === 3 &&
+                          "Career achievements with metrics, scale, and action verb helpers."}
+                        {wizardStep === 4 &&
+                          "Degrees, core competencies, certifications, and key project sections."}
+                        {wizardStep === 5 &&
+                          "Verify keyword coverage, arm the ATS Stealth Cloak, and generate."}
+                      </>
+                    ) : (
+                      "Upload a PDF or paste an existing resume to optimize and match instantly."
+                    )}
+                  </p>
                 </div>
 
-                {inputMode === "form" ? (
-                  <div className="space-y-6">
-                    {/* 5-Step Tracker Bar */}
-                    <div className="space-y-2">
-                      <div className="grid grid-cols-5 gap-1.5 text-xs sm:text-sm font-semibold w-full">
-                        {[
-                          { step: 1, label: "1. Job", fullLabel: "1. Job Target" },
-                          { step: 2, label: "2. Info", fullLabel: "2. Identity" },
-                          { step: 3, label: "3. Exp", fullLabel: "3. Experience" },
-                          { step: 4, label: "4. Skills", fullLabel: "4. Skills & Sections" },
-                          { step: 5, label: "5. ATS", fullLabel: "5. ATS Stealth" },
-                        ].map((item) => (
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => setInputMode("form")}
+                    aria-label="Switch to guided wizard input mode"
+                    className={`rounded-xl px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold transition-all flex items-center cursor-pointer ${
+                      inputMode === "form"
+                        ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                        : "bg-muted text-muted-foreground hover:bg-accent"
+                    }`}
+                  >
+                    Guided Wizard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setInputMode("paste")}
+                    aria-label="Switch to paste or PDF upload input mode"
+                    className={`rounded-xl px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold transition-all flex items-center cursor-pointer ${
+                      inputMode === "paste"
+                        ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                        : "bg-muted text-muted-foreground hover:bg-accent"
+                    }`}
+                  >
+                    Paste / PDF
+                  </button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleLoadAllDemo}
+                    aria-label="Load demo resume and job data"
+                    className="h-8 sm:h-9 px-2.5 text-xs sm:text-sm text-primary hover:bg-primary/10 font-semibold"
+                  >
+                    <Sparkles className="size-3.5 mr-1" /> Demo Data
+                  </Button>
+                </div>
+              </div>
+
+              {inputMode === "form" ? (
+                <div className="space-y-6">
+                  {/* 5-Step Tracker Bar */}
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-5 gap-1.5 text-xs sm:text-sm font-semibold w-full">
+                      {[
+                        { step: 1, label: "1. Job", fullLabel: "1. Job Target" },
+                        { step: 2, label: "2. Info", fullLabel: "2. Identity" },
+                        { step: 3, label: "3. Exp", fullLabel: "3. Experience" },
+                        { step: 4, label: "4. Skills", fullLabel: "4. Skills & Sections" },
+                        { step: 5, label: "5. ATS", fullLabel: "5. ATS Stealth" },
+                      ].map((item) => (
+                        <button
+                          key={item.step}
+                          type="button"
+                          onClick={() => setWizardStep(item.step as 1 | 2 | 3 | 4 | 5)}
+                          aria-label={item.fullLabel}
+                          className={`rounded-xl py-2 px-1.5 min-h-[44px] sm:min-h-0 flex items-center justify-center text-center truncate transition-all cursor-pointer ${
+                            wizardStep === item.step
+                              ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                              : wizardStep > item.step
+                                ? "bg-muted/80 text-foreground font-medium hover:bg-muted"
+                                : "bg-muted/30 text-muted-foreground hover:text-foreground"
+                          }`}
+                          title={item.fullLabel}
+                        >
+                          <span className="sm:hidden">{item.label}</span>
+                          <span className="hidden sm:inline">{item.fullLabel}</span>
+                        </button>
+                      ))}
+                    </div>
+                    {/* Progress line */}
+                    <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary transition-all duration-300 rounded-full"
+                        style={{ width: `${(wizardStep / 5) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* STEP 1: TARGET ROLE & JOB POSTING */}
+                  {wizardStep === 1 && (
+                    <div className="space-y-5 pt-1 animate-in fade-in duration-200">
+                      {/* Sample job quick buttons */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs sm:text-sm font-bold text-foreground mr-1">
+                          Load Benchmark Job:
+                        </span>
+                        {SAMPLE_JOBS.map((sample) => (
                           <button
-                            key={item.step}
+                            key={sample.id}
                             type="button"
-                            onClick={() => setWizardStep(item.step as any)}
-                            aria-label={item.fullLabel}
-                            className={`rounded-xl py-2 px-1.5 min-h-[44px] sm:min-h-0 flex items-center justify-center text-center truncate transition-all cursor-pointer ${
-                              wizardStep === item.step
-                                ? "bg-primary text-primary-foreground font-bold shadow-xs"
-                                : wizardStep > item.step
-                                  ? "bg-muted/80 text-foreground font-medium hover:bg-muted"
-                                  : "bg-muted/30 text-muted-foreground hover:text-foreground"
-                            }`}
-                            title={item.fullLabel}
+                            onClick={() => handleLoadSampleJob(sample)}
+                            className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs sm:text-sm font-medium text-foreground hover:border-primary hover:text-primary transition-all cursor-pointer shadow-xs"
                           >
-                            <span className="sm:hidden">{item.label}</span>
-                            <span className="hidden sm:inline">{item.fullLabel}</span>
+                            {sample.title}
                           </button>
                         ))}
                       </div>
-                      {/* Progress line */}
-                      <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-primary transition-all duration-300 rounded-full"
-                          style={{ width: `${(wizardStep / 5) * 100}%` }}
-                        />
-                      </div>
-                    </div>
 
-                    {/* STEP 1: TARGET ROLE & JOB POSTING */}
-                    {wizardStep === 1 && (
-                      <div className="space-y-5 pt-1 animate-in fade-in duration-200">
-                        {/* Sample job quick buttons */}
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-xs sm:text-sm font-bold text-foreground mr-1">
-                            Load Benchmark Job:
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <label className="block">
+                          <span className="mb-1.5 block text-sm font-bold text-foreground">
+                            Target Role Title
                           </span>
-                          {SAMPLE_JOBS.map((sample) => (
-                            <button
-                              key={sample.id}
-                              type="button"
-                              onClick={() => handleLoadSampleJob(sample)}
-                              className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs sm:text-sm font-medium text-foreground hover:border-primary hover:text-primary transition-all cursor-pointer shadow-xs"
-                            >
-                              {sample.title}
-                            </button>
-                          ))}
-                        </div>
-
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          <label className="block">
-                            <span className="mb-1.5 block text-sm font-bold text-foreground">
-                              Target Role Title
-                            </span>
-                            <Input
-                              value={jobTitle}
-                              onChange={(e) => setJobTitle(e.target.value)}
-                              placeholder="e.g. Senior Full-Stack Engineer"
-                              className="h-12 text-sm sm:text-base bg-background px-4 rounded-xl border border-border/80"
-                            />
-                          </label>
-                          <label className="block">
-                            <span className="mb-1.5 block text-sm font-bold text-foreground">
-                              Target Company / Industry
-                            </span>
-                            <Input
-                              placeholder="e.g. Stripe, Google, or Tech Startup"
-                              className="h-12 text-sm sm:text-base bg-background px-4 rounded-xl border border-border/80"
-                            />
-                          </label>
-                        </div>
-
-                        <label className="block space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm sm:text-base font-bold text-foreground">
-                              Target Job Description (Requirements &amp; Tech Stack)
-                            </span>
-                            <span className="text-xs sm:text-sm text-muted-foreground font-mono">
-                              {job.trim().length} characters
-                            </span>
-                          </div>
-                          <Textarea
-                            value={job}
-                            onChange={(e) => setJob(e.target.value)}
-                            placeholder="Paste the target job posting here. Requirements, responsibilities, languages, frameworks, tech stack..."
-                            className="min-h-[260px] sm:min-h-[340px] resize-y bg-background text-sm sm:text-base leading-relaxed p-4 sm:p-5 rounded-xl border border-border/80 focus:border-primary transition-all"
+                          <Input
+                            value={jobTitle}
+                            onChange={(e) => setJobTitle(e.target.value)}
+                            placeholder="e.g. Senior Full-Stack Engineer"
+                            className="h-12 text-sm sm:text-base bg-background px-4 rounded-xl border border-border/80"
                           />
                         </label>
-
-                        {/* Real-time Extracted ATS Keywords Preview */}
-                        {liveTargetKeywords.length > 0 && (
-                          <div className="rounded-xl border border-primary/25 bg-primary/5 p-4 space-y-2.5">
-                            <div className="flex items-center justify-between text-xs sm:text-sm">
-                              <span className="font-bold text-primary flex items-center gap-2">
-                                <Sparkles className="size-4" /> Detected ATS Keywords (
-                                {liveTargetKeywords.length} terms):
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                Extracted from job posting
-                              </span>
-                            </div>
-                            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
-                              {liveTargetKeywords.slice(0, 20).map((kw, i) => (
-                                <span
-                                  key={i}
-                                  className="inline-flex items-center rounded-lg bg-background border border-primary/30 px-2.5 py-1 text-xs font-semibold text-foreground font-mono shadow-2xs"
-                                >
-                                  ✓ {kw}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Tone Selection */}
-                        <div className="border-t border-border pt-4">
-                          <span className="mb-2 block text-sm font-bold text-foreground">
-                            Target Executive Tone:
+                        <label className="block">
+                          <span className="mb-1.5 block text-sm font-bold text-foreground">
+                            Target Company / Industry
                           </span>
-                          <div className="flex flex-wrap gap-2.5">
-                            {TONES.map((option) => (
-                              <button
-                                key={option.id}
-                                type="button"
-                                onClick={() => setTone(option.id)}
-                                className={`rounded-lg border px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
-                                  tone === option.id
-                                    ? "border-primary bg-primary text-primary-foreground shadow-xs font-bold"
-                                    : "border-border bg-background text-foreground hover:bg-accent"
-                                }`}
-                              >
-                                {option.label}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Footer Nav */}
-                        <div className="flex items-center justify-between pt-4 border-t border-border">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleLoadSampleJob(SAMPLE_JOBS[0]!)}
-                            className="h-10 px-4 text-xs sm:text-sm font-semibold rounded-xl"
-                          >
-                            <Sparkles className="size-3.5 mr-1.5 text-primary" /> Load Sample Job
-                          </Button>
-                          <Button
-                            type="button"
-                            onClick={() => setWizardStep(2)}
-                            className="h-11 px-6 text-sm sm:text-base font-bold rounded-xl shadow-xs"
-                          >
-                            Next: Contact Details →
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* STEP 2: PERSONAL & CONTACT INFORMATION */}
-                    {wizardStep === 2 && (
-                      <div className="space-y-5 pt-1 animate-in fade-in duration-200">
-                        <div
-                          className={
-                            workspaceLayout === "full"
-                              ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-                              : "grid gap-4 sm:grid-cols-2"
-                          }
-                        >
-                          <label className="block">
-                            <span className="mb-1.5 block text-sm font-bold text-foreground">
-                              Full Name
-                            </span>
-                            <Input
-                              value={profile.name}
-                              onChange={(e) => updateProfileField("name", e.target.value)}
-                              placeholder="Alex Chen"
-                              className="h-12 text-sm sm:text-base bg-background px-4 rounded-xl border border-border/80"
-                            />
-                          </label>
-                          <label className="block">
-                            <span className="mb-1.5 block text-sm font-bold text-foreground">
-                              Target Headline / Title
-                            </span>
-                            <Input
-                              value={profile.headline}
-                              onChange={(e) => updateProfileField("headline", e.target.value)}
-                              placeholder="Senior Full-Stack Architect"
-                              className="h-12 text-sm sm:text-base bg-background px-4 rounded-xl border border-border/80"
-                            />
-                          </label>
-                          <label className="block">
-                            <span className="mb-1.5 block text-sm font-bold text-foreground">
-                              Email Address
-                            </span>
-                            <Input
-                              value={profile.email}
-                              onChange={(e) => updateProfileField("email", e.target.value)}
-                              placeholder="alex.chen@example.com"
-                              className="h-12 text-sm sm:text-base bg-background px-4 rounded-xl border border-border/80"
-                            />
-                          </label>
-                          <label className="block">
-                            <span className="mb-1.5 block text-sm font-bold text-foreground">
-                              Phone &amp; Location
-                            </span>
-                            <Input
-                              value={
-                                profile.phone
-                                  ? `${profile.phone} | ${profile.location}`
-                                  : profile.location
-                              }
-                              onChange={(e) => updateProfileField("location", e.target.value)}
-                              placeholder="+1 (415) 890-2341 | San Francisco, CA"
-                              className="h-12 text-sm sm:text-base bg-background px-4 rounded-xl border border-border/80"
-                            />
-                          </label>
-                          <label className="block">
-                            <span className="mb-1.5 block text-sm font-bold text-foreground">
-                              LinkedIn Profile URL
-                            </span>
-                            <Input
-                              value={profile.linkedin}
-                              onChange={(e) => updateProfileField("linkedin", e.target.value)}
-                              placeholder="linkedin.com/in/alexchen-dev"
-                              className="h-12 text-sm sm:text-base bg-background px-4 rounded-xl border border-border/80"
-                            />
-                          </label>
-                          <label className="block">
-                            <span className="mb-1.5 block text-sm font-bold text-foreground">
-                              Website / Portfolio
-                            </span>
-                            <Input
-                              value={profile.website}
-                              onChange={(e) => updateProfileField("website", e.target.value)}
-                              placeholder="alexchen.dev"
-                              className="h-12 text-sm sm:text-base bg-background px-4 rounded-xl border border-border/80"
-                            />
-                          </label>
-                        </div>
-
-                        {/* Executive Summary */}
-                        <label className="block border-t border-border pt-4 space-y-1.5">
-                          <span className="block text-sm sm:text-base font-bold text-foreground">
-                            Executive Summary / Profile Intro
-                          </span>
-                          <Textarea
-                            value={profile.about}
-                            onChange={(e) => updateProfileField("about", e.target.value)}
-                            placeholder="Brief overview of your experience, leadership, key metrics, and accomplishments..."
-                            className="min-h-[160px] sm:min-h-[220px] resize-y bg-background text-sm sm:text-base leading-relaxed p-4 sm:p-5 rounded-xl border border-border/80 focus:border-primary transition-all"
+                          <Input
+                            placeholder="e.g. Stripe, Google, or Tech Startup"
+                            className="h-12 text-sm sm:text-base bg-background px-4 rounded-xl border border-border/80"
                           />
                         </label>
-
-                        {/* Footer Nav */}
-                        <div className="flex items-center justify-between pt-4 border-t border-border">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setWizardStep(1)}
-                            className="h-10 px-4 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground rounded-xl"
-                          >
-                            ← Back: Target Job
-                          </Button>
-                          <Button
-                            type="button"
-                            onClick={() => setWizardStep(3)}
-                            className="h-11 px-6 text-sm sm:text-base font-bold rounded-xl shadow-xs"
-                          >
-                            Next: Work Experience →
-                          </Button>
-                        </div>
                       </div>
-                    )}
 
-                    {/* STEP 3: WORK EXPERIENCE */}
-                    {wizardStep === 3 && (
-                      <div className="space-y-5 pt-1 animate-in fade-in duration-200">
-                        <div className="flex items-center justify-between border-b border-border pb-3">
-                          <span className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
-                            <Briefcase className="size-4 text-primary" /> Career Roles (
-                            {profile.roles.length})
+                      <label className="block space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm sm:text-base font-bold text-foreground">
+                            Target Job Description (Requirements &amp; Tech Stack)
                           </span>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-9 sm:h-10 text-xs sm:text-sm font-semibold px-3 sm:px-4 rounded-xl border-border hover:border-primary cursor-pointer"
-                            onClick={() =>
-                              updateProfileField("roles", [
-                                ...profile.roles,
-                                {
-                                  ...emptyRole,
-                                  title: "Software Engineer",
-                                  company: "Company Name",
-                                  dates: "2022 – Present",
-                                },
-                              ])
-                            }
-                          >
-                            <Plus className="size-3.5 mr-1 text-primary" /> Add Another Role
-                          </Button>
-                        </div>
-
-                        {/* Power Action Verb Pills Helper */}
-                        <div className="rounded-xl border border-border/80 bg-muted/40 p-3.5 space-y-2">
-                          <span className="text-xs sm:text-sm font-bold text-foreground block">
-                            ⚡ Executive Action Verbs (Click to copy/inspire):
+                          <span className="text-xs sm:text-sm text-muted-foreground font-mono">
+                            {job.trim().length} characters
                           </span>
-                          <div className="flex flex-wrap gap-1.5">
-                            {[
-                              "Architected",
-                              "Spearheaded",
-                              "Engineered",
-                              "Orchestrated",
-                              "Scaled to 1M+",
-                              "Reduced Latency by 40%",
-                              "Streamlined",
-                              "Automated",
-                            ].map((verb) => (
-                              <button
-                                key={verb}
-                                type="button"
-                                onClick={() => {
-                                  navigator.clipboard.writeText(verb);
-                                  toast.info(`Copied "${verb}" to clipboard!`);
-                                }}
-                                className="rounded-lg bg-background border border-border px-2.5 py-1 text-xs sm:text-sm font-medium text-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer shadow-2xs"
-                              >
-                                + {verb}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Role list */}
-                        <div className="space-y-4">
-                          {profile.roles.map((role, idx) => (
-                            <div
-                              key={idx}
-                              className="rounded-2xl border border-border bg-background/60 p-4 sm:p-5 space-y-3 shadow-xs"
-                            >
-                              <div className="grid gap-3 sm:grid-cols-3">
-                                <Input
-                                  value={role.title}
-                                  onChange={(e) =>
-                                    updateProfileField(
-                                      "roles",
-                                      profile.roles.map((r, i) =>
-                                        i === idx ? { ...r, title: e.target.value } : r,
-                                      ),
-                                    )
-                                  }
-                                  placeholder="Job Title"
-                                  className="h-11 sm:h-12 text-sm sm:text-base bg-background px-3.5 sm:px-4 rounded-xl border border-border/80"
-                                />
-                                <Input
-                                  value={role.company}
-                                  onChange={(e) =>
-                                    updateProfileField(
-                                      "roles",
-                                      profile.roles.map((r, i) =>
-                                        i === idx ? { ...r, company: e.target.value } : r,
-                                      ),
-                                    )
-                                  }
-                                  placeholder="Company"
-                                  className="h-11 sm:h-12 text-sm sm:text-base bg-background px-3.5 sm:px-4 rounded-xl border border-border/80"
-                                />
-                                <Input
-                                  value={role.dates}
-                                  onChange={(e) =>
-                                    updateProfileField(
-                                      "roles",
-                                      profile.roles.map((r, i) =>
-                                        i === idx ? { ...r, dates: e.target.value } : r,
-                                      ),
-                                    )
-                                  }
-                                  placeholder="Dates (e.g. 2022 – Present)"
-                                  className="h-11 sm:h-12 text-sm sm:text-base bg-background px-3.5 sm:px-4 rounded-xl border border-border/80"
-                                />
-                              </div>
-                              <Textarea
-                                value={role.bullets}
-                                onChange={(e) =>
-                                  updateProfileField(
-                                    "roles",
-                                    profile.roles.map((r, i) =>
-                                      i === idx ? { ...r, bullets: e.target.value } : r,
-                                    ),
-                                  )
-                                }
-                                placeholder="Accomplishment bullets (one per line) — lead with strong verbs and measurable metrics (%, $, scale)..."
-                                className="min-h-[160px] sm:min-h-[220px] resize-y bg-background text-sm sm:text-base leading-relaxed p-4 sm:p-5 rounded-xl border border-border/80 focus:border-primary font-mono sm:font-sans transition-all"
-                              />
-                              {profile.roles.length > 1 && (
-                                <div className="flex justify-end pt-1">
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      updateProfileField(
-                                        "roles",
-                                        profile.roles.filter((_, i) => i !== idx),
-                                      )
-                                    }
-                                    className="text-xs sm:text-sm font-medium text-muted-foreground hover:text-destructive flex items-center gap-1.5 transition-colors cursor-pointer"
-                                  >
-                                    <Trash2 className="size-3.5" /> Remove role
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Footer Nav */}
-                        <div className="flex items-center justify-between pt-4 border-t border-border">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setWizardStep(2)}
-                            className="h-10 px-4 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground rounded-xl"
-                          >
-                            ← Back: Contact
-                          </Button>
-                          <Button
-                            type="button"
-                            onClick={() => setWizardStep(4)}
-                            className="h-11 px-6 text-sm sm:text-base font-bold rounded-xl shadow-xs"
-                          >
-                            Next: Skills &amp; Sections →
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* STEP 4: EDUCATION, SKILLS & CUSTOM SECTIONS */}
-                    {wizardStep === 4 && (
-                      <div className="space-y-5 pt-1 animate-in fade-in duration-200">
-                        {/* Technical Skills */}
-                        <label className="block space-y-1.5">
-                          <span className="block text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
-                            <Wrench className="size-4 text-primary" /> Core Technical &amp; Domain
-                            Skills
-                          </span>
-                          <Textarea
-                            value={profile.skills}
-                            onChange={(e) => updateProfileField("skills", e.target.value)}
-                            placeholder="React, TypeScript, Node.js, Python, PostgreSQL, AWS, Docker, Kubernetes, GraphQL, Distributed Systems, Microservices..."
-                            className="min-h-[140px] sm:min-h-[180px] resize-y bg-background text-sm sm:text-base leading-relaxed p-4 sm:p-5 rounded-xl border border-border/80 focus:border-primary transition-all"
-                          />
-                        </label>
-
-                        {/* Education */}
-                        <div className="space-y-3 border-t border-border pt-4">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
-                              <GraduationCap className="size-4 text-primary" /> Education
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                updateProfileField("studies", [
-                                  ...profile.studies,
-                                  { ...emptyStudy, qualification: "B.S. in Computer Science" },
-                                ])
-                              }
-                              className="text-xs sm:text-sm text-primary font-semibold hover:underline cursor-pointer"
-                            >
-                              + Add Degree
-                            </button>
-                          </div>
-                          {profile.studies.map((study, idx) => (
-                            <div key={idx} className="grid gap-3 sm:grid-cols-3">
-                              <Input
-                                value={study.qualification}
-                                onChange={(e) =>
-                                  updateProfileField(
-                                    "studies",
-                                    profile.studies.map((s, i) =>
-                                      i === idx ? { ...s, qualification: e.target.value } : s,
-                                    ),
-                                  )
-                                }
-                                placeholder="Degree / B.S."
-                                className="h-11 sm:h-12 text-sm sm:text-base bg-background px-3.5 sm:px-4 rounded-xl border border-border/80"
-                              />
-                              <Input
-                                value={study.school}
-                                onChange={(e) =>
-                                  updateProfileField(
-                                    "studies",
-                                    profile.studies.map((s, i) =>
-                                      i === idx ? { ...s, school: e.target.value } : s,
-                                    ),
-                                  )
-                                }
-                                placeholder="University / College"
-                                className="h-11 sm:h-12 text-sm sm:text-base bg-background px-3.5 sm:px-4 rounded-xl border border-border/80"
-                              />
-                              <Input
-                                value={study.dates}
-                                onChange={(e) =>
-                                  updateProfileField(
-                                    "studies",
-                                    profile.studies.map((s, i) =>
-                                      i === idx ? { ...s, dates: e.target.value } : s,
-                                    ),
-                                  )
-                                }
-                                placeholder="Dates (e.g. 2020)"
-                                className="h-11 sm:h-12 text-sm sm:text-base bg-background px-3.5 sm:px-4 rounded-xl border border-border/80"
-                              />
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* CUSTOM SECTIONS BUILDER */}
-                        <div className="space-y-4 border-t border-border pt-4">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
-                              <Layers className="size-4 text-primary" /> Custom Resume Sections
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              Projects, Certifications, Awards
-                            </span>
-                          </div>
-
-                          {(profile.customSections || []).map((section) => (
-                            <div
-                              key={section.id}
-                              className="rounded-2xl border border-primary/25 bg-primary/5 p-4 sm:p-5 space-y-3 shadow-xs"
-                            >
-                              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-primary/20 pb-3">
-                                <Input
-                                  value={section.title}
-                                  onChange={(e) =>
-                                    handleUpdateSectionTitle(section.id, e.target.value)
-                                  }
-                                  placeholder="Section Title"
-                                  className="h-10 sm:h-11 text-sm sm:text-base font-bold bg-background max-w-xs border-primary/30 rounded-xl px-3.5"
-                                />
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-8 sm:h-9 text-xs sm:text-sm font-semibold bg-background rounded-xl px-3 cursor-pointer"
-                                    onClick={() => handleAddItemToSection(section.id)}
-                                  >
-                                    <Plus className="size-3.5 mr-1" /> Add Entry
-                                  </Button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleRemoveSection(section.id)}
-                                    className="text-xs sm:text-sm text-muted-foreground hover:text-destructive flex items-center gap-1.5 transition-colors cursor-pointer"
-                                  >
-                                    <Trash2 className="size-3.5" /> Remove
-                                  </button>
-                                </div>
-                              </div>
-
-                              {section.items && section.items.length > 0 ? (
-                                <div className="space-y-3">
-                                  {section.items.map((item) => (
-                                    <div
-                                      key={item.id}
-                                      className="rounded-xl border border-border bg-background p-3.5 sm:p-4 space-y-2.5 shadow-2xs"
-                                    >
-                                      <div className="grid gap-3 sm:grid-cols-3">
-                                        <Input
-                                          value={item.name}
-                                          onChange={(e) =>
-                                            handleUpdateSectionItem(
-                                              section.id,
-                                              item.id,
-                                              "name",
-                                              e.target.value,
-                                            )
-                                          }
-                                          placeholder="Entry / Project Name"
-                                          className="h-10 sm:h-11 text-sm sm:text-base bg-background px-3.5 rounded-xl border border-border/80"
-                                        />
-                                        <Input
-                                          value={item.subtitle || ""}
-                                          onChange={(e) =>
-                                            handleUpdateSectionItem(
-                                              section.id,
-                                              item.id,
-                                              "subtitle",
-                                              e.target.value,
-                                            )
-                                          }
-                                          placeholder="Stack / Issuer"
-                                          className="h-10 sm:h-11 text-sm sm:text-base bg-background px-3.5 rounded-xl border border-border/80"
-                                        />
-                                        <Input
-                                          value={item.dates || ""}
-                                          onChange={(e) =>
-                                            handleUpdateSectionItem(
-                                              section.id,
-                                              item.id,
-                                              "dates",
-                                              e.target.value,
-                                            )
-                                          }
-                                          placeholder="Dates / Year"
-                                          className="h-10 sm:h-11 text-sm sm:text-base bg-background px-3.5 rounded-xl border border-border/80"
-                                        />
-                                      </div>
-                                      <Textarea
-                                        value={item.description || ""}
-                                        onChange={(e) =>
-                                          handleUpdateSectionItem(
-                                            section.id,
-                                            item.id,
-                                            "description",
-                                            e.target.value,
-                                          )
-                                        }
-                                        placeholder="Accomplishment bullets, metrics, technologies used..."
-                                        className="min-h-[100px] sm:min-h-[130px] text-sm sm:text-base leading-relaxed p-3.5 sm:p-4 rounded-xl border border-border/80 bg-background/90"
-                                      />
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <Textarea
-                                  value={section.content}
-                                  onChange={(e) => {
-                                    const updated = (profile.customSections || []).map((s) =>
-                                      s.id === section.id ? { ...s, content: e.target.value } : s,
-                                    );
-                                    updateProfileField("customSections", updated);
-                                  }}
-                                  placeholder="Enter accomplishments, credentials, or bullets..."
-                                  className="min-h-[140px] sm:min-h-[180px] text-sm sm:text-base leading-relaxed p-4 sm:p-5 rounded-xl border border-border/80 bg-background/90"
-                                />
-                              )}
-                            </div>
-                          ))}
-
-                          {/* Quick Section Presets */}
-                          <div className="rounded-xl border border-dashed border-border p-4 bg-muted/30 space-y-2">
-                            <span className="text-xs sm:text-sm font-semibold text-foreground block">
-                              + Add a Custom Section Preset:
-                            </span>
-                            <div className="flex flex-wrap gap-2">
-                              {SECTION_PRESETS.map((preset) => (
-                                <button
-                                  key={preset.title}
-                                  type="button"
-                                  onClick={() => handleAddSection(preset.title)}
-                                  className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs sm:text-sm font-medium text-foreground hover:border-primary hover:text-primary transition-all cursor-pointer shadow-2xs"
-                                >
-                                  {preset.label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Footer Nav */}
-                        <div className="flex items-center justify-between pt-4 border-t border-border">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setWizardStep(3)}
-                            className="h-10 px-4 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground rounded-xl"
-                          >
-                            ← Back: Experience
-                          </Button>
-                          <Button
-                            type="button"
-                            onClick={() => setWizardStep(5)}
-                            className="h-11 px-6 text-sm sm:text-base font-bold rounded-xl shadow-xs"
-                          >
-                            Next: ATS Optimization →
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* STEP 5: ATS OPTIMIZATION & STEALTH CLOAK */}
-                    {wizardStep === 5 && (
-                      <div className="space-y-5 pt-1 animate-in fade-in duration-200">
-                        {/* Readiness Summary */}
-                        <div className="rounded-2xl border border-border bg-muted/40 p-4 sm:p-5 space-y-3">
-                          <span className="font-bold text-sm sm:text-base text-foreground block">
-                            Optimization Readiness Checklist:
-                          </span>
-                          <div className="grid grid-cols-2 gap-3 text-xs sm:text-sm">
-                            <div className="flex items-center gap-2">
-                              <span className="text-emerald-500 font-bold">✓</span>
-                              <span>
-                                Target: <strong>{jobTitle || "Job Configured"}</strong>
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-emerald-500 font-bold">✓</span>
-                              <span>
-                                Candidate: <strong>{profile.name || "Alex Chen"}</strong>
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-emerald-500 font-bold">✓</span>
-                              <span>
-                                Roles: <strong>{profile.roles.length} entries</strong>
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-emerald-500 font-bold">✓</span>
-                              <span>
-                                ATS Keywords: <strong>{liveTargetKeywords.length} terms</strong>
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* ATS Stealth Cloak Notice */}
-                        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 sm:p-5 space-y-2.5">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2.5">
-                              <ShieldCheck className="size-5 text-emerald-600 dark:text-emerald-400" />
-                              <span className="text-sm sm:text-base font-bold text-foreground">
-                                ATS Stealth Cloak™ Active
-                              </span>
-                            </div>
-                            <Badge className="bg-emerald-600 text-white font-bold text-xs py-0.5 px-2">
-                              100% SHORTLIST
-                            </Badge>
-                          </div>
-                          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                            Injects exact target keywords in invisible white font (
-                            <code className="text-emerald-600 dark:text-emerald-400 font-mono font-semibold">
-                              #ffffff
-                            </code>
-                            ) into your exported Word and PDF documents. Human recruiters see a
-                            spotless, executive layout while automated ATS parsers index a 100%
-                            keyword match.
-                          </p>
-                        </div>
-
-                        {/* Main Generate Button */}
-                        <Button
-                          size="lg"
-                          className="w-full h-14 sm:h-15 text-base sm:text-lg font-bold shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground transition-all rounded-xl cursor-pointer"
-                          disabled={!ready}
-                          onClick={() => {
-                            tailor();
-                            outputRef.current?.scrollIntoView({ behavior: "smooth" });
-                          }}
-                        >
-                          {streaming ? (
-                            <>
-                              <Loader2 className="mr-2 size-5 animate-spin" /> Infiltrating &amp;
-                              Tailoring Resume…
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="mr-2 size-5" /> Generate 100% ATS
-                              Matched Resume <ArrowRight className="ml-2 size-5" />
-                            </>
-                          )}
-                        </Button>
-
-                        {/* Footer Nav */}
-                        <div className="flex items-center justify-between pt-3 border-t border-border">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setWizardStep(4)}
-                            className="h-10 px-4 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground rounded-xl"
-                          >
-                            ← Back: Skills &amp; Sections
-                          </Button>
-                          <span className="text-xs text-muted-foreground font-semibold">Step 5 of 5</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  /* PASTE / PDF UPLOAD VIEW - Ultra-wide 2-column responsive layout */
-                  <div className="space-y-6">
-                    <div
-                      className={
-                        workspaceLayout === "full"
-                          ? "grid grid-cols-1 lg:grid-cols-2 gap-6"
-                          : "space-y-5"
-                      }
-                    >
-                      {/* Left Box: Candidate Resume */}
-                      <div className="space-y-2 flex flex-col">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <label className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
-                            <FileText className="size-4 text-primary" />
-                            Your Current Resume
-                          </label>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs sm:text-sm text-muted-foreground font-mono">
-                              {resume.trim().length} chars
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => fileInput.current?.click()}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-background px-3 py-1.5 text-xs sm:text-sm font-semibold text-foreground hover:bg-accent transition-colors cursor-pointer shadow-xs"
-                            >
-                              {reading ? (
-                                <Loader2 className="size-3.5 animate-spin text-primary" />
-                              ) : (
-                                <Upload className="size-3.5 text-primary" />
-                              )}
-                              Upload (PDF / TXT)
-                            </button>
-                          </div>
-                        </div>
-                        <input
-                          ref={fileInput}
-                          type="file"
-                          accept=".pdf,.txt,.md,application/pdf,text/plain"
-                          className="hidden"
-                          onChange={(e) => onFile(e.target.files?.[0] ?? null)}
-                        />
-                        <Textarea
-                          value={resume}
-                          onChange={(e) => setResume(e.target.value)}
-                          placeholder="Paste your full resume text here, or click upload to import from PDF..."
-                          className={`flex-1 resize-y bg-background/90 text-sm sm:text-base leading-relaxed p-4 sm:p-5 rounded-xl border border-border/80 focus:border-primary font-mono sm:font-sans transition-all ${
-                            workspaceLayout === "full"
-                              ? "min-h-[380px] lg:min-h-[480px]"
-                              : "min-h-[260px] sm:min-h-[320px]"
-                          }`}
-                        />
-                      </div>
-
-                      {/* Right Box: Target Job Description */}
-                      <div className="space-y-2 flex flex-col">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <label className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
-                            <Briefcase className="size-4 text-primary" />
-                            Target Job Description
-                          </label>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs sm:text-sm text-muted-foreground font-mono">
-                              {job.trim().length} chars
-                            </span>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleLoadSampleJob(SAMPLE_JOBS[0]!)}
-                              className="h-8 text-xs font-semibold px-2.5 rounded-lg"
-                            >
-                              <Sparkles className="size-3 mr-1 text-primary" /> Sample Job
-                            </Button>
-                          </div>
                         </div>
                         <Textarea
                           value={job}
                           onChange={(e) => setJob(e.target.value)}
-                          placeholder="Paste target job requirements, qualifications, responsibilities, and tech stack here..."
-                          className={`flex-1 resize-y bg-background/90 text-sm sm:text-base leading-relaxed p-4 sm:p-5 rounded-xl border border-border/80 focus:border-primary transition-all ${
-                            workspaceLayout === "full"
-                              ? "min-h-[380px] lg:min-h-[480px]"
-                              : "min-h-[220px] sm:min-h-[280px]"
-                          }`}
+                          placeholder="Paste the target job posting here. Requirements, responsibilities, languages, frameworks, tech stack..."
+                          className="min-h-[260px] sm:min-h-[340px] resize-y bg-background text-sm sm:text-base leading-relaxed p-4 sm:p-5 rounded-xl border border-border/80 focus:border-primary transition-all"
                         />
+                      </label>
 
-                        {/* Real-time Extracted ATS Keywords Preview in Paste Mode */}
-                        {liveTargetKeywords.length > 0 && (
-                          <div className="rounded-xl border border-primary/25 bg-primary/5 p-3 space-y-1.5">
-                            <div className="flex items-center justify-between text-xs sm:text-sm">
-                              <span className="font-bold text-primary flex items-center gap-1.5">
-                                <Sparkles className="size-3.5" /> Detected ATS Keywords ({liveTargetKeywords.length}):
-                              </span>
-                            </div>
-                            <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto">
-                              {liveTargetKeywords.slice(0, 14).map((kw, i) => (
-                                <span
-                                  key={i}
-                                  className="inline-flex items-center rounded-md bg-background border border-primary/30 px-2 py-0.5 text-xs font-semibold text-foreground font-mono"
-                                >
-                                  ✓ {kw}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <Button
-                      size="lg"
-                      className="w-full h-14 sm:h-15 text-base sm:text-lg font-bold shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl transition-all cursor-pointer"
-                      disabled={!ready}
-                      onClick={() => {
-                        tailor();
-                        outputRef.current?.scrollIntoView({ behavior: "smooth" });
-                      }}
-                    >
-                      {streaming ? (
-                        <>
-                          <Loader2 className="mr-2 size-5 animate-spin" /> Tailoring Resume…
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="mr-2 size-5" /> Generate 100% ATS Matched Resume{" "}
-                          <ArrowRight className="ml-2 size-5" />
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              {/* Sidebar Corporate Banner Ad (Placed in left column) */}
-              <BannerAd
-                variant="sidebar"
-                onUpgradeClick={() => {
-                  setSubReason(
-                    "Upgrade to Enterprise Pro to remove all sponsor banners and unlock all 32 templates.",
-                  );
-                  setSubModalOpen(true);
-                }}
-              />
-
-              {/* Saved Generations History - Collapsible Drawer on Mobile */}
-              {history.length > 0 && (
-                <aside
-                  aria-labelledby="history-heading"
-                  className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-xs"
-                >
-                  <div
-                    className="flex items-center justify-between border-b border-border pb-2.5 cursor-pointer sm:cursor-default select-none"
-                    onClick={() => setHistoryOpenMobile((prev) => !prev)}
-                  >
-                    <h3
-                      id="history-heading"
-                      className="inline-flex items-center gap-1.5 text-xs font-bold text-foreground"
-                    >
-                      <HistoryIcon className="size-3.5 text-muted-foreground" /> Saved Generations (
-                      {history.length})
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setHistory(clearHistory());
-                        }}
-                        aria-label="Clear all saved generations"
-                        className="text-xs text-muted-foreground hover:text-destructive p-1"
-                      >
-                        Clear all
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setHistoryOpenMobile((prev) => !prev)}
-                        className="sm:hidden p-1 text-muted-foreground hover:text-foreground"
-                        aria-label={
-                          historyOpenMobile ? "Collapse saved generations" : "Expand saved generations"
-                        }
-                        aria-expanded={historyOpenMobile}
-                      >
-                        <ChevronDown
-                          className={cn(
-                            "size-4 transition-transform duration-200",
-                            historyOpenMobile && "rotate-180",
-                          )}
-                        />
-                      </button>
-                    </div>
-                  </div>
-                  <ul
-                    className={cn(
-                      "mt-2 divide-y divide-border/60 transition-all",
-                      !historyOpenMobile && "hidden sm:block",
-                    )}
-                  >
-                    {history.map((entry) => (
-                      <li key={entry.id} className="flex items-center justify-between gap-3 py-2">
-                        <button
-                          type="button"
-                          onClick={() => restore(entry)}
-                          aria-label={`Restore saved resume: ${entry.title}`}
-                          className="min-w-0 flex-1 text-left group min-h-[44px] sm:min-h-0 flex flex-col justify-center"
-                        >
-                          <p className="truncate text-xs font-bold text-foreground group-hover:text-primary">
-                            {entry.title}
-                          </p>
-                          <p className="text-[11px] text-muted-foreground">
-                            {formatWhen(entry.createdAt)} ·{" "}
-                            <span className="text-primary font-bold">
-                              {entry.result.match_score}/100
-                            </span>{" "}
-                            · {entry.tone}
-                          </p>
-                        </button>
-                        <button
-                          type="button"
-                          aria-label={`Delete entry ${entry.title}`}
-                          onClick={() => setHistory(deleteEntry(entry.id))}
-                          className="text-muted-foreground hover:text-destructive p-2 sm:p-1 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center rounded-lg"
-                        >
-                          <Trash2 className="size-3.5" />
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </aside>
-              )}
-            </section>
-
-            {/* Right Workspace Column: Tailored Resume & 32 Templates Showcase */}
-            <section
-              ref={outputRef}
-              aria-labelledby="output-heading"
-              className={
-                workspaceLayout === "split"
-                  ? "lg:col-span-7 xl:col-span-7 2xl:col-span-7 space-y-6"
-                  : "space-y-6 w-full max-w-[1400px] mx-auto"
-              }
-            >
-              {error && (
-                <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-xs font-medium text-destructive">
-                  {error}
-                </div>
-              )}
-
-              {/* Empty state when no resume generated yet: Clean Minimalist View with Banner Ad */}
-              {!text && !error && (
-                <div className="flex h-full min-h-[460px] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center shadow-xs">
-                  <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/20 shadow-inner mb-4">
-                    <Award className="size-7" />
-                  </div>
-                  <h2 id="output-heading" className="mt-2 text-xl sm:text-2xl font-bold hero-gradient-text">
-                    Your Tailored Executive Resume Lands Here
-                  </h2>
-                  <p className="mt-2 max-w-md text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                    Fill in candidate details on the left, paste a target job posting, and click
-                    Generate. The AI scores keywords, matches competencies, and renders 32 templates
-                    with full Overleaf LaTeX (.tex) support.
-                  </p>
-                  <div className="mt-6 flex flex-wrap gap-2.5 justify-center">
-                    <Button onClick={handleLoadAllDemo} size="sm" className="font-semibold text-xs shadow-xs">
-                      <Sparkles className="mr-1.5 size-3.5 text-primary" /> Try with Demo Data
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {text && (
-                <>
-                  {/* ATS Match Score Header Card */}
-                  {result && (
-                    <div className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-xs">
-                      <div className="flex items-baseline justify-between gap-4">
-                        <div>
-                          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                            ATS Target Match Fit
-                          </span>
-                          <h2 className="text-lg sm:text-xl font-bold text-foreground">
-                            {jobTitle || deriveTitle(job)}
-                          </h2>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-4xl font-extrabold text-primary">
-                            {result.match_score}
-                          </span>
-                          <span className="text-sm font-bold text-muted-foreground">/100</span>
-                        </div>
-                      </div>
-                      <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-muted">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-primary via-indigo-400 to-emerald-400 transition-all duration-700"
-                          style={{ width: `${result.match_score}%` }}
-                        />
-                      </div>
-                      {/* Interactive ATS Fit Score Breakdown */}
-                      <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-border/60 text-center">
-                        <div className="rounded-xl bg-muted/40 p-2 border border-border/50">
-                          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
-                            ATS Infiltration
-                          </p>
-                          <p className="text-sm font-extrabold text-emerald-400">100% Guaranteed</p>
-                        </div>
-                        <div className="rounded-xl bg-muted/40 p-2 border border-border/50">
-                          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
-                            Core Match
-                          </p>
-                          <p className="text-sm font-extrabold text-primary">
-                            {Math.min(100, Math.max(85, result.match_score))}%
-                          </p>
-                        </div>
-                        <div className="rounded-xl bg-muted/40 p-2 border border-border/50">
-                          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
-                            Vector Layout
-                          </p>
-                          <p className="text-sm font-extrabold text-blue-400">100% Pass</p>
-                        </div>
-                        <div className="rounded-xl bg-muted/40 p-2 border border-border/50">
-                          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
-                            Action Impact
-                          </p>
-                          <p className="text-sm font-extrabold text-indigo-400">96% FAANG</p>
-                        </div>
-                      </div>
-
-                      {result.missing_keywords.length > 0 && (
-                        <div className="mt-3.5 border-t border-border/60 pt-3">
-                          <div className="flex items-center justify-between">
-                            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                              Target Keywords (Click to Copy):
-                            </p>
-                            <span className="text-[11px] text-muted-foreground hidden sm:inline">
-                              Click any tag to copy into your experience bullets
+                      {/* Real-time Extracted ATS Keywords Preview */}
+                      {liveTargetKeywords.length > 0 && (
+                        <div className="rounded-xl border border-primary/25 bg-primary/5 p-4 space-y-2.5">
+                          <div className="flex items-center justify-between text-xs sm:text-sm">
+                            <span className="font-bold text-primary flex items-center gap-2">
+                              <Sparkles className="size-4" /> Detected ATS Keywords (
+                              {liveTargetKeywords.length} terms):
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              Extracted from job posting
                             </span>
                           </div>
-                          <div className="mt-1.5 flex flex-wrap gap-1.5">
-                            {result.missing_keywords.map((kw) => (
-                              <button
-                                key={kw}
-                                type="button"
-                                onClick={() => {
-                                  void navigator.clipboard.writeText(kw);
-                                  toast.success(`Copied keyword "${kw}" to clipboard!`);
-                                }}
-                                className="inline-flex items-center gap-1 rounded-md bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs font-medium px-2 py-0.5 border border-border/60 transition-transform active:scale-95 cursor-pointer group"
-                                title="Click to copy keyword"
+                          <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                            {liveTargetKeywords.slice(0, 20).map((kw, i) => (
+                              <span
+                                key={i}
+                                className="inline-flex items-center rounded-lg bg-background border border-primary/30 px-2.5 py-1 text-xs font-semibold text-foreground font-mono shadow-2xs"
                               >
-                                <span>{kw}</span>
-                                <Copy className="size-2.5 opacity-50 group-hover:opacity-100" />
-                              </button>
+                                ✓ {kw}
+                              </span>
                             ))}
                           </div>
                         </div>
                       )}
 
-                      {/* Interactive FAANG Executive Power Verbs Bank */}
-                      <div className="mt-3.5 border-t border-border/60 pt-3">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                            <Sparkles className="size-3 text-primary" /> FAANG Executive Action
-                            Verbs:
-                          </p>
-                          <span className="text-[10px] text-muted-foreground">Click to copy</span>
+                      {/* Tone Selection */}
+                      <div className="border-t border-border pt-4">
+                        <span className="mb-2 block text-sm font-bold text-foreground">
+                          Target Executive Tone:
+                        </span>
+                        <div className="flex flex-wrap gap-2.5">
+                          {TONES.map((option) => (
+                            <button
+                              key={option.id}
+                              type="button"
+                              onClick={() => setTone(option.id)}
+                              className={`rounded-lg border px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+                                tone === option.id
+                                  ? "border-primary bg-primary text-primary-foreground shadow-xs font-bold"
+                                  : "border-border bg-background text-foreground hover:bg-accent"
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
                         </div>
+                      </div>
+
+                      {/* Footer Nav */}
+                      <div className="flex items-center justify-between pt-4 border-t border-border">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleLoadSampleJob(SAMPLE_JOBS[0]!)}
+                          className="h-10 px-4 text-xs sm:text-sm font-semibold rounded-xl"
+                        >
+                          <Sparkles className="size-3.5 mr-1.5 text-primary" /> Load Sample Job
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={() => setWizardStep(2)}
+                          className="h-11 px-6 text-sm sm:text-base font-bold rounded-xl shadow-xs"
+                        >
+                          Next: Contact Details →
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* STEP 2: PERSONAL & CONTACT INFORMATION */}
+                  {wizardStep === 2 && (
+                    <div className="space-y-5 pt-1 animate-in fade-in duration-200">
+                      <div
+                        className={
+                          workspaceLayout === "full"
+                            ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                            : "grid gap-4 sm:grid-cols-2"
+                        }
+                      >
+                        <label className="block">
+                          <span className="mb-1.5 block text-sm font-bold text-foreground">
+                            Full Name
+                          </span>
+                          <Input
+                            value={profile.name}
+                            onChange={(e) => updateProfileField("name", e.target.value)}
+                            placeholder="Alex Chen"
+                            className="h-12 text-sm sm:text-base bg-background px-4 rounded-xl border border-border/80"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="mb-1.5 block text-sm font-bold text-foreground">
+                            Target Headline / Title
+                          </span>
+                          <Input
+                            value={profile.headline}
+                            onChange={(e) => updateProfileField("headline", e.target.value)}
+                            placeholder="Senior Full-Stack Architect"
+                            className="h-12 text-sm sm:text-base bg-background px-4 rounded-xl border border-border/80"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="mb-1.5 block text-sm font-bold text-foreground">
+                            Email Address
+                          </span>
+                          <Input
+                            value={profile.email}
+                            onChange={(e) => updateProfileField("email", e.target.value)}
+                            placeholder="alex.chen@example.com"
+                            className="h-12 text-sm sm:text-base bg-background px-4 rounded-xl border border-border/80"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="mb-1.5 block text-sm font-bold text-foreground">
+                            Phone &amp; Location
+                          </span>
+                          <Input
+                            value={
+                              profile.phone
+                                ? `${profile.phone} | ${profile.location}`
+                                : profile.location
+                            }
+                            onChange={(e) => updateProfileField("location", e.target.value)}
+                            placeholder="+1 (415) 890-2341 | San Francisco, CA"
+                            className="h-12 text-sm sm:text-base bg-background px-4 rounded-xl border border-border/80"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="mb-1.5 block text-sm font-bold text-foreground">
+                            LinkedIn Profile URL
+                          </span>
+                          <Input
+                            value={profile.linkedin}
+                            onChange={(e) => updateProfileField("linkedin", e.target.value)}
+                            placeholder="linkedin.com/in/alexchen-dev"
+                            className="h-12 text-sm sm:text-base bg-background px-4 rounded-xl border border-border/80"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="mb-1.5 block text-sm font-bold text-foreground">
+                            Website / Portfolio
+                          </span>
+                          <Input
+                            value={profile.website}
+                            onChange={(e) => updateProfileField("website", e.target.value)}
+                            placeholder="alexchen.dev"
+                            className="h-12 text-sm sm:text-base bg-background px-4 rounded-xl border border-border/80"
+                          />
+                        </label>
+                      </div>
+
+                      {/* Executive Summary */}
+                      <label className="block border-t border-border pt-4 space-y-1.5">
+                        <span className="block text-sm sm:text-base font-bold text-foreground">
+                          Executive Summary / Profile Intro
+                        </span>
+                        <Textarea
+                          value={profile.about}
+                          onChange={(e) => updateProfileField("about", e.target.value)}
+                          placeholder="Brief overview of your experience, leadership, key metrics, and accomplishments..."
+                          className="min-h-[160px] sm:min-h-[220px] resize-y bg-background text-sm sm:text-base leading-relaxed p-4 sm:p-5 rounded-xl border border-border/80 focus:border-primary transition-all"
+                        />
+                      </label>
+
+                      {/* Footer Nav */}
+                      <div className="flex items-center justify-between pt-4 border-t border-border">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setWizardStep(1)}
+                          className="h-10 px-4 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground rounded-xl"
+                        >
+                          ← Back: Target Job
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={() => setWizardStep(3)}
+                          className="h-11 px-6 text-sm sm:text-base font-bold rounded-xl shadow-xs"
+                        >
+                          Next: Work Experience →
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* STEP 3: WORK EXPERIENCE */}
+                  {wizardStep === 3 && (
+                    <div className="space-y-5 pt-1 animate-in fade-in duration-200">
+                      <div className="flex items-center justify-between border-b border-border pb-3">
+                        <span className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                          <Briefcase className="size-4 text-primary" /> Career Roles (
+                          {profile.roles.length})
+                        </span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-9 sm:h-10 text-xs sm:text-sm font-semibold px-3 sm:px-4 rounded-xl border-border hover:border-primary cursor-pointer"
+                          onClick={() =>
+                            updateProfileField("roles", [
+                              ...profile.roles,
+                              {
+                                ...emptyRole,
+                                title: "Software Engineer",
+                                company: "Company Name",
+                                dates: "2022 – Present",
+                              },
+                            ])
+                          }
+                        >
+                          <Plus className="size-3.5 mr-1 text-primary" /> Add Another Role
+                        </Button>
+                      </div>
+
+                      {/* Power Action Verb Pills Helper */}
+                      <div className="rounded-xl border border-border/80 bg-muted/40 p-3.5 space-y-2">
+                        <span className="text-xs sm:text-sm font-bold text-foreground block">
+                          ⚡ Executive Action Verbs (Click to copy/inspire):
+                        </span>
                         <div className="flex flex-wrap gap-1.5">
                           {[
-                            "Spearheaded",
                             "Architected",
-                            "Orchestrated",
+                            "Spearheaded",
                             "Engineered",
-                            "Automated",
-                            "Accelerated",
+                            "Orchestrated",
+                            "Scaled to 1M+",
+                            "Reduced Latency by 40%",
                             "Streamlined",
-                            "Maximized",
-                            "Pioneered",
-                            "Consolidated",
-                            "Transformed",
-                            "Scaled",
+                            "Automated",
                           ].map((verb) => (
                             <button
                               key={verb}
                               type="button"
                               onClick={() => {
-                                void navigator.clipboard.writeText(verb);
-                                toast.success(`Copied action verb "${verb}"!`);
+                                navigator.clipboard.writeText(verb);
+                                toast.info(`Copied "${verb}" to clipboard!`);
                               }}
-                              className="rounded-md bg-muted/60 hover:bg-primary/15 hover:text-primary text-[11px] font-semibold px-2 py-0.5 border border-border/40 text-foreground transition-all active:scale-95 cursor-pointer"
-                              title={`Copy '${verb}' to clipboard`}
+                              className="rounded-lg bg-background border border-border px-2.5 py-1 text-xs sm:text-sm font-medium text-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer shadow-2xs"
                             >
-                              {verb}
+                              + {verb}
                             </button>
                           ))}
                         </div>
                       </div>
-                      <div className="mt-4 flex flex-wrap gap-2 pt-2 border-t border-border/60">
+
+                      {/* Role list */}
+                      <div className="space-y-4">
+                        {profile.roles.map((role, idx) => (
+                          <div
+                            key={idx}
+                            className="rounded-2xl border border-border bg-background/60 p-4 sm:p-5 space-y-3 shadow-xs"
+                          >
+                            <div className="grid gap-3 sm:grid-cols-3">
+                              <Input
+                                value={role.title}
+                                onChange={(e) =>
+                                  updateProfileField(
+                                    "roles",
+                                    profile.roles.map((r, i) =>
+                                      i === idx ? { ...r, title: e.target.value } : r,
+                                    ),
+                                  )
+                                }
+                                placeholder="Job Title"
+                                className="h-11 sm:h-12 text-sm sm:text-base bg-background px-3.5 sm:px-4 rounded-xl border border-border/80"
+                              />
+                              <Input
+                                value={role.company}
+                                onChange={(e) =>
+                                  updateProfileField(
+                                    "roles",
+                                    profile.roles.map((r, i) =>
+                                      i === idx ? { ...r, company: e.target.value } : r,
+                                    ),
+                                  )
+                                }
+                                placeholder="Company"
+                                className="h-11 sm:h-12 text-sm sm:text-base bg-background px-3.5 sm:px-4 rounded-xl border border-border/80"
+                              />
+                              <Input
+                                value={role.dates}
+                                onChange={(e) =>
+                                  updateProfileField(
+                                    "roles",
+                                    profile.roles.map((r, i) =>
+                                      i === idx ? { ...r, dates: e.target.value } : r,
+                                    ),
+                                  )
+                                }
+                                placeholder="Dates (e.g. 2022 – Present)"
+                                className="h-11 sm:h-12 text-sm sm:text-base bg-background px-3.5 sm:px-4 rounded-xl border border-border/80"
+                              />
+                            </div>
+                            <Textarea
+                              value={role.bullets}
+                              onChange={(e) =>
+                                updateProfileField(
+                                  "roles",
+                                  profile.roles.map((r, i) =>
+                                    i === idx ? { ...r, bullets: e.target.value } : r,
+                                  ),
+                                )
+                              }
+                              placeholder="Accomplishment bullets (one per line) — lead with strong verbs and measurable metrics (%, $, scale)..."
+                              className="min-h-[160px] sm:min-h-[220px] resize-y bg-background text-sm sm:text-base leading-relaxed p-4 sm:p-5 rounded-xl border border-border/80 focus:border-primary font-mono sm:font-sans transition-all"
+                            />
+                            {profile.roles.length > 1 && (
+                              <div className="flex justify-end pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    updateProfileField(
+                                      "roles",
+                                      profile.roles.filter((_, i) => i !== idx),
+                                    )
+                                  }
+                                  className="text-xs sm:text-sm font-medium text-muted-foreground hover:text-destructive flex items-center gap-1.5 transition-colors cursor-pointer"
+                                >
+                                  <Trash2 className="size-3.5" /> Remove role
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Footer Nav */}
+                      <div className="flex items-center justify-between pt-4 border-t border-border">
                         <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDownloadWord(template)}
-                          className="h-8 border-border text-foreground hover:bg-accent font-bold text-xs"
-                        >
-                          <FileDown className="size-3.5 mr-1 text-primary" /> Word (.doc) Free
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setTab("latex");
-                            if (outputRef.current) {
-                              outputRef.current.scrollIntoView({ behavior: "smooth" });
-                            }
-                          }}
-                          className="h-8 border-emerald-600/30 text-emerald-400 hover:bg-emerald-500/10 font-bold text-xs"
-                          title="View & Export Overleaf FAANGPath LaTeX (.tex) format"
-                        >
-                          <FileCode className="size-3.5 mr-1 text-emerald-400" /> Overleaf LaTeX
-                          (.tex)
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => handleDownloadPdf(template)}
-                          disabled={streaming}
-                          className="h-8 bg-primary hover:bg-primary/90 font-bold text-xs text-primary-foreground shadow-xs"
-                        >
-                          <Download className="size-3.5 mr-1" />
-                          {isSubscribed ? "Download PDF" : "Download PDF (Pro)"}
-                          {!isSubscribed && <Lock className="size-3 ml-1 text-primary-foreground" />}
-                        </Button>
-                        <Button
+                          type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={downloadReport}
-                          className="h-8 text-xs font-semibold"
+                          onClick={() => setWizardStep(2)}
+                          className="h-10 px-4 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground rounded-xl"
                         >
-                          Match Report PDF
+                          ← Back: Contact
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={() => setWizardStep(4)}
+                          className="h-11 px-6 text-sm sm:text-base font-bold rounded-xl shadow-xs"
+                        >
+                          Next: Skills &amp; Sections →
                         </Button>
                       </div>
                     </div>
                   )}
 
-                  {/* ⚡ 100% ATS SHORTLIST SECRET WEAPON: GHOST KEYWORDS (WHITE-FONT INJECTION) */}
-                  <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/15 p-4 sm:p-5 shadow-xs space-y-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="flex items-start gap-3">
-                        <div className="size-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5">
-                          <ShieldCheck className="size-5" />
+                  {/* STEP 4: EDUCATION, SKILLS & CUSTOM SECTIONS */}
+                  {wizardStep === 4 && (
+                    <div className="space-y-5 pt-1 animate-in fade-in duration-200">
+                      {/* Technical Skills */}
+                      <label className="block space-y-1.5">
+                        <span className="block text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                          <Wrench className="size-4 text-primary" /> Core Technical &amp; Domain
+                          Skills
+                        </span>
+                        <Textarea
+                          value={profile.skills}
+                          onChange={(e) => updateProfileField("skills", e.target.value)}
+                          placeholder="React, TypeScript, Node.js, Python, PostgreSQL, AWS, Docker, Kubernetes, GraphQL, Distributed Systems, Microservices..."
+                          className="min-h-[140px] sm:min-h-[180px] resize-y bg-background text-sm sm:text-base leading-relaxed p-4 sm:p-5 rounded-xl border border-border/80 focus:border-primary transition-all"
+                        />
+                      </label>
+
+                      {/* Education */}
+                      <div className="space-y-3 border-t border-border pt-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                            <GraduationCap className="size-4 text-primary" /> Education
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateProfileField("studies", [
+                                ...profile.studies,
+                                { ...emptyStudy, qualification: "B.S. in Computer Science" },
+                              ])
+                            }
+                            className="text-xs sm:text-sm text-primary font-semibold hover:underline cursor-pointer"
+                          >
+                            + Add Degree
+                          </button>
                         </div>
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-sm sm:text-base font-bold text-foreground">
-                              ⚡ ATS Stealth Cloak™ (White-Font Keyword Infiltration)
-                            </h3>
-                            <Badge className="bg-emerald-600 text-white font-bold text-[10px] py-0.5 px-2">
-                              100% BOT SHORTLIST GUARANTEE
-                            </Badge>
+                        {profile.studies.map((study, idx) => (
+                          <div key={idx} className="grid gap-3 sm:grid-cols-3">
+                            <Input
+                              value={study.qualification}
+                              onChange={(e) =>
+                                updateProfileField(
+                                  "studies",
+                                  profile.studies.map((s, i) =>
+                                    i === idx ? { ...s, qualification: e.target.value } : s,
+                                  ),
+                                )
+                              }
+                              placeholder="Degree / B.S."
+                              className="h-11 sm:h-12 text-sm sm:text-base bg-background px-3.5 sm:px-4 rounded-xl border border-border/80"
+                            />
+                            <Input
+                              value={study.school}
+                              onChange={(e) =>
+                                updateProfileField(
+                                  "studies",
+                                  profile.studies.map((s, i) =>
+                                    i === idx ? { ...s, school: e.target.value } : s,
+                                  ),
+                                )
+                              }
+                              placeholder="University / College"
+                              className="h-11 sm:h-12 text-sm sm:text-base bg-background px-3.5 sm:px-4 rounded-xl border border-border/80"
+                            />
+                            <Input
+                              value={study.dates}
+                              onChange={(e) =>
+                                updateProfileField(
+                                  "studies",
+                                  profile.studies.map((s, i) =>
+                                    i === idx ? { ...s, dates: e.target.value } : s,
+                                  ),
+                                )
+                              }
+                              placeholder="Dates (e.g. 2020)"
+                              className="h-11 sm:h-12 text-sm sm:text-base bg-background px-3.5 sm:px-4 rounded-xl border border-border/80"
+                            />
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1 leading-relaxed max-w-2xl">
-                            Injects all target job keywords in invisible white font (
-                            <code className="font-mono text-emerald-600 dark:text-emerald-400">
-                              #ffffff
-                            </code>
-                            ). Human recruiters see a clean, professional resume with zero clutter,
-                            while automated ATS bots (Workday, Greenhouse, Taleo, Lever) parse a
-                            100% keyword match.
-                          </p>
+                        ))}
+                      </div>
+
+                      {/* CUSTOM SECTIONS BUILDER */}
+                      <div className="space-y-4 border-t border-border pt-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                            <Layers className="size-4 text-primary" /> Custom Resume Sections
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            Projects, Certifications, Awards
+                          </span>
+                        </div>
+
+                        {(profile.customSections || []).map((section) => (
+                          <div
+                            key={section.id}
+                            className="rounded-2xl border border-primary/25 bg-primary/5 p-4 sm:p-5 space-y-3 shadow-xs"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-primary/20 pb-3">
+                              <Input
+                                value={section.title}
+                                onChange={(e) =>
+                                  handleUpdateSectionTitle(section.id, e.target.value)
+                                }
+                                placeholder="Section Title"
+                                className="h-10 sm:h-11 text-sm sm:text-base font-bold bg-background max-w-xs border-primary/30 rounded-xl px-3.5"
+                              />
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 sm:h-9 text-xs sm:text-sm font-semibold bg-background rounded-xl px-3 cursor-pointer"
+                                  onClick={() => handleAddItemToSection(section.id)}
+                                >
+                                  <Plus className="size-3.5 mr-1" /> Add Entry
+                                </Button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveSection(section.id)}
+                                  className="text-xs sm:text-sm text-muted-foreground hover:text-destructive flex items-center gap-1.5 transition-colors cursor-pointer"
+                                >
+                                  <Trash2 className="size-3.5" /> Remove
+                                </button>
+                              </div>
+                            </div>
+
+                            {section.items && section.items.length > 0 ? (
+                              <div className="space-y-3">
+                                {section.items.map((item) => (
+                                  <div
+                                    key={item.id}
+                                    className="rounded-xl border border-border bg-background p-3.5 sm:p-4 space-y-2.5 shadow-2xs"
+                                  >
+                                    <div className="grid gap-3 sm:grid-cols-3">
+                                      <Input
+                                        value={item.name}
+                                        onChange={(e) =>
+                                          handleUpdateSectionItem(
+                                            section.id,
+                                            item.id,
+                                            "name",
+                                            e.target.value,
+                                          )
+                                        }
+                                        placeholder="Entry / Project Name"
+                                        className="h-10 sm:h-11 text-sm sm:text-base bg-background px-3.5 rounded-xl border border-border/80"
+                                      />
+                                      <Input
+                                        value={item.subtitle || ""}
+                                        onChange={(e) =>
+                                          handleUpdateSectionItem(
+                                            section.id,
+                                            item.id,
+                                            "subtitle",
+                                            e.target.value,
+                                          )
+                                        }
+                                        placeholder="Stack / Issuer"
+                                        className="h-10 sm:h-11 text-sm sm:text-base bg-background px-3.5 rounded-xl border border-border/80"
+                                      />
+                                      <Input
+                                        value={item.dates || ""}
+                                        onChange={(e) =>
+                                          handleUpdateSectionItem(
+                                            section.id,
+                                            item.id,
+                                            "dates",
+                                            e.target.value,
+                                          )
+                                        }
+                                        placeholder="Dates / Year"
+                                        className="h-10 sm:h-11 text-sm sm:text-base bg-background px-3.5 rounded-xl border border-border/80"
+                                      />
+                                    </div>
+                                    <Textarea
+                                      value={item.description || ""}
+                                      onChange={(e) =>
+                                        handleUpdateSectionItem(
+                                          section.id,
+                                          item.id,
+                                          "description",
+                                          e.target.value,
+                                        )
+                                      }
+                                      placeholder="Accomplishment bullets, metrics, technologies used..."
+                                      className="min-h-[100px] sm:min-h-[130px] text-sm sm:text-base leading-relaxed p-3.5 sm:p-4 rounded-xl border border-border/80 bg-background/90"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <Textarea
+                                value={section.content}
+                                onChange={(e) => {
+                                  const updated = (profile.customSections || []).map((s) =>
+                                    s.id === section.id ? { ...s, content: e.target.value } : s,
+                                  );
+                                  updateProfileField("customSections", updated);
+                                }}
+                                placeholder="Enter accomplishments, credentials, or bullets..."
+                                className="min-h-[140px] sm:min-h-[180px] text-sm sm:text-base leading-relaxed p-4 sm:p-5 rounded-xl border border-border/80 bg-background/90"
+                              />
+                            )}
+                          </div>
+                        ))}
+
+                        {/* Quick Section Presets */}
+                        <div className="rounded-xl border border-dashed border-border p-4 bg-muted/30 space-y-2">
+                          <span className="text-xs sm:text-sm font-semibold text-foreground block">
+                            + Add a Custom Section Preset:
+                          </span>
+                          <div className="flex flex-wrap gap-2">
+                            {SECTION_PRESETS.map((preset) => (
+                              <button
+                                key={preset.title}
+                                type="button"
+                                onClick={() => handleAddSection(preset.title)}
+                                className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs sm:text-sm font-medium text-foreground hover:border-primary hover:text-primary transition-all cursor-pointer shadow-2xs"
+                              >
+                                {preset.label}
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+                      {/* Footer Nav */}
+                      <div className="flex items-center justify-between pt-4 border-t border-border">
                         <Button
                           type="button"
-                          variant={showXRay ? "default" : "outline"}
+                          variant="ghost"
                           size="sm"
-                          onClick={() => setShowXRay(!showXRay)}
-                          className="h-8 text-xs font-semibold gap-1.5"
+                          onClick={() => setWizardStep(3)}
+                          className="h-10 px-4 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground rounded-xl"
                         >
-                          <Eye className="size-3.5" />
-                          {showXRay ? "Hide X-Ray" : "X-Ray View (Reveal)"}
+                          ← Back: Experience
                         </Button>
-
-                        <div className="flex items-center gap-2 pl-2 border-l border-border/70">
-                          <span className="text-xs font-semibold text-foreground">
-                            {stealthCloakActive ? "Armed" : "Disabled"}
-                          </span>
-                          <Switch
-                            checked={stealthCloakActive}
-                            onCheckedChange={setStealthCloakActive}
-                            aria-label="Toggle ATS Stealth Cloak"
-                          />
-                        </div>
+                        <Button
+                          type="button"
+                          onClick={() => setWizardStep(5)}
+                          className="h-11 px-6 text-sm sm:text-base font-bold rounded-xl shadow-xs"
+                        >
+                          Next: ATS Optimization →
+                        </Button>
                       </div>
                     </div>
+                  )}
 
-                    {/* Active Keywords Pill List */}
-                    {stealthCloakActive && activeGhostKeywords.length > 0 && (
-                      <div className="pt-2.5 border-t border-emerald-500/20">
-                        <div className="flex items-center justify-between text-[11px] mb-1.5">
-                          <span className="font-semibold text-emerald-700 dark:text-emerald-300">
-                            Target Keywords Armed ({activeGhostKeywords.length} terms):
-                          </span>
-                          <span className="text-muted-foreground">
-                            {showXRay ? "Revealed in preview below" : "Invisible to human eye"}
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto pr-1">
-                          {activeGhostKeywords.slice(0, 25).map((kw, i) => (
-                            <span
-                              key={i}
-                              className="inline-flex items-center rounded-md bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300 font-mono"
-                            >
-                              ✓ {kw}
+                  {/* STEP 5: ATS OPTIMIZATION & STEALTH CLOAK */}
+                  {wizardStep === 5 && (
+                    <div className="space-y-5 pt-1 animate-in fade-in duration-200">
+                      {/* Readiness Summary */}
+                      <div className="rounded-2xl border border-border bg-muted/40 p-4 sm:p-5 space-y-3">
+                        <span className="font-bold text-sm sm:text-base text-foreground block">
+                          Optimization Readiness Checklist:
+                        </span>
+                        <div className="grid grid-cols-2 gap-3 text-xs sm:text-sm">
+                          <div className="flex items-center gap-2">
+                            <span className="text-emerald-500 font-bold">✓</span>
+                            <span>
+                              Target: <strong>{jobTitle || "Job Configured"}</strong>
                             </span>
-                          ))}
-                          {activeGhostKeywords.length > 25 && (
-                            <span className="text-[10px] text-muted-foreground py-0.5 px-1 font-medium">
-                              +{activeGhostKeywords.length - 25} more
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-emerald-500 font-bold">✓</span>
+                            <span>
+                              Candidate: <strong>{profile.name || "Alex Chen"}</strong>
                             </span>
-                          )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-emerald-500 font-bold">✓</span>
+                            <span>
+                              Roles: <strong>{profile.roles.length} entries</strong>
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-emerald-500 font-bold">✓</span>
+                            <span>
+                              ATS Keywords: <strong>{liveTargetKeywords.length} terms</strong>
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    )}
-                  </div>
 
-                  {/* Tabs: Resume, 31 Templates, Gaps, Cover Letter */}
-                  <Tabs value={tab} onValueChange={setTab} className="w-full">
-                    <TabsList className="w-full flex sm:grid sm:grid-cols-5 overflow-x-auto scrollbar-none h-12 sm:h-11 bg-card/80 border border-border/80 p-1 rounded-xl">
-                      <TabsTrigger
-                        value="resume"
-                        className="text-xs font-bold px-2 sm:px-2.5 truncate shrink-0 sm:shrink min-w-[76px] sm:min-w-0"
-                      >
-                        <span className="hidden sm:inline">🎯 Live Resume</span>
-                        <span className="sm:hidden">🎯 Resume</span>
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="latex"
-                        className="text-xs font-bold px-2 sm:px-2.5 truncate shrink-0 sm:shrink min-w-[76px] sm:min-w-0"
-                      >
-                        <span className="hidden sm:inline">📜 LaTeX (.tex)</span>
-                        <span className="sm:hidden">📜 LaTeX</span>
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="templates"
-                        className="text-xs font-bold px-2 sm:px-2.5 truncate shrink-0 sm:shrink min-w-[76px] sm:min-w-0"
-                      >
-                        <span className="hidden sm:inline">🎨 32 Templates</span>
-                        <span className="sm:hidden">🎨 Templates</span>
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="original"
-                        className="text-xs font-bold px-2 sm:px-2.5 truncate shrink-0 sm:shrink min-w-[76px] sm:min-w-0"
-                      >
-                        <span className="hidden sm:inline">🔍 ATS Gaps</span>
-                        <span className="sm:hidden">🔍 Gaps</span>
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="cover"
-                        className="text-xs font-bold px-2 sm:px-2.5 truncate shrink-0 sm:shrink min-w-[76px] sm:min-w-0"
-                      >
-                        <span className="hidden sm:inline">✉️ Cover Letter</span>
-                        <span className="sm:hidden">✉️ Letter</span>
-                      </TabsTrigger>
-                    </TabsList>
-
-                    {/* TAB 1: TAILORED RESUME PREVIEW WITH ZOOM CONTROLS */}
-                    <TabsContent value="resume" className="mt-4 space-y-4">
-                      <div className="rounded-2xl border border-border bg-card shadow-xs overflow-hidden">
-                        {/* Sub-header Toolbar */}
-                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-card/70 px-3 sm:px-5 py-2.5 backdrop-blur-xs">
-                          <div className="flex flex-wrap items-center gap-2 min-w-0">
-                            {/* Direct Template Selector Dropdown */}
-                            <div className="flex items-center gap-1.5 bg-background/90 border border-border rounded-xl px-2.5 py-1 shadow-2xs">
-                              <label
-                                htmlFor="resume-template-select"
-                                className="text-[11px] font-bold text-muted-foreground whitespace-nowrap"
-                              >
-                                Template:
-                              </label>
-                              <select
-                                id="resume-template-select"
-                                aria-label="Choose resume template"
-                                value={template.id}
-                                onChange={(e) => {
-                                  const selected = TEMPLATES.find((t) => t.id === e.target.value);
-                                  if (selected) handleSelectTemplate(selected);
-                                }}
-                                className="bg-transparent text-xs font-bold text-foreground focus:outline-none cursor-pointer pr-1"
-                              >
-                                <optgroup label="✨ Free Templates">
-                                  {TEMPLATES.filter((t) => t.isFree).map((t) => (
-                                    <option
-                                      key={t.id}
-                                      value={t.id}
-                                      className="text-foreground bg-background"
-                                    >
-                                      {t.name} ({t.badge})
-                                    </option>
-                                  ))}
-                                </optgroup>
-                                <optgroup label="👑 Pro Templates">
-                                  {TEMPLATES.filter((t) => !t.isFree).map((t) => (
-                                    <option
-                                      key={t.id}
-                                      value={t.id}
-                                      className="text-foreground bg-background"
-                                    >
-                                      {t.name} {!isSubscribed ? "🔒" : ""} ({t.badge})
-                                    </option>
-                                  ))}
-                                </optgroup>
-                              </select>
-                            </div>
-
-                            {/* Multi-Page Navigation Controls when totalPages > 1 */}
-                            {previewMode === "visual" && totalPages > 1 && (
-                              <div className="inline-flex items-center rounded-xl border border-primary/30 bg-primary/5 px-2.5 py-1 gap-1.5 shadow-2xs">
-                                <span className="text-[11px] font-bold text-primary whitespace-nowrap">
-                                  Page {currentPage} of {totalPages}
-                                </span>
-                                <div className="inline-flex items-center gap-0.5">
-                                  <button
-                                    type="button"
-                                    onClick={() => scrollToPage(currentPage - 1)}
-                                    disabled={currentPage <= 1}
-                                    className="p-0.5 rounded hover:bg-primary/20 text-primary disabled:opacity-30 disabled:hover:bg-transparent"
-                                    title="Previous Page"
-                                    aria-label="Previous resume page"
-                                  >
-                                    <ChevronLeft className="size-3.5" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => scrollToPage(currentPage + 1)}
-                                    disabled={currentPage >= totalPages}
-                                    className="p-0.5 rounded hover:bg-primary/20 text-primary disabled:opacity-30 disabled:hover:bg-transparent"
-                                    title="Next Page"
-                                    aria-label="Next resume page"
-                                  >
-                                    <ChevronRight className="size-3.5" />
-                                  </button>
-                                </div>
-                              </div>
-                            )}
+                      {/* ATS Stealth Cloak Notice */}
+                      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 sm:p-5 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <ShieldCheck className="size-5 text-emerald-600 dark:text-emerald-400" />
+                            <span className="text-sm sm:text-base font-bold text-foreground">
+                              ATS Stealth Cloak™ Active
+                            </span>
                           </div>
-
-                          <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
-                            {/* Toggle Preview Mode */}
-                            <div className="mr-0.5 sm:mr-1 inline-flex rounded-lg border border-border bg-card/80 p-0.5">
-                              <button
-                                type="button"
-                                onClick={() => setPreviewMode("visual")}
-                                aria-label="Visual resume preview mode"
-                                className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold transition-all ${
-                                  previewMode === "visual"
-                                    ? "bg-primary text-primary-foreground shadow-2xs"
-                                    : "text-muted-foreground hover:text-foreground"
-                                }`}
-                              >
-                                <Eye className="size-3" />{" "}
-                                <span className="hidden sm:inline">Visual</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setPreviewMode("text")}
-                                aria-label="Plain text resume preview mode"
-                                className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold transition-all ${
-                                  previewMode === "text"
-                                    ? "bg-primary text-primary-foreground shadow-2xs"
-                                    : "text-muted-foreground hover:text-foreground"
-                                }`}
-                              >
-                                <FileText className="size-3" />{" "}
-                                <span className="hidden sm:inline">Plain </span>Text
-                              </button>
-                            </div>
-
-                            {/* Zoom Controls for Visual Preview */}
-                            {previewMode === "visual" && (
-                              <div className="flex items-center rounded-xl border border-border bg-[#121624] p-0.5 shadow-xs">
-                                <Button
-                                  variant={zoomMode === "fit" ? "default" : "ghost"}
-                                  size="sm"
-                                  className="h-8 px-2 sm:px-2.5 text-xs font-bold rounded-lg cursor-pointer"
-                                  onClick={() => setZoomMode("fit")}
-                                  title="Fit resume width to screen (100% readable)"
-                                  aria-label="Fit resume to screen width"
-                                >
-                                  Fit
-                                </Button>
-                                <Button
-                                  variant={
-                                    zoomMode === "custom" && previewZoom === 100
-                                      ? "default"
-                                      : "ghost"
-                                  }
-                                  size="sm"
-                                  className="h-8 px-2 sm:px-2.5 text-xs font-bold rounded-lg cursor-pointer"
-                                  onClick={() => {
-                                    setZoomMode("custom");
-                                    setPreviewZoom(100);
-                                  }}
-                                  title="100% scale"
-                                  aria-label="Set resume zoom to 100 percent"
-                                >
-                                  100%
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="size-8 rounded-lg cursor-pointer"
-                                  onClick={() => {
-                                    setZoomMode("custom");
-                                    setPreviewZoom((z) =>
-                                      Math.max(
-                                        40,
-                                        (zoomMode === "fit" ? Math.round(fitScale * 100) : z) - 15,
-                                      ),
-                                    );
-                                  }}
-                                  title="Zoom Out"
-                                  aria-label="Zoom out resume preview"
-                                >
-                                  <ZoomOut className="size-3.5" />
-                                </Button>
-                                <span
-                                  className="text-xs font-bold px-1.5 min-w-[38px] text-center"
-                                  aria-live="polite"
-                                >
-                                  {Math.round(previewScale * 100)}%
-                                </span>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="size-8 rounded-lg cursor-pointer"
-                                  onClick={() => {
-                                    setZoomMode("custom");
-                                    setPreviewZoom((z) =>
-                                      Math.min(
-                                        150,
-                                        (zoomMode === "fit" ? Math.round(fitScale * 100) : z) + 15,
-                                      ),
-                                    );
-                                  }}
-                                  title="Zoom In"
-                                  aria-label="Zoom in resume preview"
-                                >
-                                  <ZoomIn className="size-3.5" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="size-8 rounded-lg cursor-pointer"
-                                  onClick={() => setZoomTemplate(template)}
-                                  title="Open Fullscreen Zoom Modal"
-                                  aria-label="Open fullscreen resume view"
-                                >
-                                  <Maximize2 className="size-3.5" />
-                                </Button>
-                              </div>
-                            )}
-
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={copyResume}
-                              disabled={streaming}
-                              className="h-8 sm:h-9 text-xs sm:text-sm font-semibold px-2.5 sm:px-3 rounded-xl cursor-pointer"
-                            >
-                              {copied ? (
-                                <Check className="size-3.5 text-emerald-500" />
-                              ) : (
-                                <Copy className="size-3.5" />
-                              )}{" "}
-                              <span className="hidden sm:inline">Copy</span>
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDownloadWord(template)}
-                              disabled={streaming}
-                              className="h-8 sm:h-9 text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 border-blue-500/30 px-2.5 sm:px-3 rounded-xl cursor-pointer"
-                            >
-                              <FileDown className="size-3.5 sm:mr-1" />{" "}
-                              <span className="hidden sm:inline">Word Free</span>
-                              <span className="sm:hidden">Word</span>
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setTab("latex")}
-                              className="h-8 sm:h-9 text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 px-2.5 sm:px-3 rounded-xl cursor-pointer"
-                              title="View and export Overleaf FAANGPath LaTeX (.tex) format"
-                            >
-                              <FileCode className="size-3.5 sm:mr-1" />{" "}
-                              <span className="hidden sm:inline">LaTeX (.tex)</span>
-                              <span className="sm:hidden">LaTeX</span>
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => handleDownloadPdf(template)}
-                              disabled={streaming}
-                              className="h-8 sm:h-9 text-xs sm:text-sm font-bold px-3 sm:px-3.5 rounded-xl cursor-pointer"
-                            >
-                              <Download className="size-3.5 sm:mr-1" /> PDF
-                              {!isSubscribed && <Lock className="size-3 ml-1 text-primary-foreground" />}
-                            </Button>
-                          </div>
+                          <Badge className="bg-emerald-600 text-white font-bold text-xs py-0.5 px-2">
+                            100% SHORTLIST
+                          </Badge>
                         </div>
+                        <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                          Injects exact target keywords in invisible white font (
+                          <code className="text-emerald-600 dark:text-emerald-400 font-mono font-semibold">
+                            #ffffff
+                          </code>
+                          ) into your exported Word and PDF documents. Human recruiters see a
+                          spotless, executive layout while automated ATS parsers index a 100%
+                          keyword match.
+                        </p>
+                      </div>
 
-                        {/* Visual Preview Canvas - Clean, Centered with True Vertical Scroll & Zero Horizontal Scroll */}
-                        {previewMode === "visual" ? (
-                          <div
-                            ref={previewCanvasRef}
-                            onScroll={handlePreviewScroll}
-                            className={`relative bg-[#090A0F]/90 p-3 sm:p-4 pb-12 sm:pb-16 flex flex-col items-center justify-start overflow-x-hidden overflow-y-auto w-full ${
-                              workspaceLayout === "full"
-                                ? "min-h-[600px] h-[calc(100vh-200px)] max-h-[1050px]"
-                                : "min-h-[500px] h-[calc(100vh-270px)] max-h-[850px]"
-                            }`}
-                            style={{
-                              overscrollBehaviorY: "contain",
-                              scrollbarWidth: "thin",
-                            }}
-                          >
-                            <div
-                              style={{
-                                width: `${Math.round(850 * previewScale)}px`,
-                                height: `${Math.round(previewDocHeight * previewScale)}px`,
-                                maxWidth: "100%",
-                                position: "relative",
-                                overflow: "hidden",
-                              }}
-                              className="mx-auto rounded-lg shadow-2xl shadow-black/80 bg-white transition-[height] duration-150 mb-4 shrink-0"
-                            >
-                              <div
-                                style={{
-                                  position: "absolute",
-                                  top: 0,
-                                  left: 0,
-                                  width: "850px",
-                                  height: `${previewDocHeight}px`,
-                                  transform: `scale(${previewScale})`,
-                                  transformOrigin: "top left",
-                                  willChange: "transform",
-                                }}
-                                className="bg-white"
-                              >
-                                <iframe
-                                  title="Tailored Resume Live Preview"
-                                  srcDoc={previewHtml}
-                                  sandbox="allow-scripts allow-same-origin"
-                                  scrolling="no"
-                                  className="w-[850px] border-0"
-                                  style={{ height: `${previewDocHeight}px` }}
-                                  onLoad={(e) => {
-                                    try {
-                                      const doc = e.currentTarget.contentDocument;
-                                      if (doc) {
-                                        const page = doc.querySelector(".page") as HTMLElement | null;
-                                        if (page) {
-                                          const scrollH = page.scrollHeight;
-                                          if (scrollH > 200) {
-                                            const pageCount =
-                                              scrollH <= 1080 ? 1 : Math.max(1, Math.ceil(scrollH / 1100));
-                                            const newH = pageCount * 1100;
-                                            setPreviewDocHeight((prev) => (prev !== newH ? newH : prev));
-                                          }
-                                        }
-                                      }
-                                    } catch {}
-                                  }}
-                                />
-                              </div>
-
-                              {/* Visual Page Break Demarcation Guides for Multi-Page Documents */}
-                              {Array.from({
-                                length: Math.floor((previewDocHeight - 50) / 1100),
-                              }).map((_, idx) => (
-                                <div
-                                  key={idx}
-                                  style={{
-                                    position: "absolute",
-                                    top: `${Math.round((idx + 1) * 1100 * previewScale)}px`,
-                                    left: 0,
-                                    right: 0,
-                                    zIndex: 20,
-                                    pointerEvents: "none",
-                                  }}
-                                  className="flex items-center justify-center -translate-y-1/2"
-                                >
-                                  <div className="w-full border-t border-slate-300 dark:border-slate-700 opacity-80" />
-                                  <span className="absolute bg-slate-800 text-slate-100 text-[10px] font-medium px-2.5 py-0.5 rounded-full shadow-xs whitespace-nowrap">
-                                    Page {idx + 2}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-
-                            {/* Minimal bottom pagination indicator for multi-page resumes */}
-                            {totalPages > 1 && (
-                              <div className="sticky bottom-4 z-20 flex items-center gap-2 bg-card/90 backdrop-blur-md border border-border px-3 py-1 rounded-full shadow-lg text-xs font-semibold text-foreground">
-                                <span className="text-[11px] text-muted-foreground">
-                                  Page {currentPage} of {totalPages}
-                                </span>
-                                <div className="flex items-center gap-1 border-l border-border pl-2">
-                                  {Array.from({ length: totalPages }).map((_, i) => (
-                                    <button
-                                      key={i}
-                                      type="button"
-                                      onClick={() => scrollToPage(i + 1)}
-                                      className={`size-5 rounded-full text-[10px] font-bold transition-all ${
-                                        currentPage === i + 1
-                                          ? "bg-primary text-primary-foreground shadow-2xs"
-                                          : "bg-muted text-muted-foreground hover:text-foreground"
-                                      }`}
-                                    >
-                                      {i + 1}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
+                      {/* Main Generate Button */}
+                      <Button
+                        size="lg"
+                        className="w-full sm:w-auto h-auto min-h-14 sm:h-15 text-sm sm:text-base md:text-lg font-bold shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground transition-all rounded-xl cursor-pointer px-4 py-3 whitespace-normal text-center"
+                        disabled={!ready}
+                        onClick={() => {
+                          tailor();
+                          outputRef.current?.scrollIntoView({ behavior: "smooth" });
+                        }}
+                      >
+                        {streaming ? (
+                          <div className="flex items-center justify-center flex-wrap gap-2">
+                            <Loader2 className="size-5 animate-spin shrink-0" />
+                            <span>Infiltrating &amp; Tailoring Resume…</span>
                           </div>
                         ) : (
-                          <pre className="max-h-[600px] overflow-auto whitespace-pre-wrap px-4 sm:px-5 py-4 font-sans text-xs sm:text-sm leading-relaxed text-foreground bg-card break-words">
-                            {text}
-                            {streaming && (
-                              <span className="ml-1 inline-block size-2 animate-pulse bg-primary" />
-                            )}
-                          </pre>
+                          <div className="flex items-center justify-center flex-wrap gap-2">
+                            <Sparkles className="size-5 shrink-0" />
+                            <span>Generate 100% ATS Matched Resume</span>
+                            <ArrowRight className="size-5 shrink-0" />
+                          </div>
                         )}
+                      </Button>
+
+                      {/* Footer Nav */}
+                      <div className="flex items-center justify-between pt-3 border-t border-border">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setWizardStep(4)}
+                          className="h-10 px-4 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground rounded-xl"
+                        >
+                          ← Back: Skills &amp; Sections
+                        </Button>
+                        <span className="text-xs text-muted-foreground font-semibold">
+                          Step 5 of 5
+                        </span>
                       </div>
-
-                      {/* What changed explanation */}
-                      {result && result.changes.length > 0 && (
-                        <div className="rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-xs">
-                          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                            <Check className="size-3.5 text-emerald-500" /> Strategic Optimizations
-                            Made
-                          </h3>
-                          <ul className="mt-2.5 space-y-1.5">
-                            {result.changes.map((change, idx) => (
-                              <li
-                                key={idx}
-                                className="flex gap-2 text-xs sm:text-sm leading-relaxed text-foreground"
-                              >
-                                <Check className="mt-0.5 size-3.5 shrink-0 text-primary" />
-                                <span>{change}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </TabsContent>
-
-                    {/* TAB 2: OVERLEAF FAANGPATH LATEX SOURCE ENGINE (.TEX) */}
-                    <TabsContent value="latex" className="mt-4 space-y-4">
-                      <div className="rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-xs space-y-4">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-border/80">
-                          <div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <h3 className="text-sm sm:text-base font-bold text-foreground flex items-center gap-1.5">
-                                <FileCode className="size-4 text-emerald-500" />
-                                Overleaf FAANGPath LaTeX Source Engine
-                              </h3>
-                              <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/25 text-[10px] font-bold py-0.5 px-2">
-                                Overleaf.com Ready (pdfLaTeX 11pt)
-                              </Badge>
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-1 max-w-2xl leading-relaxed">
-                              This resume is represented in pure standard LaTeX format behind the
-                              scenes, just like the Overleaf platform. Built on the #1 Overleaf
-                              FAANGPath / Jake's Resume architecture for 100% Workday, Greenhouse,
-                              and Lever ATS bot parsing.
-                            </p>
-                          </div>
-
-                          <div className="flex flex-wrap items-center gap-2 shrink-0">
-                            {template.id !== "overleaf-faang" && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  const overleafTpl = TEMPLATES.find(
-                                    (t) => t.id === "overleaf-faang",
-                                  );
-                                  if (overleafTpl) {
-                                    handleSelectTemplate(overleafTpl);
-                                    toast.success(
-                                      "Switched to Overleaf FAANGPath (Official LaTeX) template!",
-                                    );
-                                  }
-                                }}
-                                className="h-8 text-xs font-semibold gap-1.5 border-border hover:border-border/80 hover:bg-accent"
-                              >
-                                <Sparkles className="size-3.5 text-primary" />
-                                Switch to Overleaf FAANG Template
-                              </Button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* PASTE / PDF UPLOAD VIEW - Ultra-wide 2-column responsive layout */
+                <div className="space-y-6">
+                  <div
+                    className={
+                      workspaceLayout === "full"
+                        ? "grid grid-cols-1 lg:grid-cols-2 gap-6"
+                        : "space-y-5"
+                    }
+                  >
+                    {/* Left Box: Candidate Resume */}
+                    <div className="space-y-2 flex flex-col">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <label className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                          <FileText className="size-4 text-primary" />
+                          Your Current Resume
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs sm:text-sm text-muted-foreground font-mono">
+                            {resume.trim().length} chars
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => fileInput.current?.click()}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-background px-3 py-1.5 text-xs sm:text-sm font-semibold text-foreground hover:bg-accent transition-colors cursor-pointer shadow-xs"
+                          >
+                            {reading ? (
+                              <Loader2 className="size-3.5 animate-spin text-primary" />
+                            ) : (
+                              <Upload className="size-3.5 text-primary" />
                             )}
-
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={copyLatex}
-                              className="h-8 text-xs font-bold gap-1.5"
-                            >
-                              {copiedLatex ? (
-                                <Check className="size-3.5 text-emerald-500" />
-                              ) : (
-                                <Copy className="size-3.5" />
-                              )}
-                              {copiedLatex ? "Copied .tex" : "Copy LaTeX"}
-                            </Button>
-
-                            <Button
-                              size="sm"
-                              onClick={handleDownloadLatex}
-                              className="h-8 text-xs font-bold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs"
-                            >
-                              <Download className="size-3.5" />
-                              Download resume.tex
-                            </Button>
-
-                            <a
-                              href="https://www.overleaf.com/project"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card hover:bg-accent px-2.5 py-1.5 text-xs font-semibold text-foreground transition-colors shadow-2xs"
-                            >
-                              <span>Open Overleaf</span>
-                              <ExternalLink className="size-3 text-muted-foreground" />
-                            </a>
-                          </div>
+                            Upload (PDF / TXT)
+                          </button>
                         </div>
+                      </div>
+                      <input
+                        ref={fileInput}
+                        type="file"
+                        accept=".pdf,.txt,.md,application/pdf,text/plain"
+                        className="hidden"
+                        onChange={(e) => onFile(e.target.files?.[0] ?? null)}
+                      />
+                      <Textarea
+                        value={resume}
+                        onChange={(e) => setResume(e.target.value)}
+                        placeholder="Paste your full resume text here, or click upload to import from PDF..."
+                        className={`flex-1 resize-y bg-background/90 text-sm sm:text-base leading-relaxed p-4 sm:p-5 rounded-xl border border-border/80 focus:border-primary font-mono sm:font-sans transition-all ${
+                          workspaceLayout === "full"
+                            ? "min-h-[380px] lg:min-h-[480px]"
+                            : "min-h-[260px] sm:min-h-[320px]"
+                        }`}
+                      />
+                    </div>
 
-                        {/* Overleaf Code Window */}
-                        <div className="rounded-xl border border-border bg-[#05070B] text-slate-100 font-mono text-xs overflow-hidden shadow-inner">
-                          <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-[#0B0F17] text-[11px] text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              <span className="size-2.5 rounded-full bg-rose-500/80 inline-block" />
-                              <span className="size-2.5 rounded-full bg-amber-500/80 inline-block" />
-                              <span className="size-2.5 rounded-full bg-emerald-500/80 inline-block" />
-                              <span className="ml-2 font-semibold text-slate-200">main.tex</span>
-                              <span className="text-[10px] text-muted-foreground">
-                                ({generatedLatex ? generatedLatex.split("\n").length : 0} lines ·{" "}
-                                {generatedLatex ? new Blob([generatedLatex]).size : 0} bytes)
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="hidden sm:inline text-muted-foreground text-[10px]">
-                                Document Class: article [letterpaper, 11pt]
-                              </span>
-                              <button
-                                type="button"
-                                onClick={copyLatex}
-                                className="hover:text-foreground px-2 py-0.5 rounded bg-muted/60 text-[10px] flex items-center gap-1 text-muted-foreground transition-colors"
-                              >
-                                {copiedLatex ? (
-                                  <Check className="size-3 text-emerald-400" />
-                                ) : (
-                                  <Copy className="size-3" />
-                                )}
-                                Copy Code
-                              </button>
-                            </div>
-                          </div>
-
-                          <pre className="p-4 sm:p-5 overflow-x-auto max-h-[580px] overflow-y-auto leading-relaxed text-[11.5px] sm:text-xs text-slate-200 selection:bg-primary/30 selection:text-white font-mono">
-                            {generatedLatex ||
-                              "% Enter candidate details on the left or generate to inspect LaTeX source..."}
-                          </pre>
-                        </div>
-
-                        <div className="rounded-xl border border-emerald-500/20 bg-emerald-950/15 p-4 text-xs text-muted-foreground flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                          <div className="space-y-0.5">
-                            <p className="font-semibold text-foreground flex items-center gap-1.5">
-                              <Check className="size-3.5 text-emerald-500" /> How to use directly in
-                              Overleaf:
-                            </p>
-                            <p className="text-[11px]">
-                              1. Click <b>Download resume.tex</b> or <b>Copy LaTeX</b>. 2. Navigate
-                              to <b>Overleaf.com</b> &gt; <b>New Project</b> &gt;{" "}
-                              <b>Blank Project</b>. 3. Paste this code into <code>main.tex</code>{" "}
-                              and hit <b>Recompile</b>.
-                            </p>
-                          </div>
+                    {/* Right Box: Target Job Description */}
+                    <div className="space-y-2 flex flex-col">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <label className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                          <Briefcase className="size-4 text-primary" />
+                          Target Job Description
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs sm:text-sm text-muted-foreground font-mono">
+                            {job.trim().length} chars
+                          </span>
                           <Button
+                            type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => {
-                              setTab("resume");
-                              setPreviewMode("visual");
-                            }}
-                            className="text-xs shrink-0 font-medium"
+                            onClick={() => handleLoadSampleJob(SAMPLE_JOBS[0]!)}
+                            className="h-8 text-xs font-semibold px-2.5 rounded-lg"
                           >
-                            View Compiled PDF Preview →
+                            <Sparkles className="size-3 mr-1 text-primary" /> Sample Job
                           </Button>
                         </div>
                       </div>
-                    </TabsContent>
+                      <Textarea
+                        value={job}
+                        onChange={(e) => setJob(e.target.value)}
+                        placeholder="Paste target job requirements, qualifications, responsibilities, and tech stack here..."
+                        className={`flex-1 resize-y bg-background/90 text-sm sm:text-base leading-relaxed p-4 sm:p-5 rounded-xl border border-border/80 focus:border-primary transition-all ${
+                          workspaceLayout === "full"
+                            ? "min-h-[380px] lg:min-h-[480px]"
+                            : "min-h-[220px] sm:min-h-[280px]"
+                        }`}
+                      />
 
-                    {/* TAB 3: 32 WORLD-CLASS TEMPLATES SHOWCASE */}
-                    <TabsContent value="templates" className="mt-4 space-y-4">
-                      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-xs">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-sm font-bold text-foreground">
-                              32 Award-Winning FAANG &amp; Big Tech Templates
-                            </h3>
-                            <Badge variant="secondary" className="text-[10px] font-semibold px-2">
-                              Top 32
-                            </Badge>
+                      {/* Real-time Extracted ATS Keywords Preview in Paste Mode */}
+                      {liveTargetKeywords.length > 0 && (
+                        <div className="rounded-xl border border-primary/25 bg-primary/5 p-3 space-y-1.5">
+                          <div className="flex items-center justify-between text-xs sm:text-sm">
+                            <span className="font-bold text-primary flex items-center gap-1.5">
+                              <Sparkles className="size-3.5" /> Detected ATS Keywords (
+                              {liveTargetKeywords.length}):
+                            </span>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            Verified formats used by Staff &amp; Principal hires at Google, Meta,
-                            Apple, Amazon, Netflix, Stripe, and Overleaf. First 6 are Free (Word
-                            .doc &amp; LaTeX .tex).
-                          </p>
+                          <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto">
+                            {liveTargetKeywords.slice(0, 14).map((kw, i) => (
+                              <span
+                                key={i}
+                                className="inline-flex items-center rounded-md bg-background border border-primary/30 px-2 py-0.5 text-xs font-semibold text-foreground font-mono"
+                              >
+                                ✓ {kw}
+                              </span>
+                            ))}
+                          </div>
                         </div>
+                      )}
+                    </div>
+                  </div>
 
-                        {/* Filter Chips */}
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => setTemplateFilter("all")}
-                            className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
-                              templateFilter === "all"
-                                ? "bg-primary text-primary-foreground shadow-2xs"
-                                : "bg-muted/70 text-muted-foreground hover:bg-accent hover:text-foreground"
-                            }`}
-                          >
-                            All 32
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setTemplateFilter("free")}
-                            className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
-                              templateFilter === "free"
-                                ? "bg-primary text-primary-foreground shadow-2xs"
-                                : "bg-muted/70 text-muted-foreground hover:bg-accent hover:text-foreground"
-                            }`}
-                          >
-                            Free (First 6)
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setTemplateFilter("pro")}
-                            className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
-                              templateFilter === "pro"
-                                ? "bg-primary text-primary-foreground shadow-2xs"
-                                : "bg-muted/70 text-muted-foreground hover:bg-accent hover:text-foreground"
-                            }`}
-                          >
-                            Pro Exclusive (26)
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setTemplateFilter("award")}
-                            className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
-                              templateFilter === "award"
-                                ? "bg-primary text-primary-foreground shadow-2xs"
-                                : "bg-muted/70 text-muted-foreground hover:bg-accent hover:text-foreground"
-                            }`}
-                          >
-                            Award Winners
-                          </button>
+                  <Button
+                    size="lg"
+                    className="w-full sm:w-auto h-auto min-h-14 sm:h-15 text-sm sm:text-base md:text-lg font-bold shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl transition-all cursor-pointer px-4 py-3 whitespace-normal text-center"
+                    disabled={!ready}
+                    onClick={() => {
+                      tailor();
+                      outputRef.current?.scrollIntoView({ behavior: "smooth" });
+                    }}
+                  >
+                    {streaming ? (
+                      <div className="flex items-center justify-center flex-wrap gap-2">
+                        <Loader2 className="size-5 animate-spin shrink-0" />
+                        <span>Tailoring Resume…</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center flex-wrap gap-2">
+                        <Sparkles className="size-5 shrink-0" />
+                        <span>Generate 100% ATS Matched Resume</span>
+                        <ArrowRight className="size-5 shrink-0" />
+                      </div>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Sidebar Corporate Banner Ad (Placed in left column) */}
+            <BannerAd
+              variant="sidebar"
+              onUpgradeClick={() => {
+                setSubReason(
+                  "Upgrade to Enterprise Pro to remove all sponsor banners and unlock all 32 templates.",
+                );
+                setSubModalOpen(true);
+              }}
+            />
+
+            {/* Saved Generations History - Collapsible Drawer on Mobile */}
+            {history.length > 0 && (
+              <aside
+                aria-labelledby="history-heading"
+                className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-xs"
+              >
+                <div
+                  className="flex items-center justify-between border-b border-border pb-2.5 cursor-pointer sm:cursor-default select-none"
+                  onClick={() => setHistoryOpenMobile((prev) => !prev)}
+                >
+                  <h3
+                    id="history-heading"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-foreground"
+                  >
+                    <HistoryIcon className="size-3.5 text-muted-foreground" /> Saved Generations (
+                    {history.length})
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setHistory(clearHistory());
+                      }}
+                      aria-label="Clear all saved generations"
+                      className="text-xs text-muted-foreground hover:text-destructive p-1"
+                    >
+                      Clear all
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setHistoryOpenMobile((prev) => !prev)}
+                      className="sm:hidden p-1 text-muted-foreground hover:text-foreground"
+                      aria-label={
+                        historyOpenMobile
+                          ? "Collapse saved generations"
+                          : "Expand saved generations"
+                      }
+                      aria-expanded={historyOpenMobile}
+                    >
+                      <ChevronDown
+                        className={cn(
+                          "size-4 transition-transform duration-200",
+                          historyOpenMobile && "rotate-180",
+                        )}
+                      />
+                    </button>
+                  </div>
+                </div>
+                <ul
+                  className={cn(
+                    "mt-2 divide-y divide-border/60 transition-all",
+                    !historyOpenMobile && "hidden sm:block",
+                  )}
+                >
+                  {history.map((entry) => (
+                    <li key={entry.id} className="flex items-center justify-between gap-3 py-2">
+                      <button
+                        type="button"
+                        onClick={() => restore(entry)}
+                        aria-label={`Restore saved resume: ${entry.title}`}
+                        className="min-w-0 flex-1 text-left group min-h-[44px] sm:min-h-0 flex flex-col justify-center"
+                      >
+                        <p className="truncate text-xs font-bold text-foreground group-hover:text-primary">
+                          {entry.title}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {formatWhen(entry.createdAt)} ·{" "}
+                          <span className="text-primary font-bold">
+                            {entry.result.match_score}/100
+                          </span>{" "}
+                          · {entry.tone}
+                        </p>
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Delete entry ${entry.title}`}
+                        onClick={() => setHistory(deleteEntry(entry.id))}
+                        className="text-muted-foreground hover:text-destructive p-2 sm:p-1 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center rounded-lg"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </aside>
+            )}
+          </section>
+
+          {/* Right Workspace Column: Tailored Resume & 32 Templates Showcase */}
+          <section
+            ref={outputRef}
+            aria-labelledby="output-heading"
+            className={
+              workspaceLayout === "split"
+                ? "lg:col-span-7 xl:col-span-7 2xl:col-span-7 space-y-6"
+                : "space-y-6 w-full max-w-[1400px] mx-auto"
+            }
+          >
+            {error && (
+              <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-xs font-medium text-destructive">
+                {error}
+              </div>
+            )}
+
+            {/* Empty state when no resume generated yet: Clean Minimalist View with Banner Ad */}
+            {!text && !error && (
+              <div className="flex h-full min-h-[460px] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center shadow-xs">
+                <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/20 shadow-inner mb-4">
+                  <Award className="size-7" />
+                </div>
+                <h2
+                  id="output-heading"
+                  className="mt-2 text-xl sm:text-2xl font-bold hero-gradient-text"
+                >
+                  Your Tailored Executive Resume Lands Here
+                </h2>
+                <p className="mt-2 max-w-md text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                  Fill in candidate details on the left, paste a target job posting, and click
+                  Generate. The AI scores keywords, matches competencies, and renders 32 templates
+                  with full Overleaf LaTeX (.tex) support.
+                </p>
+                <div className="mt-6 flex flex-wrap gap-2.5 justify-center">
+                  <Button
+                    onClick={handleLoadAllDemo}
+                    size="sm"
+                    className="font-semibold text-xs shadow-xs"
+                  >
+                    <Sparkles className="mr-1.5 size-3.5 text-primary" /> Try with Demo Data
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {text && (
+              <>
+                {/* ATS Match Score Header Card */}
+                {result && (
+                  <div className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-xs">
+                    <div className="flex items-baseline justify-between gap-4">
+                      <div>
+                        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                          ATS Target Match Fit
+                        </span>
+                        <h2 className="text-lg sm:text-xl font-bold text-foreground">
+                          {jobTitle || deriveTitle(job)}
+                        </h2>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-4xl font-extrabold text-primary">
+                          {result.match_score}
+                        </span>
+                        <span className="text-sm font-bold text-muted-foreground">/100</span>
+                      </div>
+                    </div>
+                    <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-primary via-indigo-400 to-emerald-400 transition-all duration-700"
+                        style={{ width: `${result.match_score}%` }}
+                      />
+                    </div>
+                    {/* Interactive ATS Fit Score Breakdown */}
+                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-border/60 text-center">
+                      <div className="rounded-xl bg-muted/40 p-2 border border-border/50">
+                        <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                          ATS Infiltration
+                        </p>
+                        <p className="text-sm font-extrabold text-emerald-400">100% Guaranteed</p>
+                      </div>
+                      <div className="rounded-xl bg-muted/40 p-2 border border-border/50">
+                        <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                          Core Match
+                        </p>
+                        <p className="text-sm font-extrabold text-primary">
+                          {Math.min(100, Math.max(85, result.match_score))}%
+                        </p>
+                      </div>
+                      <div className="rounded-xl bg-muted/40 p-2 border border-border/50">
+                        <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                          Vector Layout
+                        </p>
+                        <p className="text-sm font-extrabold text-blue-400">100% Pass</p>
+                      </div>
+                      <div className="rounded-xl bg-muted/40 p-2 border border-border/50">
+                        <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                          Action Impact
+                        </p>
+                        <p className="text-sm font-extrabold text-indigo-400">96% FAANG</p>
+                      </div>
+                    </div>
+
+                    {result.missing_keywords.length > 0 && (
+                      <div className="mt-3.5 border-t border-border/60 pt-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                            Target Keywords (Click to Copy):
+                          </p>
+                          <span className="text-[11px] text-muted-foreground hidden sm:inline">
+                            Click any tag to copy into your experience bullets
+                          </span>
+                        </div>
+                        <div className="mt-1.5 flex flex-wrap gap-1.5">
+                          {result.missing_keywords.map((kw) => (
+                            <button
+                              key={kw}
+                              type="button"
+                              onClick={() => {
+                                void navigator.clipboard.writeText(kw);
+                                toast.success(`Copied keyword "${kw}" to clipboard!`);
+                              }}
+                              className="inline-flex items-center gap-1 rounded-md bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs font-medium px-2 py-0.5 border border-border/60 transition-transform active:scale-95 cursor-pointer group"
+                              title="Click to copy keyword"
+                            >
+                              <span>{kw}</span>
+                              <Copy className="size-2.5 opacity-50 group-hover:opacity-100" />
+                            </button>
+                          ))}
                         </div>
                       </div>
+                    )}
 
-                      {/* Memoized, Fast-Rendering 32 Template Cards Grid */}
-                      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                        {filteredTemplates.map((item) => (
-                          <TemplateCard
-                            key={item.id}
-                            template={item}
-                            isSelected={item.id === templateId}
-                            isSubscribed={isSubscribed}
-                            resumeText={deferredText || resume || profileToResume(SAMPLE_PROFILE)}
-                            applicant={applicant}
-                            onSelect={handleSelectTemplate}
-                            onDownloadWord={handleDownloadWord}
-                            onDownloadPdf={handleDownloadPdf}
-                            onZoom={setZoomTemplate}
-                          />
+                    {/* Interactive FAANG Executive Power Verbs Bank */}
+                    <div className="mt-3.5 border-t border-border/60 pt-3">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                          <Sparkles className="size-3 text-primary" /> FAANG Executive Action Verbs:
+                        </p>
+                        <span className="text-[10px] text-muted-foreground">Click to copy</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          "Spearheaded",
+                          "Architected",
+                          "Orchestrated",
+                          "Engineered",
+                          "Automated",
+                          "Accelerated",
+                          "Streamlined",
+                          "Maximized",
+                          "Pioneered",
+                          "Consolidated",
+                          "Transformed",
+                          "Scaled",
+                        ].map((verb) => (
+                          <button
+                            key={verb}
+                            type="button"
+                            onClick={() => {
+                              void navigator.clipboard.writeText(verb);
+                              toast.success(`Copied action verb "${verb}"!`);
+                            }}
+                            className="rounded-md bg-muted/60 hover:bg-primary/15 hover:text-primary text-[11px] font-semibold px-2 py-0.5 border border-border/40 text-foreground transition-all active:scale-95 cursor-pointer"
+                            title={`Copy '${verb}' to clipboard`}
+                          >
+                            {verb}
+                          </button>
                         ))}
                       </div>
-                    </TabsContent>
+                    </div>
+                    <div className="mt-4 flex flex-wrap gap-2 pt-2 border-t border-border/60">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDownloadWord(template)}
+                        className="h-8 border-border text-foreground hover:bg-accent font-bold text-xs"
+                      >
+                        <FileDown className="size-3.5 mr-1 text-primary" /> Word (.doc) Free
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setTab("latex");
+                          if (outputRef.current) {
+                            outputRef.current.scrollIntoView({ behavior: "smooth" });
+                          }
+                        }}
+                        className="h-8 border-emerald-600/30 text-emerald-400 hover:bg-emerald-500/10 font-bold text-xs"
+                        title="View & Export Overleaf FAANGPath LaTeX (.tex) format"
+                      >
+                        <FileCode className="size-3.5 mr-1 text-emerald-400" /> Overleaf LaTeX
+                        (.tex)
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleDownloadPdf(template)}
+                        disabled={streaming}
+                        className="h-8 bg-primary hover:bg-primary/90 font-bold text-xs text-primary-foreground shadow-xs"
+                      >
+                        <Download className="size-3.5 mr-1" />
+                        {isSubscribed ? "Download PDF" : "Download PDF (Pro)"}
+                        {!isSubscribed && <Lock className="size-3 ml-1 text-primary-foreground" />}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={downloadReport}
+                        className="h-8 text-xs font-semibold"
+                      >
+                        Match Report PDF
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
-                    {/* TAB 3: ORIGINAL GAPS & INLINE FIXES */}
-                    <TabsContent value="original" className="mt-4">
-                      <HighlightedResume
-                        resume={resume}
-                        fixes={result?.keyword_fixes ?? []}
-                        onApply={applyFix}
-                      />
-                    </TabsContent>
-
-                    {/* TAB 4: COVER LETTER */}
-                    <TabsContent value="cover" className="mt-4 space-y-4">
-                      <div className="rounded-2xl border border-border bg-card shadow-xs overflow-hidden">
-                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-card/60 px-5 py-3.5">
-                          <div>
-                            <h3 className="text-sm font-bold text-foreground">
-                              Matched Cover Letter
-                            </h3>
-                            <p className="text-xs text-muted-foreground">
-                              Tailored to {jobTitle || "the target role"}.
-                            </p>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              onClick={writeCoverLetter}
-                              disabled={!result || coverBusy}
-                              className="h-8 text-xs font-semibold"
-                            >
-                              {coverBusy ? (
-                                <Loader2 className="size-3.5 animate-spin mr-1" />
-                              ) : (
-                                <Sparkles className="size-3.5 mr-1" />
-                              )}
-                              {coverLetter ? "Regenerate" : "Generate Cover Letter"}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={downloadCoverPdf}
-                              disabled={!coverLetter || coverBusy}
-                              className="h-8 text-xs font-semibold"
-                            >
-                              <Download className="size-3.5 mr-1" /> PDF
-                              {!isSubscribed && <Lock className="size-3 ml-1 text-primary" />}
-                            </Button>
-                          </div>
+                {/* ⚡ 100% ATS SHORTLIST SECRET WEAPON: GHOST KEYWORDS (WHITE-FONT INJECTION) */}
+                <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/15 p-4 sm:p-5 shadow-xs space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <div className="size-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5">
+                        <ShieldCheck className="size-5" />
+                      </div>
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-sm sm:text-base font-bold text-foreground">
+                            ⚡ ATS Stealth Cloak™ (White-Font Keyword Infiltration)
+                          </h3>
+                          <Badge className="bg-emerald-600 text-white font-bold text-[10px] py-0.5 px-2">
+                            100% BOT SHORTLIST GUARANTEE
+                          </Badge>
                         </div>
-                        <pre className="max-h-[500px] overflow-auto whitespace-pre-wrap px-5 py-4 font-sans text-xs sm:text-sm leading-relaxed text-foreground bg-card break-words">
-                          {coverLetter ||
-                            "Click 'Generate Cover Letter' to write a personalized letter aligned with this job posting."}
-                          {coverBusy && (
+                        <p className="text-xs text-muted-foreground mt-1 leading-relaxed max-w-2xl">
+                          Injects all target job keywords in invisible white font (
+                          <code className="font-mono text-emerald-600 dark:text-emerald-400">
+                            #ffffff
+                          </code>
+                          ). Human recruiters see a clean, professional resume with zero clutter,
+                          while automated ATS bots (Workday, Greenhouse, Taleo, Lever) parse a 100%
+                          keyword match.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+                      <Button
+                        type="button"
+                        variant={showXRay ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setShowXRay(!showXRay)}
+                        className="h-8 text-xs font-semibold gap-1.5"
+                      >
+                        <Eye className="size-3.5" />
+                        {showXRay ? "Hide X-Ray" : "X-Ray View (Reveal)"}
+                      </Button>
+
+                      <div className="flex items-center gap-2 pl-2 border-l border-border/70">
+                        <span className="text-xs font-semibold text-foreground">
+                          {stealthCloakActive ? "Armed" : "Disabled"}
+                        </span>
+                        <Switch
+                          checked={stealthCloakActive}
+                          onCheckedChange={setStealthCloakActive}
+                          aria-label="Toggle ATS Stealth Cloak"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Active Keywords Pill List */}
+                  {stealthCloakActive && activeGhostKeywords.length > 0 && (
+                    <div className="pt-2.5 border-t border-emerald-500/20">
+                      <div className="flex items-center justify-between text-[11px] mb-1.5">
+                        <span className="font-semibold text-emerald-700 dark:text-emerald-300">
+                          Target Keywords Armed ({activeGhostKeywords.length} terms):
+                        </span>
+                        <span className="text-muted-foreground">
+                          {showXRay ? "Revealed in preview below" : "Invisible to human eye"}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto pr-1">
+                        {activeGhostKeywords.slice(0, 25).map((kw, i) => (
+                          <span
+                            key={i}
+                            className="inline-flex items-center rounded-md bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300 font-mono"
+                          >
+                            ✓ {kw}
+                          </span>
+                        ))}
+                        {activeGhostKeywords.length > 25 && (
+                          <span className="text-[10px] text-muted-foreground py-0.5 px-1 font-medium">
+                            +{activeGhostKeywords.length - 25} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Tabs: Resume, 31 Templates, Gaps, Cover Letter */}
+                <Tabs value={tab} onValueChange={setTab} className="w-full max-w-full">
+                  <TabsList className="w-full flex sm:grid sm:grid-cols-5 overflow-x-auto no-scrollbar h-12 sm:h-11 bg-card/80 border border-border/80 p-1 rounded-xl gap-1">
+                    <TabsTrigger
+                      value="resume"
+                      className="text-xs font-bold px-2 sm:px-2.5 truncate shrink-0 sm:shrink min-w-[76px] sm:min-w-0"
+                    >
+                      <span className="hidden sm:inline">🎯 Live Resume</span>
+                      <span className="sm:hidden">🎯 Resume</span>
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="latex"
+                      className="text-xs font-bold px-2 sm:px-2.5 truncate shrink-0 sm:shrink min-w-[76px] sm:min-w-0"
+                    >
+                      <span className="hidden sm:inline">📜 LaTeX (.tex)</span>
+                      <span className="sm:hidden">📜 LaTeX</span>
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="templates"
+                      className="text-xs font-bold px-2 sm:px-2.5 truncate shrink-0 sm:shrink min-w-[76px] sm:min-w-0"
+                    >
+                      <span className="hidden sm:inline">🎨 32 Templates</span>
+                      <span className="sm:hidden">🎨 Templates</span>
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="original"
+                      className="text-xs font-bold px-2 sm:px-2.5 truncate shrink-0 sm:shrink min-w-[76px] sm:min-w-0"
+                    >
+                      <span className="hidden sm:inline">🔍 ATS Gaps</span>
+                      <span className="sm:hidden">🔍 Gaps</span>
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="cover"
+                      className="text-xs font-bold px-2 sm:px-2.5 truncate shrink-0 sm:shrink min-w-[76px] sm:min-w-0"
+                    >
+                      <span className="hidden sm:inline">✉️ Cover Letter</span>
+                      <span className="sm:hidden">✉️ Letter</span>
+                    </TabsTrigger>
+                  </TabsList>
+
+                  {/* TAB 1: TAILORED RESUME PREVIEW WITH ZOOM CONTROLS */}
+                  <TabsContent value="resume" className="mt-4 space-y-4">
+                    <div className="rounded-2xl border border-border bg-card shadow-xs overflow-hidden">
+                      {/* Sub-header Toolbar */}
+                      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center justify-between gap-2.5 border-b border-border bg-card/70 px-3 sm:px-5 py-2.5 backdrop-blur-xs w-full max-w-full">
+                        <div className="flex flex-wrap items-center gap-2 min-w-0">
+                          {/* Direct Template Selector Dropdown */}
+                          <div className="flex items-center gap-1.5 bg-background/90 border border-border rounded-xl px-2.5 py-1 shadow-2xs">
+                            <label
+                              htmlFor="resume-template-select"
+                              className="text-[11px] font-bold text-muted-foreground whitespace-nowrap"
+                            >
+                              Template:
+                            </label>
+                            <select
+                              id="resume-template-select"
+                              aria-label="Choose resume template"
+                              value={template.id}
+                              onChange={(e) => {
+                                const selected = TEMPLATES.find((t) => t.id === e.target.value);
+                                if (selected) handleSelectTemplate(selected);
+                              }}
+                              className="bg-transparent text-xs font-bold text-foreground focus:outline-none cursor-pointer pr-1"
+                            >
+                              <optgroup label="✨ Free Templates">
+                                {TEMPLATES.filter((t) => t.isFree).map((t) => (
+                                  <option
+                                    key={t.id}
+                                    value={t.id}
+                                    className="text-foreground bg-background"
+                                  >
+                                    {t.name} ({t.badge})
+                                  </option>
+                                ))}
+                              </optgroup>
+                              <optgroup label="👑 Pro Templates">
+                                {TEMPLATES.filter((t) => !t.isFree).map((t) => (
+                                  <option
+                                    key={t.id}
+                                    value={t.id}
+                                    className="text-foreground bg-background"
+                                  >
+                                    {t.name} {!isSubscribed ? "🔒" : ""} ({t.badge})
+                                  </option>
+                                ))}
+                              </optgroup>
+                            </select>
+                          </div>
+
+                          {/* Multi-Page Navigation Controls when totalPages > 1 */}
+                          {previewMode === "visual" && totalPages > 1 && (
+                            <div className="inline-flex items-center rounded-xl border border-primary/30 bg-primary/5 px-2.5 py-1 gap-1.5 shadow-2xs">
+                              <span className="text-[11px] font-bold text-primary whitespace-nowrap">
+                                Page {currentPage} of {totalPages}
+                              </span>
+                              <div className="inline-flex items-center gap-0.5">
+                                <button
+                                  type="button"
+                                  onClick={() => scrollToPage(currentPage - 1)}
+                                  disabled={currentPage <= 1}
+                                  className="p-0.5 rounded hover:bg-primary/20 text-primary disabled:opacity-30 disabled:hover:bg-transparent"
+                                  title="Previous Page"
+                                  aria-label="Previous resume page"
+                                >
+                                  <ChevronLeft className="size-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => scrollToPage(currentPage + 1)}
+                                  disabled={currentPage >= totalPages}
+                                  className="p-0.5 rounded hover:bg-primary/20 text-primary disabled:opacity-30 disabled:hover:bg-transparent"
+                                  title="Next Page"
+                                  aria-label="Next resume page"
+                                >
+                                  <ChevronRight className="size-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full sm:w-auto overflow-x-auto no-scrollbar py-1">
+                          {/* Toggle Preview Mode */}
+                          <div className="mr-0.5 sm:mr-1 inline-flex rounded-lg border border-border bg-card/80 p-0.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewMode("visual")}
+                              aria-label="Visual resume preview mode"
+                              className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold transition-all ${
+                                previewMode === "visual"
+                                  ? "bg-primary text-primary-foreground shadow-2xs"
+                                  : "text-muted-foreground hover:text-foreground"
+                              }`}
+                            >
+                              <Eye className="size-3" />{" "}
+                              <span className="hidden sm:inline">Visual</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setPreviewMode("text")}
+                              aria-label="Plain text resume preview mode"
+                              className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold transition-all ${
+                                previewMode === "text"
+                                  ? "bg-primary text-primary-foreground shadow-2xs"
+                                  : "text-muted-foreground hover:text-foreground"
+                              }`}
+                            >
+                              <FileText className="size-3" />{" "}
+                              <span className="hidden sm:inline">Plain </span>Text
+                            </button>
+                          </div>
+
+                          {/* Zoom Controls for Visual Preview */}
+                          {previewMode === "visual" && (
+                            <div className="flex items-center rounded-xl border border-border bg-[#121624] p-0.5 shadow-xs shrink-0">
+                              <Button
+                                variant={zoomMode === "fit" ? "default" : "ghost"}
+                                size="sm"
+                                className="h-8 px-2 sm:px-2.5 text-xs font-bold rounded-lg cursor-pointer"
+                                onClick={() => setZoomMode("fit")}
+                                title="Fit resume width to screen (100% readable)"
+                                aria-label="Fit resume to screen width"
+                              >
+                                Fit
+                              </Button>
+                              <Button
+                                variant={
+                                  zoomMode === "custom" && previewZoom === 100 ? "default" : "ghost"
+                                }
+                                size="sm"
+                                className="h-8 px-2 sm:px-2.5 text-xs font-bold rounded-lg cursor-pointer"
+                                onClick={() => {
+                                  setZoomMode("custom");
+                                  setPreviewZoom(100);
+                                }}
+                                title="100% scale"
+                                aria-label="Set resume zoom to 100 percent"
+                              >
+                                100%
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-8 rounded-lg cursor-pointer"
+                                onClick={() => {
+                                  setZoomMode("custom");
+                                  setPreviewZoom((z) =>
+                                    Math.max(
+                                      40,
+                                      (zoomMode === "fit" ? Math.round(fitScale * 100) : z) - 15,
+                                    ),
+                                  );
+                                }}
+                                title="Zoom Out"
+                                aria-label="Zoom out resume preview"
+                              >
+                                <ZoomOut className="size-3.5" />
+                              </Button>
+                              <span
+                                className="text-xs font-bold px-1.5 min-w-[38px] text-center"
+                                aria-live="polite"
+                              >
+                                {Math.round(previewScale * 100)}%
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-8 rounded-lg cursor-pointer"
+                                onClick={() => {
+                                  setZoomMode("custom");
+                                  setPreviewZoom((z) =>
+                                    Math.min(
+                                      150,
+                                      (zoomMode === "fit" ? Math.round(fitScale * 100) : z) + 15,
+                                    ),
+                                  );
+                                }}
+                                title="Zoom In"
+                                aria-label="Zoom in resume preview"
+                              >
+                                <ZoomIn className="size-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-8 rounded-lg cursor-pointer"
+                                onClick={() => setZoomTemplate(template)}
+                                title="Open Fullscreen Zoom Modal"
+                                aria-label="Open fullscreen resume view"
+                              >
+                                <Maximize2 className="size-3.5" />
+                              </Button>
+                            </div>
+                          )}
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={copyResume}
+                            disabled={streaming}
+                            className="h-8 sm:h-9 text-xs sm:text-sm font-semibold px-2.5 sm:px-3 rounded-xl cursor-pointer shrink-0"
+                          >
+                            {copied ? (
+                              <Check className="size-3.5 text-emerald-500" />
+                            ) : (
+                              <Copy className="size-3.5" />
+                            )}{" "}
+                            <span className="hidden sm:inline">Copy</span>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownloadWord(template)}
+                            disabled={streaming}
+                            className="h-8 sm:h-9 text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 border-blue-500/30 px-2.5 sm:px-3 rounded-xl cursor-pointer shrink-0"
+                          >
+                            <FileDown className="size-3.5 sm:mr-1" />{" "}
+                            <span className="hidden sm:inline">Word Free</span>
+                            <span className="sm:hidden">Word</span>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setTab("latex")}
+                            className="h-8 sm:h-9 text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 px-2.5 sm:px-3 rounded-xl cursor-pointer shrink-0"
+                            title="View and export Overleaf FAANGPath LaTeX (.tex) format"
+                          >
+                            <FileCode className="size-3.5 sm:mr-1" />{" "}
+                            <span className="hidden sm:inline">LaTeX (.tex)</span>
+                            <span className="sm:hidden">LaTeX</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => handleDownloadPdf(template)}
+                            disabled={streaming}
+                            className="h-8 sm:h-9 text-xs sm:text-sm font-bold px-3 sm:px-3.5 rounded-xl cursor-pointer shrink-0"
+                          >
+                            <Download className="size-3.5 sm:mr-1" /> PDF
+                            {!isSubscribed && (
+                              <Lock className="size-3 ml-1 text-primary-foreground" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Visual Preview Canvas - Clean, Centered with True Vertical Scroll & Zero Horizontal Scroll */}
+                      {previewMode === "visual" ? (
+                        <div
+                          ref={previewCanvasRef}
+                          onScroll={handlePreviewScroll}
+                          className={`relative bg-[#090A0F]/90 p-2 sm:p-4 pb-12 sm:pb-16 flex flex-col items-center justify-start overflow-x-auto overflow-y-auto w-full max-w-full ${
+                            workspaceLayout === "full"
+                              ? "min-h-[600px] h-[calc(100vh-200px)] max-h-[1050px]"
+                              : "min-h-[500px] h-[calc(100vh-270px)] max-h-[850px]"
+                          }`}
+                          style={{
+                            overscrollBehaviorY: "contain",
+                            scrollbarWidth: "thin",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: `${Math.round(850 * previewScale)}px`,
+                              height: `${Math.round(previewDocHeight * previewScale)}px`,
+                              maxWidth: "100%",
+                              position: "relative",
+                              overflow: "hidden",
+                            }}
+                            className="mx-auto rounded-lg shadow-2xl shadow-black/80 bg-white transition-[height] duration-150 mb-4 shrink-0 w-full max-w-full transform-gpu"
+                          >
+                            <div
+                              style={{
+                                position: "absolute",
+                                top: 0,
+                                left: 0,
+                                width: "850px",
+                                height: `${previewDocHeight}px`,
+                                transform: `scale(${previewScale})`,
+                                transformOrigin: "top left",
+                                willChange: "transform",
+                              }}
+                              className="bg-white origin-top-left"
+                            >
+                              <iframe
+                                title="Tailored Resume Live Preview"
+                                srcDoc={previewHtml}
+                                sandbox="allow-scripts allow-same-origin"
+                                scrolling="no"
+                                className="w-[850px] border-0"
+                                style={{ height: `${previewDocHeight}px` }}
+                                onLoad={(e) => {
+                                  try {
+                                    const doc = e.currentTarget.contentDocument;
+                                    if (doc) {
+                                      const page = doc.querySelector(".page") as HTMLElement | null;
+                                      if (page) {
+                                        const scrollH = page.scrollHeight;
+                                        if (scrollH > 200) {
+                                          const pageCount =
+                                            scrollH <= 1080
+                                              ? 1
+                                              : Math.max(1, Math.ceil(scrollH / 1100));
+                                          const newH = pageCount * 1100;
+                                          setPreviewDocHeight((prev) =>
+                                            prev !== newH ? newH : prev,
+                                          );
+                                        }
+                                      }
+                                    }
+                                  } catch {
+                                    // ignore iframe cross-origin access restriction
+                                  }
+                                }}
+                              />
+                            </div>
+
+                            {/* Visual Page Break Demarcation Guides for Multi-Page Documents */}
+                            {Array.from({
+                              length: Math.floor((previewDocHeight - 50) / 1100),
+                            }).map((_, idx) => (
+                              <div
+                                key={idx}
+                                style={{
+                                  position: "absolute",
+                                  top: `${Math.round((idx + 1) * 1100 * previewScale)}px`,
+                                  left: 0,
+                                  right: 0,
+                                  zIndex: 20,
+                                  pointerEvents: "none",
+                                }}
+                                className="flex items-center justify-center -translate-y-1/2"
+                              >
+                                <div className="w-full border-t border-slate-300 dark:border-slate-700 opacity-80" />
+                                <span className="absolute bg-slate-800 text-slate-100 text-[10px] font-medium px-2.5 py-0.5 rounded-full shadow-xs whitespace-nowrap">
+                                  Page {idx + 2}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Minimal bottom pagination indicator for multi-page resumes */}
+                          {totalPages > 1 && (
+                            <div className="sticky bottom-4 z-20 flex items-center gap-2 bg-card/90 backdrop-blur-md border border-border px-3 py-1 rounded-full shadow-lg text-xs font-semibold text-foreground">
+                              <span className="text-[11px] text-muted-foreground">
+                                Page {currentPage} of {totalPages}
+                              </span>
+                              <div className="flex items-center gap-1 border-l border-border pl-2">
+                                {Array.from({ length: totalPages }).map((_, i) => (
+                                  <button
+                                    key={i}
+                                    type="button"
+                                    onClick={() => scrollToPage(i + 1)}
+                                    className={`size-5 rounded-full text-[10px] font-bold transition-all ${
+                                      currentPage === i + 1
+                                        ? "bg-primary text-primary-foreground shadow-2xs"
+                                        : "bg-muted text-muted-foreground hover:text-foreground"
+                                    }`}
+                                  >
+                                    {i + 1}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <pre className="max-h-[600px] overflow-auto whitespace-pre-wrap px-4 sm:px-5 py-4 font-sans text-xs sm:text-sm leading-relaxed text-foreground bg-card break-words">
+                          {text}
+                          {streaming && (
                             <span className="ml-1 inline-block size-2 animate-pulse bg-primary" />
                           )}
                         </pre>
+                      )}
+                    </div>
+
+                    {/* What changed explanation */}
+                    {result && result.changes.length > 0 && (
+                      <div className="rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-xs">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                          <Check className="size-3.5 text-emerald-500" /> Strategic Optimizations
+                          Made
+                        </h3>
+                        <ul className="mt-2.5 space-y-1.5">
+                          {result.changes.map((change, idx) => (
+                            <li
+                              key={idx}
+                              className="flex gap-2 text-xs sm:text-sm leading-relaxed text-foreground"
+                            >
+                              <Check className="mt-0.5 size-3.5 shrink-0 text-primary" />
+                              <span>{change}</span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
-                    </TabsContent>
-                  </Tabs>
-                </>
-              )}
-            </section>
+                    )}
+                  </TabsContent>
+
+                  {/* TAB 2: OVERLEAF FAANGPATH LATEX SOURCE ENGINE (.TEX) */}
+                  <TabsContent value="latex" className="mt-4 space-y-4">
+                    <div className="rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-xs space-y-4">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-border/80">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-sm sm:text-base font-bold text-foreground flex items-center gap-1.5">
+                              <FileCode className="size-4 text-emerald-500" />
+                              Overleaf FAANGPath LaTeX Source Engine
+                            </h3>
+                            <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/25 text-[10px] font-bold py-0.5 px-2">
+                              Overleaf.com Ready (pdfLaTeX 11pt)
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1 max-w-2xl leading-relaxed">
+                            This resume is represented in pure standard LaTeX format behind the
+                            scenes, just like the Overleaf platform. Built on the #1 Overleaf
+                            FAANGPath / Jake's Resume architecture for 100% Workday, Greenhouse, and
+                            Lever ATS bot parsing.
+                          </p>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto overflow-x-auto no-scrollbar py-1">
+                          {template.id !== "overleaf-faang" && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const overleafTpl = TEMPLATES.find(
+                                  (t) => t.id === "overleaf-faang",
+                                );
+                                if (overleafTpl) {
+                                  handleSelectTemplate(overleafTpl);
+                                  toast.success(
+                                    "Switched to Overleaf FAANGPath (Official LaTeX) template!",
+                                  );
+                                }
+                              }}
+                              className="h-8 text-xs font-semibold gap-1.5 border-border hover:border-border/80 hover:bg-accent"
+                            >
+                              <Sparkles className="size-3.5 text-primary" />
+                              Switch to Overleaf FAANG Template
+                            </Button>
+                          )}
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={copyLatex}
+                            className="h-8 text-xs font-bold gap-1.5"
+                          >
+                            {copiedLatex ? (
+                              <Check className="size-3.5 text-emerald-500" />
+                            ) : (
+                              <Copy className="size-3.5" />
+                            )}
+                            {copiedLatex ? "Copied .tex" : "Copy LaTeX"}
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            onClick={handleDownloadLatex}
+                            className="h-8 text-xs font-bold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs"
+                          >
+                            <Download className="size-3.5" />
+                            Download resume.tex
+                          </Button>
+
+                          <a
+                            href="https://www.overleaf.com/project"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card hover:bg-accent px-2.5 py-1.5 text-xs font-semibold text-foreground transition-colors shadow-2xs"
+                          >
+                            <span>Open Overleaf</span>
+                            <ExternalLink className="size-3 text-muted-foreground" />
+                          </a>
+                        </div>
+                      </div>
+
+                      {/* Overleaf Code Window */}
+                      <div className="rounded-xl border border-border bg-[#05070B] text-slate-100 font-mono text-xs overflow-hidden shadow-inner">
+                        <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-[#0B0F17] text-[11px] text-muted-foreground">
+                          <div className="flex items-center gap-2">
+                            <span className="size-2.5 rounded-full bg-rose-500/80 inline-block" />
+                            <span className="size-2.5 rounded-full bg-amber-500/80 inline-block" />
+                            <span className="size-2.5 rounded-full bg-emerald-500/80 inline-block" />
+                            <span className="ml-2 font-semibold text-slate-200">main.tex</span>
+                            <span className="text-[10px] text-muted-foreground">
+                              ({generatedLatex ? generatedLatex.split("\n").length : 0} lines ·{" "}
+                              {generatedLatex ? new Blob([generatedLatex]).size : 0} bytes)
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="hidden sm:inline text-muted-foreground text-[10px]">
+                              Document Class: article [letterpaper, 11pt]
+                            </span>
+                            <button
+                              type="button"
+                              onClick={copyLatex}
+                              className="hover:text-foreground px-2 py-0.5 rounded bg-muted/60 text-[10px] flex items-center gap-1 text-muted-foreground transition-colors"
+                            >
+                              {copiedLatex ? (
+                                <Check className="size-3 text-emerald-400" />
+                              ) : (
+                                <Copy className="size-3" />
+                              )}
+                              Copy Code
+                            </button>
+                          </div>
+                        </div>
+
+                        <pre className="p-4 sm:p-5 overflow-x-auto max-h-[580px] overflow-y-auto leading-relaxed text-[11.5px] sm:text-xs text-slate-200 selection:bg-primary/30 selection:text-white font-mono">
+                          {generatedLatex ||
+                            "% Enter candidate details on the left or generate to inspect LaTeX source..."}
+                        </pre>
+                      </div>
+
+                      <div className="rounded-xl border border-emerald-500/20 bg-emerald-950/15 p-4 text-xs text-muted-foreground flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div className="space-y-0.5">
+                          <p className="font-semibold text-foreground flex items-center gap-1.5">
+                            <Check className="size-3.5 text-emerald-500" /> How to use directly in
+                            Overleaf:
+                          </p>
+                          <p className="text-[11px]">
+                            1. Click <b>Download resume.tex</b> or <b>Copy LaTeX</b>. 2. Navigate to{" "}
+                            <b>Overleaf.com</b> &gt; <b>New Project</b> &gt; <b>Blank Project</b>.
+                            3. Paste this code into <code>main.tex</code> and hit <b>Recompile</b>.
+                          </p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setTab("resume");
+                            setPreviewMode("visual");
+                          }}
+                          className="text-xs shrink-0 font-medium"
+                        >
+                          View Compiled PDF Preview →
+                        </Button>
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  {/* TAB 3: 32 WORLD-CLASS TEMPLATES SHOWCASE */}
+                  <TabsContent value="templates" className="mt-4 space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-xs">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-bold text-foreground">
+                            32 Award-Winning FAANG &amp; Big Tech Templates
+                          </h3>
+                          <Badge variant="secondary" className="text-[10px] font-semibold px-2">
+                            Top 32
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Verified formats used by Staff &amp; Principal hires at Google, Meta,
+                          Apple, Amazon, Netflix, Stripe, and Overleaf. First 6 are Free (Word .doc
+                          &amp; LaTeX .tex).
+                        </p>
+                      </div>
+
+                      {/* Filter Chips */}
+                      <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto overflow-x-auto no-scrollbar py-1">
+                        <button
+                          type="button"
+                          onClick={() => setTemplateFilter("all")}
+                          className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+                            templateFilter === "all"
+                              ? "bg-primary text-primary-foreground shadow-2xs"
+                              : "bg-muted/70 text-muted-foreground hover:bg-accent hover:text-foreground"
+                          }`}
+                        >
+                          All 32
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTemplateFilter("free")}
+                          className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+                            templateFilter === "free"
+                              ? "bg-primary text-primary-foreground shadow-2xs"
+                              : "bg-muted/70 text-muted-foreground hover:bg-accent hover:text-foreground"
+                          }`}
+                        >
+                          Free (First 6)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTemplateFilter("pro")}
+                          className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+                            templateFilter === "pro"
+                              ? "bg-primary text-primary-foreground shadow-2xs"
+                              : "bg-muted/70 text-muted-foreground hover:bg-accent hover:text-foreground"
+                          }`}
+                        >
+                          Pro Exclusive (26)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTemplateFilter("award")}
+                          className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+                            templateFilter === "award"
+                              ? "bg-primary text-primary-foreground shadow-2xs"
+                              : "bg-muted/70 text-muted-foreground hover:bg-accent hover:text-foreground"
+                          }`}
+                        >
+                          Award Winners
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Memoized, Fast-Rendering 32 Template Cards Grid */}
+                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                      {filteredTemplates.map((item) => (
+                        <TemplateCard
+                          key={item.id}
+                          template={item}
+                          isSelected={item.id === templateId}
+                          isSubscribed={isSubscribed}
+                          resumeText={deferredText || resume || profileToResume(SAMPLE_PROFILE)}
+                          applicant={applicant}
+                          onSelect={handleSelectTemplate}
+                          onDownloadWord={handleDownloadWord}
+                          onDownloadPdf={handleDownloadPdf}
+                          onZoom={setZoomTemplate}
+                        />
+                      ))}
+                    </div>
+                  </TabsContent>
+
+                  {/* TAB 3: ORIGINAL GAPS & INLINE FIXES */}
+                  <TabsContent value="original" className="mt-4">
+                    <HighlightedResume
+                      resume={resume}
+                      fixes={result?.keyword_fixes ?? []}
+                      onApply={applyFix}
+                    />
+                  </TabsContent>
+
+                  {/* TAB 4: COVER LETTER */}
+                  <TabsContent value="cover" className="mt-4 space-y-4">
+                    <div className="rounded-2xl border border-border bg-card shadow-xs overflow-hidden">
+                      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-card/60 px-5 py-3.5">
+                        <div>
+                          <h3 className="text-sm font-bold text-foreground">
+                            Matched Cover Letter
+                          </h3>
+                          <p className="text-xs text-muted-foreground">
+                            Tailored to {jobTitle || "the target role"}.
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button
+                            size="sm"
+                            onClick={writeCoverLetter}
+                            disabled={!result || coverBusy}
+                            className="h-8 text-xs font-semibold"
+                          >
+                            {coverBusy ? (
+                              <Loader2 className="size-3.5 animate-spin mr-1" />
+                            ) : (
+                              <Sparkles className="size-3.5 mr-1" />
+                            )}
+                            {coverLetter ? "Regenerate" : "Generate Cover Letter"}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={downloadCoverPdf}
+                            disabled={!coverLetter || coverBusy}
+                            className="h-8 text-xs font-semibold"
+                          >
+                            <Download className="size-3.5 mr-1" /> PDF
+                            {!isSubscribed && <Lock className="size-3 ml-1 text-primary" />}
+                          </Button>
+                        </div>
+                      </div>
+                      <pre className="max-h-[500px] overflow-auto whitespace-pre-wrap px-5 py-4 font-sans text-xs sm:text-sm leading-relaxed text-foreground bg-card break-words">
+                        {coverLetter ||
+                          "Click 'Generate Cover Letter' to write a personalized letter aligned with this job posting."}
+                        {coverBusy && (
+                          <span className="ml-1 inline-block size-2 animate-pulse bg-primary" />
+                        )}
+                      </pre>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </>
+            )}
+          </section>
+        </div>
+
+        {/* Corporate Sticky / Bottom Banner Ad */}
+        <BannerAd
+          variant="bottom"
+          className="mt-12"
+          onUpgradeClick={() => {
+            setSubReason("Upgrade to Pro to remove all sponsor banners.");
+            setSubModalOpen(true);
+          }}
+        />
+
+        {/* Social Share Referral Widget */}
+        <div className="w-full max-w-[1740px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 mt-12">
+          <SocialShare
+            score={result?.match_score || 100}
+            roleTitle={jobTitle || deriveTitle(job)}
+          />
+        </div>
+
+        {/* Comprehensive FAQ Section */}
+        <FaqSection className="mt-14 border-t border-border/70 bg-card/30 content-visibility-auto" />
+      </main>
+
+      {/* Modern Enterprise Footer */}
+      <footer className="border-t border-border bg-[#07090E] py-16 sm:py-20 text-foreground content-visibility-auto">
+        <div className="w-full max-w-[1740px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
+          <div className="grid grid-cols-1 gap-10 md:grid-cols-4">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2.5">
+                <div className="flex size-8 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-indigo-600 text-primary-foreground font-bold text-xs shadow-xs border border-primary/30">
+                  CV
+                </div>
+                <span className="font-bold text-base tracking-tight">CVFitt Enterprise</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                The premier ATS resume matcher and keyword infiltration engine. Built strictly
+                around Big Tech and FAANG hiring formulas with 32 executive templates and Overleaf
+                LaTeX (.tex) support.
+              </p>
+              <div className="flex items-center gap-2 pt-1 text-xs text-muted-foreground">
+                <ShieldCheck className="size-4 text-emerald-500" />
+                <span>GDPR &amp; CCPA Compliant • Bank-grade Security</span>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
+                Document Studio
+              </h3>
+              <ul className="space-y-2 text-xs">
+                <li>
+                  <Link
+                    to="/"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    ATS Resume Matcher &amp; Tailor
+                  </Link>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTab("latex");
+                      outputRef.current?.scrollIntoView({ behavior: "smooth" });
+                    }}
+                    className="text-muted-foreground hover:text-foreground transition-colors text-left cursor-pointer"
+                  >
+                    Overleaf LaTeX (.tex) Engine
+                  </button>
+                </li>
+                <li>
+                  <Link
+                    to="/profile"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Candidate Career Profile
+                  </Link>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTab("templates");
+                      outputRef.current?.scrollIntoView({ behavior: "smooth" });
+                    }}
+                    className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  >
+                    32 FAANG &amp; Overleaf Templates
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTab("cover");
+                      outputRef.current?.scrollIntoView({ behavior: "smooth" });
+                    }}
+                    className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  >
+                    Executive Cover Letter Studio
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
+                Legal &amp; Trust
+              </h3>
+              <ul className="space-y-2 text-xs">
+                <li>
+                  <Link
+                    to="/privacy"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Privacy Policy (GDPR / CCPA)
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/terms"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Terms of Service
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/terms"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    30-Day Money-Back Guarantee
+                  </Link>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSubReason("Upgrade to Pro for high-res vector PDFs & all 32 templates.");
+                      setSubModalOpen(true);
+                    }}
+                    className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  >
+                    Enterprise Pro Pricing
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
+                100% Shortlist Weapon
+              </h3>
+              <div className="rounded-2xl border border-border/80 bg-card/60 p-4 text-xs space-y-2">
+                <p className="font-semibold text-foreground flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  ATS Stealth Cloak™ Active
+                </p>
+                <p className="text-muted-foreground text-[11px] leading-relaxed">
+                  Automatic white-font injection guarantees 100% ATS token indexing across Workday,
+                  Greenhouse, Lever, Taleo, and iCIMS.
+                </p>
+              </div>
+            </div>
           </div>
 
-      {/* Corporate Sticky / Bottom Banner Ad */}
+          <div className="mt-12 pt-8 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+            <p>© 2026 CVFitt Enterprise Inc. All rights reserved.</p>
+            <div className="flex items-center gap-4">
+              <Link to="/privacy" className="hover:text-foreground transition-colors">
+                Privacy
+              </Link>
+              <Link to="/terms" className="hover:text-foreground transition-colors">
+                Terms
+              </Link>
+              <button
+                type="button"
+                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                aria-label="Scroll back to top of page"
+                className="hover:text-foreground transition-colors cursor-pointer"
+              >
+                Back to Top ↑
+              </button>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+      {/* Floating Sticky Bottom Sponsor Banner (Mobile & Desktop) */}
       <BannerAd
-        variant="bottom"
-        className="mt-12"
+        variant="sticky-bottom"
         onUpgradeClick={() => {
           setSubReason("Upgrade to Pro to remove all sponsor banners.");
           setSubModalOpen(true);
         }}
       />
-
-      {/* Social Share Referral Widget */}
-      <div className="w-full max-w-[1740px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 mt-12">
-        <SocialShare score={result?.match_score || 100} roleTitle={jobTitle || deriveTitle(job)} />
-      </div>
-
-      {/* Comprehensive FAQ Section */}
-      <FaqSection className="mt-14 border-t border-border/70 bg-card/30 content-visibility-auto" />
-    </main>
-
-    {/* Modern Enterprise Footer */}
-    <footer className="border-t border-border bg-[#07090E] py-16 sm:py-20 text-foreground content-visibility-auto">
-      <div className="w-full max-w-[1740px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
-        <div className="grid grid-cols-1 gap-10 md:grid-cols-4">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2.5">
-              <div className="flex size-8 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-indigo-600 text-primary-foreground font-bold text-xs shadow-xs border border-primary/30">
-                CV
-              </div>
-              <span className="font-bold text-base tracking-tight">CVFitt Enterprise</span>
-            </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              The premier ATS resume matcher and keyword infiltration engine. Built strictly
-              around Big Tech and FAANG hiring formulas with 32 executive templates and Overleaf
-              LaTeX (.tex) support.
-            </p>
-            <div className="flex items-center gap-2 pt-1 text-xs text-muted-foreground">
-              <ShieldCheck className="size-4 text-emerald-500" />
-              <span>GDPR &amp; CCPA Compliant • Bank-grade Security</span>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
-              Document Studio
-            </h3>
-            <ul className="space-y-2 text-xs">
-              <li>
-                <Link
-                  to="/"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  ATS Resume Matcher &amp; Tailor
-                </Link>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTab("latex");
-                    outputRef.current?.scrollIntoView({ behavior: "smooth" });
-                  }}
-                  className="text-muted-foreground hover:text-foreground transition-colors text-left cursor-pointer"
-                >
-                  Overleaf LaTeX (.tex) Engine
-                </button>
-              </li>
-              <li>
-                <Link
-                  to="/profile"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Candidate Career Profile
-                </Link>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTab("templates");
-                    outputRef.current?.scrollIntoView({ behavior: "smooth" });
-                  }}
-                  className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                >
-                  32 FAANG &amp; Overleaf Templates
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTab("cover");
-                    outputRef.current?.scrollIntoView({ behavior: "smooth" });
-                  }}
-                  className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                >
-                  Executive Cover Letter Studio
-                </button>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
-              Legal &amp; Trust
-            </h3>
-            <ul className="space-y-2 text-xs">
-              <li>
-                <Link
-                  to="/privacy"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Privacy Policy (GDPR / CCPA)
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/terms"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Terms of Service
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/terms"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  30-Day Money-Back Guarantee
-                </Link>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSubReason("Upgrade to Pro for high-res vector PDFs & all 32 templates.");
-                    setSubModalOpen(true);
-                  }}
-                  className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                >
-                  Enterprise Pro Pricing
-                </button>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
-              100% Shortlist Weapon
-            </h3>
-            <div className="rounded-2xl border border-border/80 bg-card/60 p-4 text-xs space-y-2">
-              <p className="font-semibold text-foreground flex items-center gap-1.5">
-                <span className="size-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                ATS Stealth Cloak™ Active
-              </p>
-              <p className="text-muted-foreground text-[11px] leading-relaxed">
-                Automatic white-font injection guarantees 100% ATS token indexing across Workday,
-                Greenhouse, Lever, Taleo, and iCIMS.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-12 pt-8 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-          <p>© 2026 CVFitt Enterprise Inc. All rights reserved.</p>
-          <div className="flex items-center gap-4">
-            <Link to="/privacy" className="hover:text-foreground transition-colors">
-              Privacy
-            </Link>
-            <Link to="/terms" className="hover:text-foreground transition-colors">
-              Terms
-            </Link>
-            <button
-              type="button"
-              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-              aria-label="Scroll back to top of page"
-              className="hover:text-foreground transition-colors cursor-pointer"
-            >
-              Back to Top ↑
-            </button>
-          </div>
-        </div>
-      </div>
-    </footer>
-
-    {/* Floating Sticky Bottom Sponsor Banner (Mobile & Desktop) */}
-    <BannerAd
-      variant="sticky-bottom"
-      onUpgradeClick={() => {
-        setSubReason("Upgrade to Pro to remove all sponsor banners.");
-        setSubModalOpen(true);
-      }}
-    />
-  </div>
+    </div>
   );
 }

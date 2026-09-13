@@ -56,7 +56,8 @@
 
 :root {
   --radius: 0.75rem;
-  --font-display: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-display:
+    "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
@@ -135,7 +136,10 @@
 }
 
 @layer base {
-  * {
+  *,
+  ::before,
+  ::after {
+    box-sizing: border-box;
     border-color: var(--color-border);
   }
 
@@ -145,6 +149,7 @@
     max-width: 100vw;
     width: 100%;
     color-scheme: dark;
+    box-sizing: border-box;
   }
 
   body {
@@ -160,6 +165,16 @@
     max-width: 100vw;
     width: 100%;
     position: relative;
+    box-sizing: border-box;
+  }
+
+  #root,
+  [data-root],
+  main {
+    max-width: 100vw;
+    overflow-x: hidden;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   /* Hardware-accelerated background composite layer (zero scroll repaints) */
@@ -271,4 +286,14 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.22);
+}
+
+/* Isolated horizontal scroll without showing scrollbar */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }

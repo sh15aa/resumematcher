@@ -155,7 +155,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "CVFitt, ATS resume builder, resume matcher, 100% ATS score, resume keyword optimizer, ghost keywords, white font ATS hack, FAANG resume templates, Workday resume parser, Greenhouse ATS, Overleaf LaTeX resume, Harvard resume template",
       },
       { name: "author", content: "CVFitt Enterprise Inc." },
-      { name: "robots", content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" },
+      {
+        name: "robots",
+        content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+      },
       { name: "theme-color", content: "#090A0F" },
       { name: "color-scheme", content: "dark" },
       { name: "format-detection", content: "telephone=no" },
@@ -175,7 +178,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:image", content: "https://cv.fitt.workers.dev/og-image.png" },
       { property: "og:image:width", content: "1200" },
       { property: "og:image:height", content: "630" },
-      { property: "og:image:alt", content: "CVFitt Enterprise — 100% ATS Resume Matcher and Tailoring Engine" },
+      {
+        property: "og:image:alt",
+        content: "CVFitt Enterprise — 100% ATS Resume Matcher and Tailoring Engine",
+      },
       { name: "twitter:card", content: "summary_large_image" },
       {
         name: "twitter:title",
@@ -228,7 +234,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
                   name: "Free Community Tier",
                   price: "0.00",
                   priceCurrency: "USD",
-                  description: "Free forever access to 6 executive templates, unlimited ATS scoring, and instant Word (.doc) & LaTeX (.tex) exports.",
+                  description:
+                    "Free forever access to 6 executive templates, unlimited ATS scoring, and instant Word (.doc) & LaTeX (.tex) exports.",
                 },
                 {
                   "@type": "Offer",
@@ -236,7 +243,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
                   price: "9.00",
                   priceCurrency: "USD",
                   billingDuration: "P1M",
-                  description: "Access to all 32 FAANG & Overleaf templates, vector PDF downloads, and unlimited AI cover letter generation.",
+                  description:
+                    "Access to all 32 FAANG & Overleaf templates, vector PDF downloads, and unlimited AI cover letter generation.",
                 },
               ],
               aggregateRating: {
@@ -264,10 +272,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
               name: "CVFitt Enterprise Inc.",
               url: "https://cv.fitt.workers.dev/",
               logo: "https://cv.fitt.workers.dev/favicon.svg",
-              sameAs: [
-                "https://twitter.com/cvfitt",
-                "https://github.com/sh15aa/resumematcher",
-              ],
+              sameAs: ["https://twitter.com/cvfitt", "https://github.com/sh15aa/resumematcher"],
             },
             {
               "@type": "FAQPage",
@@ -320,11 +325,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className="dark overflow-x-hidden w-full max-w-full">
+    <html lang="en" className="dark overflow-x-hidden w-full max-w-[100vw] box-border">
       <head>
         <HeadContent />
       </head>
-      <body className="overflow-x-hidden w-full max-w-full min-h-screen">
+      <body className="overflow-x-hidden w-full max-w-[100vw] min-h-screen box-border">
         {children}
         <Scripts />
       </body>

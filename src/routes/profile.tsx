@@ -96,9 +96,9 @@ function ProfilePage() {
   }
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
+    <main className="min-h-screen bg-background text-foreground w-full max-w-[100vw] overflow-x-hidden box-border">
       <Toaster />
-      <div className="mx-auto w-full max-w-5xl px-5 py-16 md:px-8 md:py-24">
+      <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 md:px-8 py-12 md:py-20 box-border">
         <Link
           to="/"
           className="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
@@ -193,7 +193,10 @@ function ProfilePage() {
               </div>
               <div className="mt-5 space-y-5">
                 {profile.roles.map((role, index) => (
-                  <div key={index} className="rounded-xl border border-border/70 bg-muted/20 p-4 sm:p-5 space-y-3">
+                  <div
+                    key={index}
+                    className="rounded-xl border border-border/70 bg-muted/20 p-4 sm:p-5 space-y-3"
+                  >
                     <div className="grid gap-3 sm:grid-cols-3">
                       <Field
                         label="Job title"
@@ -282,7 +285,10 @@ function ProfilePage() {
               </div>
               <div className="mt-5 space-y-4">
                 {profile.studies.map((study, index) => (
-                  <div key={index} className="grid gap-3 sm:grid-cols-3 rounded-xl border border-border/70 bg-muted/20 p-4">
+                  <div
+                    key={index}
+                    className="grid gap-3 sm:grid-cols-3 rounded-xl border border-border/70 bg-muted/20 p-4"
+                  >
                     <Field
                       label="Qualification"
                       value={study.qualification}
@@ -371,7 +377,10 @@ function ProfilePage() {
               </div>
               <div className="mt-5 space-y-4">
                 {(profile.customSections || []).map((sec, idx) => (
-                  <div key={sec.id} className="rounded-xl border border-border/70 bg-muted/20 p-4 space-y-3">
+                  <div
+                    key={sec.id}
+                    className="rounded-xl border border-border/70 bg-muted/20 p-4 space-y-3"
+                  >
                     <div className="flex items-center justify-between gap-2">
                       <Input
                         value={sec.title}
@@ -418,22 +427,22 @@ function ProfilePage() {
               </div>
             </section>
 
-            <div className="flex flex-wrap gap-3 pt-2">
-              <Button variant="outline" onClick={persist}>
+            <div className="flex flex-wrap gap-3 pt-2 w-full sm:w-auto">
+              <Button variant="outline" onClick={persist} className="w-full sm:w-auto">
                 <Save className="size-4 mr-1.5" /> Save profile
               </Button>
-              <Button onClick={useInTailor} className="shadow-xs">
+              <Button onClick={useInTailor} className="shadow-xs w-full sm:w-auto">
                 Use this in the tailor <ArrowRight className="size-4 ml-1.5" />
               </Button>
             </div>
           </div>
 
-          <aside className="lg:sticky lg:top-8 lg:self-start">
-            <div className="rounded-2xl border border-border bg-card shadow-xs overflow-hidden">
+          <aside className="lg:sticky lg:top-8 lg:self-start w-full max-w-full">
+            <div className="rounded-2xl border border-border bg-card shadow-xs overflow-hidden w-full max-w-full">
               <div className="border-b border-border bg-muted/40 px-5 py-3">
                 <h2 className="text-sm font-semibold text-foreground">Resume preview</h2>
               </div>
-              <pre className="max-h-[640px] overflow-auto whitespace-pre-wrap px-5 py-4 font-sans text-sm leading-6 text-muted-foreground">
+              <pre className="max-h-[640px] overflow-auto whitespace-pre-wrap px-5 py-4 font-sans text-sm leading-6 text-muted-foreground break-words max-w-full">
                 {preview || "Start filling in your details and the resume builds itself here."}
               </pre>
             </div>

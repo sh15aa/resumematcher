@@ -89,7 +89,8 @@ export function BannerAd({ variant = "bottom", onUpgradeClick, className = "" }:
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                Benchmark your skills against real-world FAANG interview rubrics with official certifications.
+                Benchmark your skills against real-world FAANG interview rubrics with official
+                certifications.
               </p>
             </div>
           </div>
