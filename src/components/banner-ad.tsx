@@ -19,7 +19,7 @@ export function BannerAd({ variant = "bottom", onUpgradeClick, className = "" }:
     return (
       <aside
         aria-label="Sponsored Notification"
-        className={`fixed bottom-0 inset-x-0 z-40 border-t border-border bg-[#090A0F]/80 backdrop-blur-md py-2.5 px-3 sm:px-6 shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom ${className}`}
+        className={`hidden sm:block fixed bottom-0 inset-x-0 z-40 border-t border-border bg-[#090A0F]/80 backdrop-blur-md py-2.5 px-3 sm:px-6 shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom ${className}`}
       >
         <div className="w-full max-w-[1720px] mx-auto flex items-center justify-between gap-2 sm:gap-4 text-xs">
           <div className="flex items-center gap-2.5 min-w-0">

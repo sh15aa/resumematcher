@@ -2096,12 +2096,13 @@ export interface RenderResumeOptions {
 
 export function renderResumeHtml(
   resumeText: string,
-  template: ResumeTemplate,
+  template?: ResumeTemplate | null,
   fallbackName = "Your Name",
   ghostKeywords?: string[],
   showXRay = false,
   options?: RenderResumeOptions,
 ): string {
+  const activeTemplate = template || TEMPLATES[0]!;
   const isSample = !resumeText || resumeText.trim().length < 15;
   const effectiveText = isSample ? DEFAULT_SAMPLE_RESUME_TEXT : resumeText;
   const effectiveName =
@@ -2111,7 +2112,7 @@ export function renderResumeHtml(
   const includeLatex = options?.includeLatexLayer !== false;
 
   // Ultra-Fast LRU Caching to prevent rendering lag across 32 templates
-  const cacheKey = `${template.id}:${effectiveText.length}:${effectiveName}:${ghostKeywords?.join(",") || ""}:${showXRay}:${isInteractive}:${includeLatex}:${effectiveText.slice(0, 40)}`;
+  const cacheKey = `${activeTemplate.id}:${effectiveText.length}:${effectiveName}:${ghostKeywords?.join(",") || ""}:${showXRay}:${isInteractive}:${includeLatex}:${effectiveText.slice(0, 40)}`;
   const cached = htmlRenderCache.get(cacheKey);
   if (cached) return cached;
 
@@ -2144,7 +2145,7 @@ export function renderResumeHtml(
   const ghostHtml =
     ghostKeywords && ghostKeywords.length > 0
       ? showXRay
-        ? `<div class="ats-ghost-keywords-xray" style="margin-top: 16px; padding: 10px 14px; background: #f0fdf4; border: 1.5px dashed #22c55e; border-radius: 8px; font-family: ${template.bodyFont}; break-inside: avoid;">
+        ? `<div class="ats-ghost-keywords-xray" style="margin-top: 16px; padding: 10px 14px; background: #f0fdf4; border: 1.5px dashed #22c55e; border-radius: 8px; font-family: ${activeTemplate.bodyFont}; break-inside: avoid;">
             <div style="font-size: 8.5pt; font-weight: 700; color: #166534; margin-bottom: 4px; letter-spacing: 0.05em; text-transform: uppercase;">
               ⚡ ATS 100% Shortlist Secret Weapon: Ghost Keywords (X-Ray View)
             </div>
@@ -2160,15 +2161,15 @@ export function renderResumeHtml(
           </div>`
       : "";
 
-  const orderedSections = orderSectionsForTemplate(doc.sections, template.id);
+  const orderedSections = orderSectionsForTemplate(doc.sections, activeTemplate.id);
   let body: string;
-  if (template.layout === "sidebar") {
+  if (activeTemplate.layout === "sidebar") {
     const aside = orderedSections.filter(isAsideSection);
     const main = orderedSections.filter((section) => !isAsideSection(section));
-    body = `<div class="rail">${header}${aside.map((s) => renderSection(s, template)).join("")}</div>
-      <div class="main">${(main.length ? main : orderedSections).map((s) => renderSection(s, template)).join("")}${ghostHtml}</div>`;
+    body = `<div class="rail">${header}${aside.map((s) => renderSection(s, activeTemplate)).join("")}</div>
+      <div class="main">${(main.length ? main : orderedSections).map((s) => renderSection(s, activeTemplate)).join("")}${ghostHtml}</div>`;
   } else {
-    body = `${header}<div class="main">${orderedSections.map((s) => renderSection(s, template)).join("")}${ghostHtml}</div>`;
+    body = `${header}<div class="main">${orderedSections.map((s) => renderSection(s, activeTemplate)).join("")}${ghostHtml}</div>`;
   }
 
   // O(1) Height Reporter Script with zero layout thrashing (only for live interactive preview)
@@ -2247,8 +2248,8 @@ export function renderResumeHtml(
 <meta name="generator" content="pdfLaTeX / Overleaf FAANGPath Engine" />
 <meta name="application-name" content="Overleaf ResumeMatcher" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="${fontsHref(template.googleFonts)}" />
-<style>${baseCss(template)}${layoutCss(template)}</style>
+<link rel="stylesheet" href="${fontsHref(activeTemplate.googleFonts)}" />
+<style>${baseCss(activeTemplate)}${layoutCss(activeTemplate)}</style>
 </head><body><div class="page">${body}</div>${latexSemanticTag}${heightReporterScript}</body></html>`;
 
   if (htmlRenderCache.size >= MAX_CACHE_SIZE) {

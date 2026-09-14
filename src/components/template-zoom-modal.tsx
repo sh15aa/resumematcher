@@ -53,6 +53,7 @@ export function TemplateZoomModal({
       : applicant;
 
   const srcDoc = useMemo(() => {
+    if (!template) return "";
     return renderResumeHtml(effectiveResumeText, template, effectiveApplicant, undefined, false, {
       isInteractive: true,
       includeLatexLayer: false,
@@ -60,11 +61,13 @@ export function TemplateZoomModal({
   }, [template, effectiveResumeText, effectiveApplicant]);
 
   useEffect(() => {
+    if (!template) return;
     setIsFitMode(true);
     setZoomDocHeight(1100);
   }, [template?.id]);
 
   useEffect(() => {
+    if (!template) return;
     const handler = (e: MessageEvent) => {
       if (e.data && e.data.type === "RESUME_DOC_HEIGHT" && typeof e.data.height === "number") {
         const safeH = Math.min(15000, Math.max(1100, Math.ceil(e.data.height)));
@@ -83,10 +86,10 @@ export function TemplateZoomModal({
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
-  }, []);
+  }, [template]);
 
   useEffect(() => {
-    if (!canvasRef.current) return;
+    if (!template || !canvasRef.current) return;
     let rafId: number | null = null;
     const updateDims = () => {
       if (rafId) cancelAnimationFrame(rafId);
@@ -108,7 +111,7 @@ export function TemplateZoomModal({
       ro.disconnect();
       window.removeEventListener("resize", updateDims);
     };
-  }, []);
+  }, [template]);
 
   const fitScale = useMemo(() => {
     if (typeof window !== "undefined") {

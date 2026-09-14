@@ -33,30 +33,33 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 function createSupabaseClient() {
   // Use import.meta.env for client-side (Vite build-time replacement)
   // Fall back to process.env for SSR (server-side rendering)
-  const SUPABASE_URL = import.meta.env["VITE_SUPABASE_URL"] || process.env["SUPABASE_URL"];
+  const SUPABASE_URL =
+    import.meta.env["VITE_SUPABASE_URL"] ||
+    (typeof process !== "undefined" ? process.env?.["SUPABASE_URL"] : undefined) ||
+    "https://urieccltfvpmmwjeokyq.supabase.co";
   const SUPABASE_PUBLISHABLE_KEY =
-    import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"] || process.env["SUPABASE_PUBLISHABLE_KEY"];
+    import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
+    (typeof process !== "undefined" ? process.env?.["SUPABASE_PUBLISHABLE_KEY"] : undefined) ||
+    "sb_publishable_wMS6TLk7P41kkA9ixPJ5hA_4qIFJJ5T";
 
-  if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-    const missing = [
-      ...(!SUPABASE_URL ? ["SUPABASE_URL"] : []),
-      ...(!SUPABASE_PUBLISHABLE_KEY ? ["SUPABASE_PUBLISHABLE_KEY"] : []),
-    ];
-    const message = `Missing Supabase environment variable(s): ${missing.join(", ")}. Connect Supabase in Lovable Cloud.`;
-    console.error(`[Supabase] ${message}`);
-    throw new Error(message);
+  try {
+    return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      global: {
+        fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY),
+      },
+      auth: {
+        storage: brokeredPreviewStorage(),
+        persistSession: true,
+        autoRefreshToken: true,
+      },
+    });
+  } catch (err) {
+    console.warn("[Supabase] Failed to initialize client:", err);
+    return createClient<Database>(
+      "https://urieccltfvpmmwjeokyq.supabase.co",
+      "sb_publishable_wMS6TLk7P41kkA9ixPJ5hA_4qIFJJ5T",
+    );
   }
-
-  return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-    global: {
-      fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY),
-    },
-    auth: {
-      storage: brokeredPreviewStorage(),
-      persistSession: true,
-      autoRefreshToken: true,
-    },
-  });
 }
 
 let _supabase: ReturnType<typeof createSupabaseClient> | undefined;

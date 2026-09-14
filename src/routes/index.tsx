@@ -313,7 +313,6 @@ function Index() {
 
   const goToStep = useCallback((step: 1 | 2 | 3 | 4 | 5) => {
     setWizardStep(step);
-    builderRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
   useEffect(() => {
@@ -323,12 +322,16 @@ function Index() {
       setProfile(savedProf);
       setResume(profileToResume(savedProf));
     }
-    const pendingResume = sessionStorage.getItem(PENDING_RESUME_KEY);
-    if (pendingResume) {
-      setResume(pendingResume);
-      setInputMode("paste");
-      sessionStorage.removeItem(PENDING_RESUME_KEY);
-      toast.success("Resume loaded from your profile.");
+    try {
+      const pendingResume = sessionStorage.getItem(PENDING_RESUME_KEY);
+      if (pendingResume) {
+        setResume(pendingResume);
+        setInputMode("paste");
+        sessionStorage.removeItem(PENDING_RESUME_KEY);
+        toast.success("Resume loaded from your profile.");
+      }
+    } catch {
+      // sessionStorage restricted or blocked
     }
   }, []);
 
@@ -948,17 +951,19 @@ function Index() {
       />
 
       {/* Template Full-Page High-Res Zoom Modal */}
-      <TemplateZoomModal
-        template={zoomTemplate}
-        resumeText={text || resume || profileToResume(SAMPLE_PROFILE)}
-        applicant={applicant}
-        isSubscribed={isSubscribed}
-        onClose={() => setZoomTemplate(null)}
-        onSelect={handleSelectTemplate}
-        onDownloadWord={handleDownloadWord}
-        onDownloadPdf={handleDownloadPdf}
-        onDownloadLatex={handleDownloadLatex}
-      />
+      {zoomTemplate && (
+        <TemplateZoomModal
+          template={zoomTemplate}
+          resumeText={text || resume || profileToResume(SAMPLE_PROFILE)}
+          applicant={applicant}
+          isSubscribed={isSubscribed}
+          onClose={() => setZoomTemplate(null)}
+          onSelect={handleSelectTemplate}
+          onDownloadWord={handleDownloadWord}
+          onDownloadPdf={handleDownloadPdf}
+          onDownloadLatex={handleDownloadLatex}
+        />
+      )}
 
       {/* Modern Minimal Header */}
       <header className="border-b border-border bg-[#090A0F]/75 backdrop-blur-md sticky top-0 z-40 w-full overflow-x-hidden">
@@ -1099,47 +1104,46 @@ function Index() {
         {/* Clear CTA & Trust Hero Banner */}
         <section
           aria-labelledby="hero-title"
-          className="mb-8 rounded-2xl border border-border bg-card/75 p-5 sm:p-7 shadow-xs overflow-hidden"
+          className="mb-5 sm:mb-8 rounded-2xl border border-border bg-card/75 p-4 sm:p-7 shadow-xs overflow-hidden"
         >
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-            <div className="space-y-2 max-w-3xl">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-400">
-                  <ShieldCheck className="size-3.5" /> 100% ATS SHORTLIST GUARANTEE
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-5">
+            <div className="space-y-1.5 sm:space-y-2 max-w-3xl">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold text-emerald-400">
+                  <ShieldCheck className="size-3 sm:size-3.5" /> 100% ATS SHORTLIST GUARANTEE
                 </span>
                 <span className="text-xs text-slate-700 hidden sm:inline">•</span>
-                <span className="text-xs font-medium text-slate-300">
+                <span className="text-[11px] sm:text-xs font-medium text-slate-300">
                   32 FAANG &amp; Overleaf Templates
                 </span>
                 <span className="text-xs text-slate-700 hidden sm:inline">•</span>
-                <span className="text-xs text-muted-foreground">
-                  Overleaf LaTeX (.tex), Word &amp; Vector PDF
+                <span className="text-[11px] sm:text-xs text-muted-foreground hidden xs:inline sm:inline">
+                  Word &amp; Vector PDF
                 </span>
               </div>
               <h1
                 id="hero-title"
-                className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight hero-gradient-text"
+                className="text-xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight hero-gradient-text leading-snug"
               >
                 Match Your Resume &amp; Infiltrate Automated ATS Filters
               </h1>
               <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl leading-relaxed">
-                Extract exact technical keywords from any job posting, weave them into executive
-                accomplishment bullets, and activate the{" "}
+                Extract exact technical keywords from job postings, tailor bullet points, and
+                activate the{" "}
                 <strong className="text-slate-200 font-semibold">ATS Stealth Cloak™</strong>{" "}
                 (white-font keyword injection) to guarantee a 100% bot match.
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 shrink-0 w-full sm:w-auto">
+            <div className="grid grid-cols-1 sm:flex sm:flex-wrap items-center gap-2 sm:gap-3 shrink-0 w-full sm:w-auto pt-1 sm:pt-0">
               <Button
                 onClick={handleLoadAllDemo}
                 variant="outline"
                 size="sm"
                 aria-label="Load sample job posting and candidate profile"
-                className="h-9 text-xs font-semibold px-3.5 w-full sm:w-auto"
+                className="h-9 text-xs font-semibold px-3.5 w-full sm:w-auto cursor-pointer"
               >
-                <Sparkles className="size-3.5 mr-1.5 text-primary" /> Load Sample Job &amp;
-                Candidate
+                <Sparkles className="size-3.5 mr-1.5 text-primary" /> Load Sample Demo
               </Button>
               <Button
                 onClick={() => {
@@ -1266,35 +1270,88 @@ function Index() {
 
               {inputMode === "form" ? (
                 <div className="space-y-6">
-                  {/* 5-Step Tracker Bar */}
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-5 gap-1.5 text-xs sm:text-sm font-semibold w-full">
+                  {/* 5-Step Responsive Tracker Bar */}
+                  <div className="space-y-3">
+                    {/* Desktop Stepper (sm and above) */}
+                    <div className="hidden sm:grid sm:grid-cols-5 gap-1.5 text-xs sm:text-sm font-semibold w-full">
                       {[
-                        { step: 1, label: "1. Job", fullLabel: "1. Job Target" },
-                        { step: 2, label: "2. Info", fullLabel: "2. Identity" },
-                        { step: 3, label: "3. Exp", fullLabel: "3. Experience" },
-                        { step: 4, label: "4. Skills", fullLabel: "4. Skills & Sections" },
-                        { step: 5, label: "5. ATS", fullLabel: "5. ATS Stealth" },
+                        { step: 1, label: "1. Job Target" },
+                        { step: 2, label: "2. Identity" },
+                        { step: 3, label: "3. Experience" },
+                        { step: 4, label: "4. Skills & Sections" },
+                        { step: 5, label: "5. ATS Stealth" },
                       ].map((item) => (
                         <button
                           key={item.step}
                           type="button"
                           onClick={() => goToStep(item.step as 1 | 2 | 3 | 4 | 5)}
-                          aria-label={item.fullLabel}
-                          className={`rounded-xl py-2 px-1.5 min-h-[44px] sm:min-h-0 flex items-center justify-center text-center truncate transition-all cursor-pointer ${
+                          aria-label={item.label}
+                          className={`rounded-xl py-2 px-1.5 min-h-[40px] flex items-center justify-center text-center truncate transition-all cursor-pointer ${
                             wizardStep === item.step
                               ? "bg-primary text-primary-foreground font-bold shadow-xs"
                               : wizardStep > item.step
                                 ? "bg-muted/80 text-foreground font-medium hover:bg-muted"
                                 : "bg-muted/30 text-muted-foreground hover:text-foreground"
                           }`}
-                          title={item.fullLabel}
+                          title={item.label}
                         >
-                          <span className="sm:hidden">{item.label}</span>
-                          <span className="hidden sm:inline">{item.fullLabel}</span>
+                          <span className="truncate">{item.label}</span>
                         </button>
                       ))}
                     </div>
+
+                    {/* Mobile Stepper (< sm) - Sleek connected step circles + active label */}
+                    <div className="sm:hidden space-y-2">
+                      <div className="flex items-center justify-between w-full px-1">
+                        {[
+                          { step: 1, name: "Job" },
+                          { step: 2, name: "Identity" },
+                          { step: 3, name: "Experience" },
+                          { step: 4, name: "Skills" },
+                          { step: 5, name: "ATS" },
+                        ].map((item, idx, arr) => (
+                          <div key={item.step} className="flex items-center flex-1 last:flex-none">
+                            <button
+                              type="button"
+                              onClick={() => goToStep(item.step as 1 | 2 | 3 | 4 | 5)}
+                              aria-label={`Go to step ${item.step}: ${item.name}`}
+                              className={`size-8 rounded-full flex items-center justify-center text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                                wizardStep === item.step
+                                  ? "bg-primary text-primary-foreground ring-2 ring-primary/40 shadow-xs"
+                                  : wizardStep > item.step
+                                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                                    : "bg-muted text-muted-foreground border border-border"
+                              }`}
+                            >
+                              {wizardStep > item.step ? "✓" : item.step}
+                            </button>
+                            {idx < arr.length - 1 && (
+                              <div
+                                className={`h-0.5 flex-1 mx-1.5 rounded-full transition-all ${
+                                  wizardStep > item.step ? "bg-emerald-500/50" : "bg-muted"
+                                }`}
+                              />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between px-1 text-xs">
+                        <span className="font-bold text-foreground truncate max-w-[240px]">
+                          Step {wizardStep}/5:{" "}
+                          <span className="text-primary font-semibold">
+                            {wizardStep === 1 && "Job Target"}
+                            {wizardStep === 2 && "Identity & Contact"}
+                            {wizardStep === 3 && "Work Experience"}
+                            {wizardStep === 4 && "Skills & Education"}
+                            {wizardStep === 5 && "ATS Stealth & Match"}
+                          </span>
+                        </span>
+                        <span className="text-[11px] text-muted-foreground font-mono shrink-0">
+                          {Math.round((wizardStep / 5) * 100)}%
+                        </span>
+                      </div>
+                    </div>
+
                     {/* Progress line */}
                     <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                       <div
@@ -1413,23 +1470,37 @@ function Index() {
                       </div>
 
                       {/* Footer Nav */}
-                      <div className="flex items-center justify-between pt-4 border-t border-border">
+                      <div className="flex flex-wrap items-center justify-between gap-2.5 pt-4 border-t border-border">
                         <Button
                           type="button"
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
                           onClick={() => handleLoadSampleJob(SAMPLE_JOBS[0]!)}
-                          className="h-10 px-4 text-xs sm:text-sm font-semibold rounded-xl"
+                          className="h-10 px-3 text-xs sm:text-sm font-semibold rounded-xl"
                         >
                           <Sparkles className="size-3.5 mr-1.5 text-primary" /> Load Sample Job
                         </Button>
-                        <Button
-                          type="button"
-                          onClick={() => goToStep(2)}
-                          className="h-11 px-6 text-sm sm:text-base font-bold rounded-xl shadow-xs cursor-pointer"
-                        >
-                          Next: Contact Details →
-                        </Button>
+                        <div className="flex items-center gap-2 ml-auto">
+                          {ready && !streaming && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={tailor}
+                              className="h-10 px-3 text-xs sm:text-sm font-semibold border-primary/40 text-primary hover:bg-primary/10 rounded-xl"
+                              title="Generate resume right away with current details"
+                            >
+                              <Sparkles className="size-3.5 mr-1" /> Quick Match
+                            </Button>
+                          )}
+                          <Button
+                            type="button"
+                            onClick={() => goToStep(2)}
+                            className="h-10 sm:h-11 px-4 sm:px-6 text-xs sm:text-base font-bold rounded-xl shadow-xs cursor-pointer"
+                          >
+                            Next: Contact →
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1530,23 +1601,37 @@ function Index() {
                       </label>
 
                       {/* Footer Nav */}
-                      <div className="flex items-center justify-between pt-4 border-t border-border">
+                      <div className="flex flex-wrap items-center justify-between gap-2.5 pt-4 border-t border-border">
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => goToStep(1)}
-                          className="h-10 px-4 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground rounded-xl cursor-pointer"
+                          className="h-10 px-3 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground rounded-xl cursor-pointer"
                         >
-                          ← Back: Target Job
+                          ← Back: Job
                         </Button>
-                        <Button
-                          type="button"
-                          onClick={() => goToStep(3)}
-                          className="h-11 px-6 text-sm sm:text-base font-bold rounded-xl shadow-xs cursor-pointer"
-                        >
-                          Next: Work Experience →
-                        </Button>
+                        <div className="flex items-center gap-2 ml-auto">
+                          {ready && !streaming && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={tailor}
+                              className="h-10 px-3 text-xs sm:text-sm font-semibold border-primary/40 text-primary hover:bg-primary/10 rounded-xl"
+                              title="Generate resume right away with current details"
+                            >
+                              <Sparkles className="size-3.5 mr-1" /> Quick Match
+                            </Button>
+                          )}
+                          <Button
+                            type="button"
+                            onClick={() => goToStep(3)}
+                            className="h-10 sm:h-11 px-4 sm:px-6 text-xs sm:text-base font-bold rounded-xl shadow-xs cursor-pointer"
+                          >
+                            Next: Experience →
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1693,23 +1778,37 @@ function Index() {
                       </div>
 
                       {/* Footer Nav */}
-                      <div className="flex items-center justify-between pt-4 border-t border-border">
+                      <div className="flex flex-wrap items-center justify-between gap-2.5 pt-4 border-t border-border">
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => goToStep(2)}
-                          className="h-10 px-4 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground rounded-xl cursor-pointer"
+                          className="h-10 px-3 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground rounded-xl cursor-pointer"
                         >
                           ← Back: Contact
                         </Button>
-                        <Button
-                          type="button"
-                          onClick={() => goToStep(4)}
-                          className="h-11 px-6 text-sm sm:text-base font-bold rounded-xl shadow-xs cursor-pointer"
-                        >
-                          Next: Skills &amp; Sections →
-                        </Button>
+                        <div className="flex items-center gap-2 ml-auto">
+                          {ready && !streaming && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={tailor}
+                              className="h-10 px-3 text-xs sm:text-sm font-semibold border-primary/40 text-primary hover:bg-primary/10 rounded-xl"
+                              title="Generate resume right away with current details"
+                            >
+                              <Sparkles className="size-3.5 mr-1" /> Quick Match
+                            </Button>
+                          )}
+                          <Button
+                            type="button"
+                            onClick={() => goToStep(4)}
+                            className="h-10 sm:h-11 px-4 sm:px-6 text-xs sm:text-base font-bold rounded-xl shadow-xs cursor-pointer"
+                          >
+                            Next: Skills →
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1941,23 +2040,37 @@ function Index() {
                       </div>
 
                       {/* Footer Nav */}
-                      <div className="flex items-center justify-between pt-4 border-t border-border">
+                      <div className="flex flex-wrap items-center justify-between gap-2.5 pt-4 border-t border-border">
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => goToStep(3)}
-                          className="h-10 px-4 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground rounded-xl cursor-pointer"
+                          className="h-10 px-3 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground rounded-xl cursor-pointer"
                         >
                           ← Back: Experience
                         </Button>
-                        <Button
-                          type="button"
-                          onClick={() => goToStep(5)}
-                          className="h-11 px-6 text-sm sm:text-base font-bold rounded-xl shadow-xs cursor-pointer"
-                        >
-                          Next: ATS Optimization →
-                        </Button>
+                        <div className="flex items-center gap-2 ml-auto">
+                          {ready && !streaming && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={tailor}
+                              className="h-10 px-3 text-xs sm:text-sm font-semibold border-primary/40 text-primary hover:bg-primary/10 rounded-xl"
+                              title="Generate resume right away with current details"
+                            >
+                              <Sparkles className="size-3.5 mr-1" /> Quick Match
+                            </Button>
+                          )}
+                          <Button
+                            type="button"
+                            onClick={() => goToStep(5)}
+                            className="h-10 sm:h-11 px-4 sm:px-6 text-xs sm:text-base font-bold rounded-xl shadow-xs cursor-pointer"
+                          >
+                            Next: ATS Optimization →
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -2004,10 +2117,7 @@ function Index() {
                           size="lg"
                           className="w-full h-auto min-h-14 sm:h-15 text-sm sm:text-base md:text-lg font-bold shadow-xl bg-primary hover:bg-primary/90 text-primary-foreground transition-all rounded-xl cursor-pointer px-4 py-3.5 whitespace-normal text-center"
                           disabled={!ready}
-                          onClick={() => {
-                            tailor();
-                            outputRef.current?.scrollIntoView({ behavior: "smooth" });
-                          }}
+                          onClick={tailor}
                         >
                           {streaming ? (
                             <div className="flex items-center justify-center flex-wrap gap-2">
@@ -2186,10 +2296,7 @@ function Index() {
                     size="lg"
                     className="w-full sm:w-auto h-auto min-h-14 sm:h-15 text-sm sm:text-base md:text-lg font-bold shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl transition-all cursor-pointer px-4 py-3 whitespace-normal text-center"
                     disabled={!ready}
-                    onClick={() => {
-                      tailor();
-                      outputRef.current?.scrollIntoView({ behavior: "smooth" });
-                    }}
+                    onClick={tailor}
                   >
                     {streaming ? (
                       <div className="flex items-center justify-center flex-wrap gap-2">
@@ -2651,10 +2758,11 @@ function Index() {
                   <TabsContent value="resume" className="mt-4 space-y-4">
                     <div className="rounded-2xl border border-border bg-card shadow-xs overflow-hidden">
                       {/* Sub-header Toolbar */}
-                      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center justify-between gap-2.5 border-b border-border bg-card/70 px-3 sm:px-5 py-2.5 backdrop-blur-xs w-full max-w-full">
-                        <div className="flex flex-wrap items-center gap-2 min-w-0">
+                      <div className="flex flex-col gap-2.5 border-b border-border bg-card/70 px-3 sm:px-5 py-2.5 backdrop-blur-xs w-full max-w-full">
+                        {/* Row 1: Template Selection & Page Controls */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 min-w-0 w-full">
                           {/* Direct Template Selector Dropdown */}
-                          <div className="flex items-center gap-1.5 bg-background/90 border border-border rounded-xl px-2.5 py-1 shadow-2xs max-w-full min-w-0">
+                          <div className="flex items-center gap-1.5 bg-background/90 border border-border rounded-xl px-2.5 py-1 shadow-2xs max-w-full flex-1 sm:flex-initial min-w-0">
                             <label
                               htmlFor="resume-template-select"
                               className="text-[11px] font-bold text-muted-foreground whitespace-nowrap shrink-0"
@@ -2669,7 +2777,7 @@ function Index() {
                                 const selected = TEMPLATES.find((t) => t.id === e.target.value);
                                 if (selected) handleSelectTemplate(selected);
                               }}
-                              className="bg-transparent text-xs font-bold text-foreground focus:outline-none cursor-pointer pr-1 truncate max-w-[160px] sm:max-w-[280px]"
+                              className="bg-transparent text-xs font-bold text-foreground focus:outline-none cursor-pointer pr-1 truncate w-full sm:max-w-[280px]"
                             >
                               <optgroup label="✨ Free Templates">
                                 {TEMPLATES.filter((t) => t.isFree).map((t) => (
@@ -2698,9 +2806,9 @@ function Index() {
 
                           {/* Multi-Page Navigation Controls when totalPages > 1 */}
                           {previewMode === "visual" && totalPages > 1 && (
-                            <div className="inline-flex items-center rounded-xl border border-primary/30 bg-primary/5 px-2.5 py-1 gap-1.5 shadow-2xs">
+                            <div className="inline-flex items-center rounded-xl border border-primary/30 bg-primary/5 px-2.5 py-1 gap-1.5 shadow-2xs shrink-0">
                               <span className="text-[11px] font-bold text-primary whitespace-nowrap">
-                                Page {currentPage} of {totalPages}
+                                Page {currentPage}/{totalPages}
                               </span>
                               <div className="inline-flex items-center gap-0.5">
                                 <button
@@ -2728,167 +2836,172 @@ function Index() {
                           )}
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full sm:w-auto overflow-x-auto no-scrollbar py-1">
-                          {/* Toggle Preview Mode */}
-                          <div className="mr-0.5 sm:mr-1 inline-flex rounded-lg border border-border bg-card/80 p-0.5 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => setPreviewMode("visual")}
-                              aria-label="Visual resume preview mode"
-                              className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold transition-all ${
-                                previewMode === "visual"
-                                  ? "bg-primary text-primary-foreground shadow-2xs"
-                                  : "text-muted-foreground hover:text-foreground"
-                              }`}
-                            >
-                              <Eye className="size-3" />{" "}
-                              <span className="hidden sm:inline">Visual</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setPreviewMode("text")}
-                              aria-label="Plain text resume preview mode"
-                              className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold transition-all ${
-                                previewMode === "text"
-                                  ? "bg-primary text-primary-foreground shadow-2xs"
-                                  : "text-muted-foreground hover:text-foreground"
-                              }`}
-                            >
-                              <FileText className="size-3" />{" "}
-                              <span className="hidden sm:inline">Plain </span>Text
-                            </button>
+                        {/* Row 2: View mode, Zoom & Actions */}
+                        <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 w-full pt-1 border-t sm:border-t-0 border-border/50">
+                          {/* Left: View mode & Zoom controls */}
+                          <div className="flex items-center gap-1.5">
+                            {/* Toggle Preview Mode */}
+                            <div className="inline-flex rounded-lg border border-border bg-card/80 p-0.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => setPreviewMode("visual")}
+                                aria-label="Visual resume preview mode"
+                                className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold transition-all ${
+                                  previewMode === "visual"
+                                    ? "bg-primary text-primary-foreground shadow-2xs"
+                                    : "text-muted-foreground hover:text-foreground"
+                                }`}
+                              >
+                                <Eye className="size-3" />{" "}
+                                <span className="hidden sm:inline">Visual</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setPreviewMode("text")}
+                                aria-label="Plain text resume preview mode"
+                                className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold transition-all ${
+                                  previewMode === "text"
+                                    ? "bg-primary text-primary-foreground shadow-2xs"
+                                    : "text-muted-foreground hover:text-foreground"
+                                }`}
+                              >
+                                <FileText className="size-3" />{" "}
+                                <span className="hidden sm:inline">Plain </span>Text
+                              </button>
+                            </div>
+
+                            {/* Zoom Controls for Visual Preview */}
+                            {previewMode === "visual" && (
+                              <div className="flex items-center rounded-xl border border-border bg-[#121624] p-0.5 shadow-xs shrink-0">
+                                <Button
+                                  variant={zoomMode === "fit" ? "default" : "ghost"}
+                                  size="sm"
+                                  className="h-7 sm:h-8 px-2 sm:px-2.5 text-xs font-bold rounded-lg cursor-pointer"
+                                  onClick={() => setZoomMode("fit")}
+                                  title="Fit resume width to screen"
+                                  aria-label="Fit resume to screen width"
+                                >
+                                  Fit
+                                </Button>
+                                <Button
+                                  variant={
+                                    zoomMode === "custom" && previewZoom === 100
+                                      ? "default"
+                                      : "ghost"
+                                  }
+                                  size="sm"
+                                  className="h-7 sm:h-8 px-1.5 sm:px-2.5 text-xs font-bold rounded-lg cursor-pointer hidden xs:inline-flex sm:inline-flex"
+                                  onClick={() => {
+                                    setZoomMode("custom");
+                                    setPreviewZoom(100);
+                                  }}
+                                  title="100% scale"
+                                  aria-label="Set resume zoom to 100 percent"
+                                >
+                                  100%
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="size-7 sm:size-8 rounded-lg cursor-pointer hidden sm:inline-flex"
+                                  onClick={() => {
+                                    setZoomMode("custom");
+                                    setPreviewZoom((z) =>
+                                      Math.max(
+                                        40,
+                                        (zoomMode === "fit" ? Math.round(fitScale * 100) : z) - 15,
+                                      ),
+                                    );
+                                  }}
+                                  title="Zoom Out"
+                                  aria-label="Zoom out resume preview"
+                                >
+                                  <ZoomOut className="size-3.5" />
+                                </Button>
+                                <span
+                                  className="text-xs font-bold px-1 min-w-[32px] sm:min-w-[38px] text-center"
+                                  aria-live="polite"
+                                >
+                                  {Math.round(previewScale * 100)}%
+                                </span>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="size-7 sm:size-8 rounded-lg cursor-pointer hidden sm:inline-flex"
+                                  onClick={() => {
+                                    setZoomMode("custom");
+                                    setPreviewZoom((z) =>
+                                      Math.min(
+                                        150,
+                                        (zoomMode === "fit" ? Math.round(fitScale * 100) : z) + 15,
+                                      ),
+                                    );
+                                  }}
+                                  title="Zoom In"
+                                  aria-label="Zoom in resume preview"
+                                >
+                                  <ZoomIn className="size-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="size-7 sm:size-8 rounded-lg cursor-pointer"
+                                  onClick={() => setZoomTemplate(template)}
+                                  title="Open Fullscreen Zoom Modal"
+                                  aria-label="Open fullscreen resume view"
+                                >
+                                  <Maximize2 className="size-3.5" />
+                                </Button>
+                              </div>
+                            )}
                           </div>
 
-                          {/* Zoom Controls for Visual Preview */}
-                          {previewMode === "visual" && (
-                            <div className="flex items-center rounded-xl border border-border bg-[#121624] p-0.5 shadow-xs shrink-0">
-                              <Button
-                                variant={zoomMode === "fit" ? "default" : "ghost"}
-                                size="sm"
-                                className="h-8 px-2 sm:px-2.5 text-xs font-bold rounded-lg cursor-pointer"
-                                onClick={() => setZoomMode("fit")}
-                                title="Fit resume width to screen (100% readable)"
-                                aria-label="Fit resume to screen width"
-                              >
-                                Fit
-                              </Button>
-                              <Button
-                                variant={
-                                  zoomMode === "custom" && previewZoom === 100 ? "default" : "ghost"
-                                }
-                                size="sm"
-                                className="h-8 px-2 sm:px-2.5 text-xs font-bold rounded-lg cursor-pointer"
-                                onClick={() => {
-                                  setZoomMode("custom");
-                                  setPreviewZoom(100);
-                                }}
-                                title="100% scale"
-                                aria-label="Set resume zoom to 100 percent"
-                              >
-                                100%
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="size-8 rounded-lg cursor-pointer"
-                                onClick={() => {
-                                  setZoomMode("custom");
-                                  setPreviewZoom((z) =>
-                                    Math.max(
-                                      40,
-                                      (zoomMode === "fit" ? Math.round(fitScale * 100) : z) - 15,
-                                    ),
-                                  );
-                                }}
-                                title="Zoom Out"
-                                aria-label="Zoom out resume preview"
-                              >
-                                <ZoomOut className="size-3.5" />
-                              </Button>
-                              <span
-                                className="text-xs font-bold px-1.5 min-w-[38px] text-center"
-                                aria-live="polite"
-                              >
-                                {Math.round(previewScale * 100)}%
-                              </span>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="size-8 rounded-lg cursor-pointer"
-                                onClick={() => {
-                                  setZoomMode("custom");
-                                  setPreviewZoom((z) =>
-                                    Math.min(
-                                      150,
-                                      (zoomMode === "fit" ? Math.round(fitScale * 100) : z) + 15,
-                                    ),
-                                  );
-                                }}
-                                title="Zoom In"
-                                aria-label="Zoom in resume preview"
-                              >
-                                <ZoomIn className="size-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="size-8 rounded-lg cursor-pointer"
-                                onClick={() => setZoomTemplate(template)}
-                                title="Open Fullscreen Zoom Modal"
-                                aria-label="Open fullscreen resume view"
-                              >
-                                <Maximize2 className="size-3.5" />
-                              </Button>
-                            </div>
-                          )}
-
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={copyResume}
-                            disabled={streaming}
-                            className="h-8 sm:h-9 text-xs sm:text-sm font-semibold px-2.5 sm:px-3 rounded-xl cursor-pointer shrink-0"
-                          >
-                            {copied ? (
-                              <Check className="size-3.5 text-emerald-500" />
-                            ) : (
-                              <Copy className="size-3.5" />
-                            )}{" "}
-                            <span className="hidden sm:inline">Copy</span>
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDownloadWord(template)}
-                            disabled={streaming}
-                            className="h-8 sm:h-9 text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 border-blue-500/30 px-2.5 sm:px-3 rounded-xl cursor-pointer shrink-0"
-                          >
-                            <FileDown className="size-3.5 sm:mr-1" />{" "}
-                            <span className="hidden sm:inline">Word Free</span>
-                            <span className="sm:hidden">Word</span>
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setTab("latex")}
-                            className="h-8 sm:h-9 text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 px-2.5 sm:px-3 rounded-xl cursor-pointer shrink-0"
-                            title="View and export Overleaf FAANGPath LaTeX (.tex) format"
-                          >
-                            <FileCode className="size-3.5 sm:mr-1" />{" "}
-                            <span className="hidden sm:inline">LaTeX (.tex)</span>
-                            <span className="sm:hidden">LaTeX</span>
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => handleDownloadPdf(template)}
-                            disabled={streaming}
-                            className="h-8 sm:h-9 text-xs sm:text-sm font-bold px-3 sm:px-3.5 rounded-xl cursor-pointer shrink-0"
-                          >
-                            <Download className="size-3.5 sm:mr-1" /> PDF
-                            {!isSubscribed && (
-                              <Lock className="size-3 ml-1 text-primary-foreground" />
-                            )}
-                          </Button>
+                          {/* Right: Export & Action buttons */}
+                          <div className="flex items-center gap-1 sm:gap-1.5 ml-auto">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={copyResume}
+                              disabled={streaming}
+                              className="h-7 sm:h-9 text-xs font-semibold px-2 sm:px-3 rounded-lg sm:rounded-xl cursor-pointer shrink-0"
+                            >
+                              {copied ? (
+                                <Check className="size-3.5 text-emerald-500" />
+                              ) : (
+                                <Copy className="size-3.5" />
+                              )}{" "}
+                              <span className="hidden sm:inline">Copy</span>
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDownloadWord(template)}
+                              disabled={streaming}
+                              className="h-7 sm:h-9 text-xs font-bold text-blue-600 dark:text-blue-400 border-blue-500/30 px-2 sm:px-3 rounded-lg sm:rounded-xl cursor-pointer shrink-0"
+                            >
+                              <FileDown className="size-3.5 sm:mr-1" /> <span>Word</span>
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setTab("latex")}
+                              className="h-7 sm:h-9 text-xs font-bold text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 px-2 sm:px-3 rounded-lg sm:rounded-xl cursor-pointer shrink-0"
+                              title="View and export Overleaf FAANGPath LaTeX (.tex) format"
+                            >
+                              <FileCode className="size-3.5 sm:mr-1" /> <span>LaTeX</span>
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => handleDownloadPdf(template)}
+                              disabled={streaming}
+                              className="h-7 sm:h-9 text-xs font-bold px-2.5 sm:px-3.5 rounded-lg sm:rounded-xl cursor-pointer shrink-0 shadow-xs"
+                            >
+                              <Download className="size-3.5 sm:mr-1" /> PDF
+                              {!isSubscribed && (
+                                <Lock className="size-3 ml-1 text-primary-foreground" />
+                              )}
+                            </Button>
+                          </div>
                         </div>
                       </div>
 

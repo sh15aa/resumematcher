@@ -111,6 +111,18 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
           An unexpected error occurred during processing. You can reload the session or navigate
           back to the workspace.
         </p>
+        {error && (
+          <div className="mt-4 p-3 text-left rounded-xl bg-destructive/10 border border-destructive/20 text-xs font-mono text-destructive break-all max-h-40 overflow-y-auto">
+            <p className="font-semibold">
+              {error.name || "Error"}: {error.message || String(error)}
+            </p>
+            {error.stack && (
+              <pre className="mt-1 text-[10px] opacity-75 whitespace-pre-wrap font-mono">
+                {error.stack.split("\n").slice(0, 3).join("\n")}
+              </pre>
+            )}
+          </div>
+        )}
         <div className="mt-6 flex flex-wrap justify-center gap-2.5">
           <button
             onClick={() => {
