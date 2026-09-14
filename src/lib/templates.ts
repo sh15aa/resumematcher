@@ -1279,8 +1279,49 @@ function baseCss(template: ResumeTemplate): string {
       color: ${template.accent};
       font-size: 7.5pt;
     }
+    .page-break-spacer {
+      display: block;
+      width: 100%;
+      clear: both;
+      pointer-events: none;
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    li.page-break-spacer {
+      list-style: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    li.page-break-spacer::marker {
+      content: "" !important;
+      display: none !important;
+    }
     @media print {
-      body, .page { width: 100% !important; margin: 0 !important; padding: 0 !important; min-height: auto !important; }
+      body { width: 100% !important; margin: 0 !important; min-height: auto !important; }
+      .page-break-spacer {
+        display: block !important;
+        height: 0.55in !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        break-before: page !important;
+        page-break-before: always !important;
+        clear: both !important;
+        visibility: hidden !important;
+      }
+      li.page-break-spacer {
+        list-style: none !important;
+      }
+      li.page-break-spacer::marker {
+        content: "" !important;
+        display: none !important;
+      }
+      @page {
+        size: letter portrait;
+        margin: 0;
+      }
       section.block { break-inside: auto; }
       h1, h2, .entry-subheading, .entry-row, li, .entry-prose { break-inside: avoid; page-break-inside: avoid; }
       h2 { break-after: avoid; page-break-after: avoid; }
@@ -2256,6 +2297,177 @@ export function renderResumeHtml(
       (function() {
         var lastReportedH = 0;
         var rafId = null;
+        var isPaginating = false;
+        var lastUnspacedH = -1;
+        var PAGE_HEIGHT = 1100;
+
+        function applyPageBreaks() {
+          try {
+            var page = document.querySelector('.page');
+            if (!page) return;
+
+            var currentSpacers = page.querySelectorAll('.page-break-spacer');
+            var spacerSum = 0;
+            for (var i = 0; i < currentSpacers.length; i++) {
+              spacerSum += currentSpacers[i].offsetHeight;
+            }
+
+            var currentUnspacedH = page.scrollHeight - spacerSum;
+
+            if (lastUnspacedH !== -1 && Math.abs(currentUnspacedH - lastUnspacedH) <= 1) {
+              return;
+            }
+
+            for (var j = 0; j < currentSpacers.length; j++) {
+              currentSpacers[j].remove();
+            }
+
+            var pageStyle = window.getComputedStyle(page);
+            var mainCol = page.querySelector('.main') || page.querySelector('.main-col') || page;
+            var mainStyle = window.getComputedStyle(mainCol);
+            var pTop = parseFloat(pageStyle.paddingTop) || parseFloat(mainStyle.paddingTop) || 55;
+            var pBottom = parseFloat(pageStyle.paddingBottom) || parseFloat(mainStyle.paddingBottom) || 55;
+            var padTop = Math.max(45, Math.min(65, Math.round(pTop)));
+            var padBottom = Math.max(45, Math.min(65, Math.round(pBottom)));
+
+            var pageRect = page.getBoundingClientRect();
+            var totalH = page.scrollHeight;
+
+            if (totalH <= (PAGE_HEIGHT - padBottom)) {
+              lastUnspacedH = totalH;
+              return;
+            }
+
+            var containers = [];
+            var rail = page.querySelector('.rail') || page.querySelector('.side-col');
+            var main = page.querySelector('.main') || page.querySelector('.main-col');
+            if (rail) containers.push(rail);
+            if (main) containers.push(main);
+            if (containers.length === 0) containers.push(page);
+
+            for (var c = 0; c < containers.length; c++) {
+              var container = containers[c];
+              var maxPages = 10;
+
+              for (var p = 1; p <= maxPages; p++) {
+                var boundary = p * PAGE_HEIGHT;
+                var safeBottom = boundary - padBottom;
+                var safeTop = boundary + padTop;
+
+                pageRect = page.getBoundingClientRect();
+                var cRect = container.getBoundingClientRect();
+                var cBottom = cRect.bottom - pageRect.top;
+
+                if (cBottom <= safeBottom) break;
+
+                var sections = Array.from(container.querySelectorAll('section.block'));
+                if (sections.length === 0) sections = Array.from(container.children);
+                var targetEl = null;
+
+                for (var s = 0; s < sections.length; s++) {
+                  var sec = sections[s];
+                  if (sec.classList.contains('page-break-spacer') || sec.classList.contains('latex-underlying-format') || (sec.classList.contains('ats-ghost-keywords') && !sec.classList.contains('ats-ghost-keywords-xray'))) {
+                    continue;
+                  }
+                  var sRect = sec.getBoundingClientRect();
+                  var sTop = sRect.top - pageRect.top;
+                  var sBottom = sRect.bottom - pageRect.top;
+
+                  if (sTop >= safeTop) break;
+                  if (sBottom <= safeBottom) continue;
+
+                  var entries = Array.from(sec.querySelectorAll('.entry-subheading'));
+                  var skillLines = Array.from(sec.querySelectorAll('.skill-line'));
+
+                  if (entries.length > 0) {
+                    for (var e = 0; e < entries.length; e++) {
+                      var entry = entries[e];
+                      var eRect = entry.getBoundingClientRect();
+                      var eTop = eRect.top - pageRect.top;
+                      var eBottom = eRect.bottom - pageRect.top;
+
+                      if (eTop >= safeTop) break;
+                      if (eBottom <= safeBottom) continue;
+
+                      var bullets = Array.from(entry.querySelectorAll('li'));
+                      if (bullets.length > 1) {
+                        var b0Rect = bullets[0].getBoundingClientRect();
+                        if (b0Rect.bottom - pageRect.top <= safeBottom) {
+                          for (var b = 1; b < bullets.length; b++) {
+                            var bRect = bullets[b].getBoundingClientRect();
+                            if (bRect.bottom - pageRect.top > safeBottom) {
+                              targetEl = bullets[b];
+                              break;
+                            }
+                          }
+                        }
+                      }
+
+                      if (!targetEl) {
+                        if (e === 0) {
+                          targetEl = sec;
+                        } else {
+                          targetEl = entry;
+                        }
+                      }
+                      break;
+                    }
+                  } else if (skillLines.length > 0) {
+                    for (var sl = 0; sl < skillLines.length; sl++) {
+                      var sLine = skillLines[sl];
+                      var slRect = sLine.getBoundingClientRect();
+                      if (slRect.bottom - pageRect.top > safeBottom) {
+                        if (sl === 0) {
+                          targetEl = sec;
+                        } else {
+                          targetEl = sLine;
+                        }
+                        break;
+                      }
+                    }
+                  } else {
+                    targetEl = sec;
+                  }
+
+                  if (targetEl) break;
+                }
+
+                if (targetEl) {
+                  var prevEl = targetEl.previousElementSibling;
+                  var existingSpacer = prevEl && prevEl.classList.contains('page-break-spacer') ? prevEl : null;
+                  var tRect = targetEl.getBoundingClientRect();
+                  var tTop = tRect.top - pageRect.top;
+                  if (existingSpacer) {
+                    tTop -= existingSpacer.offsetHeight;
+                  }
+                  var pushH = Math.ceil(safeTop - tTop);
+                  if (pushH > 0) {
+                    if (existingSpacer) {
+                      existingSpacer.style.height = pushH + 'px';
+                    } else {
+                      var isLi = targetEl.tagName.toLowerCase() === 'li';
+                      var spacer = document.createElement(isLi ? 'li' : 'div');
+                      spacer.className = 'page-break-spacer';
+                      spacer.style.height = pushH + 'px';
+                      targetEl.parentNode.insertBefore(spacer, targetEl);
+                    }
+                  }
+                } else {
+                  break;
+                }
+              }
+            }
+
+            var newSpacers = page.querySelectorAll('.page-break-spacer');
+            var newSpacerSum = 0;
+            for (var k = 0; k < newSpacers.length; k++) {
+              newSpacerSum += newSpacers[k].offsetHeight;
+            }
+            lastUnspacedH = page.scrollHeight - newSpacerSum;
+          } catch(err) {
+            console.error(err);
+          }
+        }
 
         function sendHeight() {
           try {
@@ -2263,12 +2475,13 @@ export function renderResumeHtml(
             if (!page) return;
 
             var totalH = page.scrollHeight;
-            var main = page.querySelector('.main') || page;
+            var main = page.querySelector('.main') || page.querySelector('.main-col') || page;
             var lastEl = main.lastElementChild;
             while (lastEl && (lastEl.classList.contains('latex-underlying-format') || (lastEl.classList.contains('ats-ghost-keywords') && !lastEl.classList.contains('ats-ghost-keywords-xray')))) {
               lastEl = lastEl.previousElementSibling;
             }
-            var contentBottom = lastEl ? (lastEl.offsetTop + lastEl.offsetHeight + 25) : totalH;
+            var pageRect = page.getBoundingClientRect();
+            var contentBottom = lastEl ? (lastEl.getBoundingClientRect().bottom - pageRect.top + 25) : totalH;
             var effectiveH = Math.max(contentBottom, totalH);
 
             var pageCount = effectiveH <= 1080 ? 1 : Math.max(1, Math.ceil(effectiveH / 1100));
@@ -2286,9 +2499,22 @@ export function renderResumeHtml(
           } catch(e) {}
         }
 
+        function updateLayoutAndHeight() {
+          if (isPaginating) return;
+          isPaginating = true;
+          try {
+            applyPageBreaks();
+            sendHeight();
+          } finally {
+            setTimeout(function() {
+              isPaginating = false;
+            }, 60);
+          }
+        }
+
         function scheduleHeight() {
           if (rafId) cancelAnimationFrame(rafId);
-          rafId = requestAnimationFrame(sendHeight);
+          rafId = requestAnimationFrame(updateLayoutAndHeight);
         }
 
         if (document.readyState === 'complete') {
