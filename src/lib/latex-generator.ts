@@ -70,15 +70,89 @@ function parseContactInfo(contactItems: string[]) {
   return { email, phone, linkedin, github, location, website };
 }
 
+function cleanDateStr(d: string): string {
+  let cleaned = d.trim();
+  cleaned = cleaned.replace(/^\(([\s\S]*)\)$/, "$1").trim();
+  cleaned = cleaned.replace(/^[()]+|[()]+$/g, "").trim();
+  cleaned = cleaned.replace(/\s*[-–—]\s*/g, " – ");
+  return cleaned;
+}
+
+function parseLineEntry(text: string): {
+  main: string;
+  sub: string;
+  loc: string;
+  date: string;
+} {
+  const dateParenMatch = text.match(/\s*\(([^)]*(?:19\d\d|20\d\d|Present|Current)[^)]*)\)\s*$/i);
+  if (dateParenMatch) {
+    const date = cleanDateStr(dateParenMatch[1]!);
+    const remaining = text.slice(0, dateParenMatch.index).trim().replace(/[,–—\s-]+$/, "");
+    const parts = remaining.split(/\s*,\s*|\s+[—–]\s+/);
+    if (parts.length >= 3) {
+      return {
+        main: parts[0]!.trim(),
+        sub: parts[1]!.trim(),
+        loc: parts.slice(2).join(", ").trim(),
+        date,
+      };
+    }
+    if (parts.length === 2) {
+      return { main: parts[0]!.trim(), sub: parts[1]!.trim(), loc: "", date };
+    }
+    return { main: remaining, sub: "", loc: "", date };
+  }
+
+  const dateEndMatch = text.match(
+    /[\s,–—|•·]+((?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\.?\s*)?(?:19\d\d|20\d\d)(?:\s*[-–—/to]+\s*(?:Present|Current|(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\.?\s*)?(?:19\d\d|20\d\d)))?|(?:Present|Current))\s*$/i,
+  );
+  if (dateEndMatch && dateEndMatch[1]) {
+    const date = cleanDateStr(dateEndMatch[1]);
+    const remaining = text.slice(0, dateEndMatch.index).trim().replace(/[,–—\s-]+$/, "");
+    const parts = remaining.split(/\s*,\s*|\s+[—–]\s+/);
+    if (parts.length >= 3) {
+      return {
+        main: parts[0]!.trim(),
+        sub: parts[1]!.trim(),
+        loc: parts.slice(2).join(", ").trim(),
+        date,
+      };
+    }
+    if (parts.length === 2) {
+      return { main: parts[0]!.trim(), sub: parts[1]!.trim(), loc: "", date };
+    }
+    return { main: remaining, sub: "", loc: "", date };
+  }
+
+  const dashParts = text.split(/\s+[—–]\s+/);
+  if (dashParts.length >= 2) {
+    return {
+      main: dashParts[0]!.trim(),
+      sub: dashParts.slice(1).join(" — ").trim(),
+      loc: "",
+      date: "",
+    };
+  }
+
+  const commaParts = text.split(/\s*,\s*/);
+  if (commaParts.length >= 2) {
+    return {
+      main: commaParts[0]!.trim(),
+      sub: commaParts.slice(1).join(", ").trim(),
+      loc: "",
+      date: "",
+    };
+  }
+
+  return { main: text, sub: "", loc: "", date: "" };
+}
+
 function parseExperienceSection(section: ResumeSection): ParsedRoleEntry[] {
   const entries: ParsedRoleEntry[] = [];
   let currentEntry: ParsedRoleEntry | null = null;
 
   for (const block of section.blocks) {
     if (block.kind === "entry") {
-      // Common formats:
-      // "Senior Software Engineer | Google | Mountain View, CA | 2021 – Present"
-      // "Google · Senior Software Engineer · 2021 – Present"
       const parts = block.text.split(/\s+[|•·]\s+/);
       if (parts.length >= 2) {
         if (currentEntry) entries.push(currentEntry);
@@ -86,26 +160,33 @@ function parseExperienceSection(section: ResumeSection): ParsedRoleEntry[] {
         let title = parts[0]?.trim() || "";
         let company = parts[1]?.trim() || "";
         let location = parts[2]?.trim() || "";
-        let dates = parts[3]?.trim() || "";
+        let dates = cleanDateStr(parts[3]?.trim() || "");
 
-        // If only 2 parts: "Title, Company | Dates" or "Company | Title"
         if (parts.length === 2) {
           title = parts[0]?.trim() || "";
-          dates = parts[1]?.trim() || "";
+          dates = cleanDateStr(parts[1]?.trim() || "");
         } else if (parts.length === 3) {
-          // Check if part 2 looks like a date range
           if (/\d{4}/.test(parts[2] || "")) {
             title = parts[0]?.trim() || "";
             company = parts[1]?.trim() || "";
-            dates = parts[2]?.trim() || "";
+            dates = cleanDateStr(parts[2]?.trim() || "");
             location = "";
           }
         }
 
         currentEntry = { company, location, title, dates, bullets: [] };
       } else {
-        // Single line entry text
-        if (currentEntry) {
+        const parsed = parseLineEntry(block.text);
+        if (parsed.date || parsed.sub) {
+          if (currentEntry) entries.push(currentEntry);
+          currentEntry = {
+            company: parsed.sub || parsed.main,
+            location: parsed.loc,
+            title: parsed.sub ? parsed.main : "",
+            dates: parsed.date,
+            bullets: [],
+          };
+        } else if (currentEntry) {
           currentEntry.bullets.push(block.text);
         } else {
           currentEntry = {
@@ -140,11 +221,21 @@ function parseEducationSection(section: ResumeSection): ParsedEduEntry[] {
         if (currentEntry) entries.push(currentEntry);
         const school = parts[0]?.trim() || "";
         const degree = parts[1]?.trim() || "";
-        const dates = parts[2]?.trim() || "";
+        const dates = cleanDateStr(parts[2]?.trim() || "");
         const location = parts[3]?.trim() || "";
         currentEntry = { school, location, degree, dates, bullets: [] };
       } else {
-        if (currentEntry) {
+        const parsed = parseLineEntry(block.text);
+        if (parsed.date || parsed.sub) {
+          if (currentEntry) entries.push(currentEntry);
+          currentEntry = {
+            school: parsed.sub || parsed.main,
+            location: parsed.loc,
+            degree: parsed.sub ? parsed.main : "",
+            dates: parsed.date,
+            bullets: [],
+          };
+        } else if (currentEntry) {
           currentEntry.bullets.push(block.text);
         } else {
           currentEntry = {

@@ -829,6 +829,14 @@ CERTIFICATIONS & PROJECTS
 - AWS Certified Solutions Architect (Associate), 2023
 - Distributed Vector Indexing Engine (Rust, WebAssembly) — 15,000+ GitHub Stars`;
 
+function cleanDateStr(d: string): string {
+  let cleaned = d.trim();
+  cleaned = cleaned.replace(/^\(([\s\S]*)\)$/, "$1").trim();
+  cleaned = cleaned.replace(/^[()]+|[()]+$/g, "").trim();
+  cleaned = cleaned.replace(/\s*[-–—]\s*/g, " – ");
+  return cleaned;
+}
+
 function parseEntryDetails(text: string): {
   main: string;
   sub: string;
@@ -837,8 +845,8 @@ function parseEntryDetails(text: string): {
 } {
   const dateParenMatch = text.match(/\s*\(([^)]*(?:19\d\d|20\d\d|Present|Current)[^)]*)\)\s*$/i);
   if (dateParenMatch) {
-    const date = dateParenMatch[1]!.trim();
-    const remaining = text.slice(0, dateParenMatch.index).trim();
+    const date = cleanDateStr(dateParenMatch[1]!);
+    const remaining = text.slice(0, dateParenMatch.index).trim().replace(/[,–—\s-]+$/, "");
     const parts = remaining.split(/\s*,\s*|\s+[—–]\s+/);
     if (parts.length >= 3) {
       return {
@@ -855,11 +863,11 @@ function parseEntryDetails(text: string): {
   }
 
   const dateEndMatch = text.match(
-    /[\s,–—-]+((?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s*)?(?:19\d\d|20\d\d)(?:\s*[-–—]\s*(?:Present|Current|(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s*)?(?:19\d\d|20\d\d)))?)\s*$/i,
+    /[\s,–—|•·]+((?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\.?\s*)?(?:19\d\d|20\d\d)(?:\s*[-–—/to]+\s*(?:Present|Current|(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\.?\s*)?(?:19\d\d|20\d\d)))?|(?:Present|Current))\s*$/i,
   );
   if (dateEndMatch && dateEndMatch[1]) {
-    const date = dateEndMatch[1].trim();
-    const remaining = text.slice(0, dateEndMatch.index).trim();
+    const date = cleanDateStr(dateEndMatch[1]);
+    const remaining = text.slice(0, dateEndMatch.index).trim().replace(/[,–—\s-]+$/, "");
     const parts = remaining.split(/\s*,\s*|\s+[—–]\s+/);
     if (parts.length >= 3) {
       return {
@@ -880,6 +888,16 @@ function parseEntryDetails(text: string): {
     return {
       main: dashParts[0]!.trim(),
       sub: dashParts.slice(1).join(" — ").trim(),
+      loc: "",
+      date: "",
+    };
+  }
+
+  const commaParts = text.split(/\s*,\s*/);
+  if (commaParts.length >= 2) {
+    return {
+      main: commaParts[0]!.trim(),
+      sub: commaParts.slice(1).join(", ").trim(),
       loc: "",
       date: "",
     };
@@ -939,60 +957,78 @@ function renderBlocks(section: ResumeSection, template: ResumeTemplate): string 
 
       const hasStructuredDelimiter =
         block.text.includes("|") || block.text.includes("•") || block.text.includes("·");
-      const parts = hasStructuredDelimiter
-        ? block.text.split(/\s+[|•·]\s+/)
-        : block.text.split(/\s+[—–]\s+/);
 
-      if (parts.length >= 4) {
-        let l1Left = parts[0]?.trim() || "";
-        let l1Right = parts[parts.length - 1]?.trim() || "";
-        let l2Left = parts[1]?.trim() || "";
-        let l2Right = parts.length > 3 ? parts.slice(2, -1).join(" · ").trim() : "";
+      if (hasStructuredDelimiter) {
+        const parts = block.text.split(/\s+[|•·]\s+/);
 
-        if (/\d{4}/.test(parts[1] || "") && !/\d{4}/.test(parts[parts.length - 1] || "")) {
-          l1Right = parts[1]!.trim();
-          l2Left = parts[2]?.trim() || "";
-          l2Right = parts.slice(3).join(" · ").trim();
-        }
+        if (parts.length >= 4) {
+          let l1Left = parts[0]?.trim() || "";
+          let l1Right = cleanDateStr(parts[parts.length - 1]?.trim() || "");
+          let l2Left = parts[1]?.trim() || "";
+          let l2Right = parts.length > 3 ? parts.slice(2, -1).join(" · ").trim() : "";
 
-        html += `<div class="entry-subheading">
-          <div class="entry-row"><span class="entry-main font-bold">${escapeHtml(l1Left)}</span><span class="entry-date">${escapeHtml(l1Right)}</span></div>
-          <div class="entry-row sub-row"><span class="entry-sub italic">${escapeHtml(l2Left)}</span>${l2Right ? `<span class="entry-loc italic">${escapeHtml(l2Right)}</span>` : ""}</div>
-        </div>`;
-      } else if (parts.length === 3) {
-        let l1Left = parts[0]?.trim() || "";
-        let l1Right = parts[2]?.trim() || "";
-        let l2Left = parts[1]?.trim() || "";
-        let l2Right = "";
+          if (/\d{4}/.test(parts[1] || "") && !/\d{4}/.test(parts[parts.length - 1] || "")) {
+            l1Right = cleanDateStr(parts[1]!.trim());
+            l2Left = parts[2]?.trim() || "";
+            l2Right = parts.slice(3).join(" · ").trim();
+          }
 
-        if (/\d{4}/.test(parts[1] || "") && !/\d{4}/.test(parts[2] || "")) {
-          l1Right = parts[1]!.trim();
-          l2Left = parts[2]?.trim() || "";
-        }
-
-        const subParts = l2Left.split(/\s*,\s*/);
-        if (subParts.length >= 2 && !l2Right) {
-          l2Left = subParts[0]!.trim();
-          l2Right = subParts.slice(1).join(", ").trim();
-        }
-
-        html += `<div class="entry-subheading">
-          <div class="entry-row"><span class="entry-main font-bold">${escapeHtml(l1Left)}</span><span class="entry-date">${escapeHtml(l1Right)}</span></div>
-          <div class="entry-row sub-row"><span class="entry-sub italic">${escapeHtml(l2Left)}</span>${l2Right ? `<span class="entry-loc italic">${escapeHtml(l2Right)}</span>` : ""}</div>
-        </div>`;
-      } else if (parts.length === 2) {
-        const left = parts[0]?.trim() || "";
-        const right = parts[1]?.trim() || "";
-        const rightIsDate = /\d{4}|present|current/i.test(right);
-        if (rightIsDate) {
           html += `<div class="entry-subheading">
-            <div class="entry-row"><span class="entry-main font-bold">${escapeHtml(left)}</span><span class="entry-date">${escapeHtml(right)}</span></div>
+            <div class="entry-row"><span class="entry-main font-bold">${escapeHtml(l1Left)}</span><span class="entry-date">${escapeHtml(l1Right)}</span></div>
+            <div class="entry-row sub-row"><span class="entry-sub italic">${escapeHtml(l2Left)}</span>${l2Right ? `<span class="entry-loc italic">${escapeHtml(l2Right)}</span>` : ""}</div>
           </div>`;
+        } else if (parts.length === 3) {
+          let l1Left = parts[0]?.trim() || "";
+          let l1Right = cleanDateStr(parts[2]?.trim() || "");
+          let l2Left = parts[1]?.trim() || "";
+          let l2Right = "";
+
+          if (/\d{4}/.test(parts[1] || "") && !/\d{4}/.test(parts[2] || "")) {
+            l1Right = cleanDateStr(parts[1]!.trim());
+            l2Left = parts[2]?.trim() || "";
+          }
+
+          const subParts = l2Left.split(/\s*,\s*/);
+          if (subParts.length >= 2 && !l2Right) {
+            l2Left = subParts[0]!.trim();
+            l2Right = subParts.slice(1).join(", ").trim();
+          }
+
+          html += `<div class="entry-subheading">
+            <div class="entry-row"><span class="entry-main font-bold">${escapeHtml(l1Left)}</span><span class="entry-date">${escapeHtml(l1Right)}</span></div>
+            <div class="entry-row sub-row"><span class="entry-sub italic">${escapeHtml(l2Left)}</span>${l2Right ? `<span class="entry-loc italic">${escapeHtml(l2Right)}</span>` : ""}</div>
+          </div>`;
+        } else if (parts.length === 2) {
+          const left = parts[0]?.trim() || "";
+          const right = parts[1]?.trim() || "";
+          const rightIsDate = /\d{4}|present|current/i.test(right);
+          if (rightIsDate) {
+            html += `<div class="entry-subheading">
+              <div class="entry-row"><span class="entry-main font-bold">${escapeHtml(left)}</span><span class="entry-date">${escapeHtml(cleanDateStr(right))}</span></div>
+            </div>`;
+          } else {
+            html += `<div class="entry-subheading">
+              <div class="entry-row"><span class="entry-main font-bold">${escapeHtml(left)}</span></div>
+              <div class="entry-row sub-row"><span class="entry-sub italic">${escapeHtml(right)}</span></div>
+            </div>`;
+          }
         } else {
-          html += `<div class="entry-subheading">
-            <div class="entry-row"><span class="entry-main font-bold">${escapeHtml(left)}</span></div>
-            <div class="entry-row sub-row"><span class="entry-sub italic">${escapeHtml(right)}</span></div>
-          </div>`;
+          const parsed = parseEntryDetails(block.text);
+          if (parsed.date) {
+            html += `<div class="entry-subheading">
+              <div class="entry-row"><span class="entry-main font-bold">${escapeHtml(parsed.main)}</span><span class="entry-date">${escapeHtml(parsed.date)}</span></div>
+              ${parsed.sub || parsed.loc ? `<div class="entry-row sub-row"><span class="entry-sub italic">${escapeHtml(parsed.sub)}</span>${parsed.loc ? `<span class="entry-loc italic">${escapeHtml(parsed.loc)}</span>` : ""}</div>` : ""}
+            </div>`;
+          } else if (parsed.sub) {
+            html += `<div class="entry-subheading">
+              <div class="entry-row"><span class="entry-main font-bold">${escapeHtml(parsed.main)}</span></div>
+              <div class="entry-row sub-row"><span class="entry-sub italic">${escapeHtml(parsed.sub)}</span>${parsed.loc ? `<span class="entry-loc italic">${escapeHtml(parsed.loc)}</span>` : ""}</div>
+            </div>`;
+          } else if (block.text.length > 70) {
+            html += `<p class="entry-prose">${escapeHtml(block.text)}</p>`;
+          } else {
+            html += `<div class="entry-subheading single-entry"><div class="entry-row"><span class="entry-main font-bold">${escapeHtml(block.text)}</span></div></div>`;
+          }
         }
       } else {
         const parsed = parseEntryDetails(block.text);
@@ -1000,6 +1036,11 @@ function renderBlocks(section: ResumeSection, template: ResumeTemplate): string 
           html += `<div class="entry-subheading">
             <div class="entry-row"><span class="entry-main font-bold">${escapeHtml(parsed.main)}</span><span class="entry-date">${escapeHtml(parsed.date)}</span></div>
             ${parsed.sub || parsed.loc ? `<div class="entry-row sub-row"><span class="entry-sub italic">${escapeHtml(parsed.sub)}</span>${parsed.loc ? `<span class="entry-loc italic">${escapeHtml(parsed.loc)}</span>` : ""}</div>` : ""}
+          </div>`;
+        } else if (parsed.sub) {
+          html += `<div class="entry-subheading">
+            <div class="entry-row"><span class="entry-main font-bold">${escapeHtml(parsed.main)}</span></div>
+            <div class="entry-row sub-row"><span class="entry-sub italic">${escapeHtml(parsed.sub)}</span>${parsed.loc ? `<span class="entry-loc italic">${escapeHtml(parsed.loc)}</span>` : ""}</div>
           </div>`;
         } else if (block.text.length > 70) {
           html += `<p class="entry-prose">${escapeHtml(block.text)}</p>`;
