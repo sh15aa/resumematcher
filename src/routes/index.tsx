@@ -313,6 +313,31 @@ function Index() {
 
   const goToStep = useCallback((step: 1 | 2 | 3 | 4 | 5) => {
     setWizardStep(step);
+
+    const scrollToTop = () => {
+      if (builderRef.current) {
+        const rect = builderRef.current.getBoundingClientRect();
+        // 56px sticky header + 20px comfortable breathing room = 76px
+        const headerOffset = 76;
+        const targetY = Math.max(0, window.pageYOffset + rect.top - headerOffset);
+
+        if (Math.abs(window.pageYOffset - targetY) > 10) {
+          const prefersReducedMotion =
+            typeof window !== "undefined" &&
+            window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+          window.scrollTo({
+            top: targetY,
+            behavior: prefersReducedMotion ? "auto" : "smooth",
+          });
+        }
+      }
+    };
+
+    scrollToTop();
+    requestAnimationFrame(() => {
+      scrollToTop();
+    });
   }, []);
 
   useEffect(() => {
@@ -1174,9 +1199,10 @@ function Index() {
             aria-labelledby="wizard-heading"
             className={
               workspaceLayout === "split"
-                ? "lg:col-span-5 xl:col-span-5 2xl:col-span-5 space-y-6 min-w-0"
-                : "space-y-6 w-full max-w-[1400px] mx-auto min-w-0"
+                ? "lg:col-span-5 xl:col-span-5 2xl:col-span-5 space-y-6 min-w-0 scroll-mt-20"
+                : "space-y-6 w-full max-w-[1400px] mx-auto min-w-0 scroll-mt-20"
             }
+            style={{ overflowAnchor: "none" }}
           >
             {/* Step-by-Step Guided Wizard Workspace */}
             <div
@@ -1185,6 +1211,7 @@ function Index() {
                   ? "rounded-2xl border border-border bg-card p-6 sm:p-8 lg:p-10 shadow-md space-y-6"
                   : "rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-xs space-y-5"
               }
+              style={{ overflowAnchor: "none" }}
             >
               {/* Header & Mode Switcher */}
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/80 pb-4 sm:pb-5">
@@ -1269,7 +1296,7 @@ function Index() {
               </div>
 
               {inputMode === "form" ? (
-                <div className="space-y-6">
+                <div className="space-y-6" style={{ overflowAnchor: "none" }}>
                   {/* 5-Step Responsive Tracker Bar */}
                   <div className="space-y-3">
                     {/* Desktop Stepper (sm and above) */}
@@ -1363,7 +1390,7 @@ function Index() {
 
                   {/* STEP 1: TARGET ROLE & JOB POSTING */}
                   {wizardStep === 1 && (
-                    <div className="space-y-5 pt-1 animate-in fade-in duration-200">
+                    <div className="space-y-5 pt-1 min-h-[460px] animate-in fade-in duration-200">
                       {/* Sample job quick buttons */}
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-xs sm:text-sm font-bold text-foreground mr-1">
@@ -1507,7 +1534,7 @@ function Index() {
 
                   {/* STEP 2: PERSONAL & CONTACT INFORMATION */}
                   {wizardStep === 2 && (
-                    <div className="space-y-5 pt-1 animate-in fade-in duration-200">
+                    <div className="space-y-5 pt-1 min-h-[460px] animate-in fade-in duration-200">
                       <div
                         className={
                           workspaceLayout === "full"
@@ -1638,7 +1665,7 @@ function Index() {
 
                   {/* STEP 3: WORK EXPERIENCE */}
                   {wizardStep === 3 && (
-                    <div className="space-y-5 pt-1 animate-in fade-in duration-200">
+                    <div className="space-y-5 pt-1 min-h-[460px] animate-in fade-in duration-200">
                       <div className="flex items-center justify-between border-b border-border pb-3">
                         <span className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
                           <Briefcase className="size-4 text-primary" /> Career Roles (
@@ -1815,7 +1842,7 @@ function Index() {
 
                   {/* STEP 4: EDUCATION, SKILLS & CUSTOM SECTIONS */}
                   {wizardStep === 4 && (
-                    <div className="space-y-5 pt-1 animate-in fade-in duration-200">
+                    <div className="space-y-5 pt-1 min-h-[460px] animate-in fade-in duration-200">
                       {/* Technical Skills */}
                       <label className="block space-y-1.5">
                         <span className="block text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
@@ -2077,7 +2104,7 @@ function Index() {
 
                   {/* STEP 5: ATS OPTIMIZATION & STEALTH CLOAK */}
                   {wizardStep === 5 && (
-                    <div className="space-y-5 pt-1 animate-in fade-in duration-200">
+                    <div className="space-y-5 pt-1 min-h-[460px] animate-in fade-in duration-200">
                       {/* Readiness Summary */}
                       <div className="rounded-2xl border border-border bg-muted/40 p-4 sm:p-5 space-y-3">
                         <span className="font-bold text-sm sm:text-base text-foreground block">
@@ -3190,9 +3217,7 @@ function Index() {
                                 );
                                 if (harvardTpl) {
                                   handleSelectTemplate(harvardTpl);
-                                  toast.success(
-                                    "Switched to Standard Harvard template!",
-                                  );
+                                  toast.success("Switched to Standard Harvard template!");
                                 }
                               }}
                               className="h-8 text-xs font-semibold gap-1.5 border-border hover:border-border/80 hover:bg-accent cursor-pointer"
