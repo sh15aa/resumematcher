@@ -822,12 +822,12 @@ function Index() {
     const link = document.createElement("a");
     link.href = url;
     const baseName = (applicant || "resume").toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    link.download = `${baseName}-overleaf-faang.tex`;
+    link.download = `${baseName}-standard-resume.tex`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    toast.success("Downloaded Overleaf FAANGPath LaTeX (.tex) file!");
+    toast.success("Downloaded Overleaf LaTeX (.tex) source file!");
   }, [text, stealthCloakActive, activeGhostKeywords, applicant, jobTitle, job]);
 
   // Select a template
@@ -3180,25 +3180,25 @@ function Index() {
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto overflow-x-auto no-scrollbar py-1">
-                          {template.id !== "overleaf-faang" && (
+                          {template.id !== "standard-harvard" && (
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => {
-                                const overleafTpl = TEMPLATES.find(
-                                  (t) => t.id === "overleaf-faang",
+                                const harvardTpl = TEMPLATES.find(
+                                  (t) => t.id === "standard-harvard",
                                 );
-                                if (overleafTpl) {
-                                  handleSelectTemplate(overleafTpl);
+                                if (harvardTpl) {
+                                  handleSelectTemplate(harvardTpl);
                                   toast.success(
-                                    "Switched to Overleaf FAANGPath (Official LaTeX) template!",
+                                    "Switched to Standard Harvard template!",
                                   );
                                 }
                               }}
-                              className="h-8 text-xs font-semibold gap-1.5 border-border hover:border-border/80 hover:bg-accent"
+                              className="h-8 text-xs font-semibold gap-1.5 border-border hover:border-border/80 hover:bg-accent cursor-pointer"
                             >
                               <Sparkles className="size-3.5 text-primary" />
-                              Switch to Overleaf FAANG Template
+                              Switch to Standard Harvard
                             </Button>
                           )}
 

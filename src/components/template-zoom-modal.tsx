@@ -169,10 +169,10 @@ export function TemplateZoomModal({
               )}
               <span className="rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] sm:text-xs font-semibold px-2 py-0.5 inline-flex items-center gap-1">
                 <ShieldCheck className="size-3 text-emerald-400" />
-                {template.id === "overleaf-faang" ||
-                template.id === "google-swe" ||
-                template.id === "citadel-quant" ||
-                template.id === "harvard-hbs"
+                {template.id === "standard-harvard" ||
+                template.id === "canonical-plain" ||
+                template.id === "standard-wharton" ||
+                template.id === "wall-street-elite"
                   ? "100% ATS Verified"
                   : "99% ATS Verified"}
               </span>

@@ -165,14 +165,14 @@ export const TemplateCard = memo(function TemplateCard({
           )}
           <span className="rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-semibold py-0.5 px-2 inline-flex items-center gap-1 backdrop-blur-md shadow-xs">
             <ShieldCheck className="size-3 text-emerald-400" />
-            {template.id === "overleaf-faang" ||
-            template.id === "google-swe" ||
-            template.id === "citadel-quant" ||
-            template.id === "harvard-hbs"
+            {template.id === "standard-harvard" ||
+            template.id === "canonical-plain" ||
+            template.id === "standard-wharton" ||
+            template.id === "wall-street-elite"
               ? "100% ATS"
               : "99% ATS"}
           </span>
-          {template.id === "overleaf-faang" && (
+          {template.id === "standard-harvard" && (
             <span className="rounded-md bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-[10px] font-semibold py-0.5 px-2 backdrop-blur-md">
               LaTeX Ready
             </span>
