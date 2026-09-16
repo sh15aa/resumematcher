@@ -197,55 +197,106 @@ export function SubscriptionModal({ open, onOpenChange, featureReason }: Subscri
     setPaymentError("");
     idempotencyKeyRef.current = `idem_rzp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
-    const activeKey =
-      customRazorpayKey.trim() ||
-      (import.meta.env["VITE_RAZORPAY_KEY_ID"] as string | undefined) ||
-      "";
+    const customKey = customRazorpayKey.trim();
+    const envKey = (import.meta.env["VITE_RAZORPAY_KEY_ID"] as string | undefined)?.trim() || "";
+    const activeKey = customKey || envKey;
 
     try {
-      if (activeKey) {
-        // Load live Razorpay checkout.js script
-        const scriptLoaded = await loadRazorpayScript();
-        if (!scriptLoaded || !(window as any).Razorpay) {
-          throw new Error(
-            "Unable to initialize Razorpay checkout script. Check network connection.",
-          );
-        }
+      // Step A: Load Razorpay Checkout.js SDK
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded || !(window as any).Razorpay) {
+        throw new Error(
+          "Unable to initialize Razorpay checkout script. Please check your network connection.",
+        );
+      }
 
-        const amountPaise =
-          currencyCode === "INR"
-            ? billingCycle === "annual"
-              ? 99900
-              : 19900
-            : billingCycle === "annual"
-              ? 8900
-              : 1900;
+      const amountPaise =
+        currencyCode === "INR"
+          ? billingCycle === "annual"
+            ? 99900
+            : 19900
+          : billingCycle === "annual"
+            ? 8900
+            : 1900;
 
-        const options = {
-          key: activeKey,
+      // Step 1: Call Backend /api/create-order
+      const orderResponse = await fetch("/api/create-order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
           amount: amountPaise,
           currency: currencyCode === "INR" ? "INR" : "USD",
-          name: "CVFitt Enterprise Pro",
-          description: `Unlock all 32 FAANG & Overleaf templates. ${featureReason || ""}`,
-          image: "https://cv.fitt.workers.dev/favicon.ico",
-          prefill: {
-            name: cardName || user?.email?.split("@")[0] || "Alex Chen",
-            email: user?.email || email || "alex.chen@example.com",
-            contact: "+919876543210",
-          },
-          theme: {
-            color: "#2563eb",
-          },
-          handler: async function (response: any) {
-            if (!response.razorpay_payment_id) {
-              isProcessingRef.current = false;
-              setPaymentLoading(false);
-              setPaymentStatus("failed");
-              setPaymentError("Razorpay authorization missing valid payment ID. No funds charged.");
-              toast.error("Payment Verification Failed.");
-              return;
+          receipt: `rcpt_${billingCycle}_${Date.now()}`,
+        }),
+      });
+
+      const orderData = await orderResponse.json();
+
+      if (!orderResponse.ok) {
+        const errorMsg =
+          orderData.error ||
+          (orderResponse.status === 401
+            ? "Razorpay authentication failed (401). Please verify API keys in .env."
+            : `Failed to create order (HTTP ${orderResponse.status})`);
+        throw new Error(errorMsg);
+      }
+
+      const resolvedKeyId = activeKey || orderData.key_id;
+      if (!resolvedKeyId) {
+        throw new Error("Razorpay Key ID is not configured on client or server.");
+      }
+
+      // Step 2: Open Razorpay Standard Modal with received order_id
+      const options = {
+        key: resolvedKeyId,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "CVFitt Enterprise Pro",
+        description: `Unlock all 32 FAANG & Overleaf templates. ${featureReason || ""}`,
+        order_id: orderData.order_id,
+        image: "https://cv.fitt.workers.dev/favicon.ico",
+        prefill: {
+          name: cardName || user?.email?.split("@")[0] || "Alex Chen",
+          email: user?.email || email || "alex.chen@example.com",
+          contact: "+919876543210",
+        },
+        theme: {
+          color: "#2563eb",
+        },
+        handler: async function (response: {
+          razorpay_payment_id: string;
+          razorpay_order_id: string;
+          razorpay_signature: string;
+        }) {
+          // Step 3: Backend HMAC-SHA256 signature verification
+          try {
+            if (!response.razorpay_payment_id || !response.razorpay_signature) {
+              throw new Error("Incomplete payment response received from Razorpay.");
             }
 
+            const verifyResponse = await fetch("/api/verify-payment", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+
+            const verifyData = await verifyResponse.json();
+
+            if (!verifyResponse.ok || !verifyData.success) {
+              throw new Error(
+                verifyData.error || "Payment signature mismatch. Verification failed.",
+              );
+            }
+
+            // Only mark as paid when backend signature matches
             const txnId = response.razorpay_payment_id;
             setTransactionId(txnId);
             await linkSubscriptionToUser(billingCycle);
@@ -256,46 +307,39 @@ export function SubscriptionModal({ open, onOpenChange, featureReason }: Subscri
             setPaymentStatus("succeeded");
             setStep("success");
             toast.success(`🎉 Payment Verified! Razorpay ID: ${txnId}`);
+          } catch (verifyErr: any) {
+            isProcessingRef.current = false;
+            setPaymentLoading(false);
+            setPaymentStatus("failed");
+            const verifyMsg =
+              verifyErr?.message || "Payment signature verification failed. Zero funds charged.";
+            setPaymentError(verifyMsg);
+            toast.error(verifyMsg);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            isProcessingRef.current = false;
+            setPaymentLoading(false);
+            setPaymentStatus("failed");
+            setPaymentError(
+              "Payment window was dismissed by user. Zero charges were made to your account.",
+            );
+            toast.info("Payment window dismissed.");
           },
-          modal: {
-            ondismiss: function () {
-              isProcessingRef.current = false;
-              setPaymentLoading(false);
-              setPaymentStatus("failed");
-              setPaymentError(
-                "Payment window was dismissed. Zero charges were made to your account.",
-              );
-              toast.info("Payment window dismissed.");
-            },
-          },
-        };
+        },
+      };
 
-        const rzp = new (window as any).Razorpay(options);
-        rzp.on("payment.failed", function (response: any) {
-          isProcessingRef.current = false;
-          setPaymentLoading(false);
-          setPaymentStatus("failed");
-          const errorMsg = response.error?.description || "Payment was declined by issuing bank.";
-          setPaymentError(`Transaction Failed: ${errorMsg}`);
-          toast.error(`Payment Failed: ${errorMsg}`);
-        });
-        rzp.open();
-      } else {
-        // Razorpay Instant Sandbox Verification
-        // Generates cryptographically unique Razorpay payment ID (pay_rzp_...)
-        await new Promise((r) => setTimeout(r, 1400));
-        const txnId = `pay_rzp_${Date.now().toString(36).toUpperCase()}_${Math.floor(10000 + Math.random() * 90000)}`;
-        setTransactionId(txnId);
-
-        await linkSubscriptionToUser(billingCycle);
-        subscribe(billingCycle);
-
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on("payment.failed", function (failResponse: any) {
         isProcessingRef.current = false;
         setPaymentLoading(false);
-        setPaymentStatus("succeeded");
-        setStep("success");
-        toast.success(`🎉 Razorpay Sandbox Verified! Transaction ID: ${txnId}`);
-      }
+        setPaymentStatus("failed");
+        const errorMsg = failResponse?.error?.description || "Payment was declined by issuing bank.";
+        setPaymentError(`Transaction Failed: ${errorMsg}`);
+        toast.error(`Payment Failed: ${errorMsg}`);
+      });
+      rzp.open();
     } catch (err: any) {
       isProcessingRef.current = false;
       setPaymentLoading(false);

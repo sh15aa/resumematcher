@@ -14,7 +14,9 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as ApiCoverLetterRouteImport } from './routes/api/cover-letter'
+import { Route as ApiCreateOrderRouteImport } from './routes/api/create-order'
 import { Route as ApiTailorRouteImport } from './routes/api/tailor'
+import { Route as ApiVerifyPaymentRouteImport } from './routes/api/verify-payment'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -41,9 +43,19 @@ const ApiCoverLetterRoute = ApiCoverLetterRouteImport.update({
   path: '/api/cover-letter',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCreateOrderRoute = ApiCreateOrderRouteImport.update({
+  id: '/api/create-order',
+  path: '/api/create-order',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiTailorRoute = ApiTailorRouteImport.update({
   id: '/api/tailor',
   path: '/api/tailor',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiVerifyPaymentRoute = ApiVerifyPaymentRouteImport.update({
+  id: '/api/verify-payment',
+  path: '/api/verify-payment',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -53,7 +65,9 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/terms': typeof TermsRoute
   '/api/cover-letter': typeof ApiCoverLetterRoute
+  '/api/create-order': typeof ApiCreateOrderRoute
   '/api/tailor': typeof ApiTailorRoute
+  '/api/verify-payment': typeof ApiVerifyPaymentRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -61,7 +75,9 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/terms': typeof TermsRoute
   '/api/cover-letter': typeof ApiCoverLetterRoute
+  '/api/create-order': typeof ApiCreateOrderRoute
   '/api/tailor': typeof ApiTailorRoute
+  '/api/verify-payment': typeof ApiVerifyPaymentRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -70,7 +86,9 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/terms': typeof TermsRoute
   '/api/cover-letter': typeof ApiCoverLetterRoute
+  '/api/create-order': typeof ApiCreateOrderRoute
   '/api/tailor': typeof ApiTailorRoute
+  '/api/verify-payment': typeof ApiVerifyPaymentRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -80,7 +98,9 @@ export interface FileRouteTypes {
     | '/profile'
     | '/terms'
     | '/api/cover-letter'
+    | '/api/create-order'
     | '/api/tailor'
+    | '/api/verify-payment'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -88,7 +108,9 @@ export interface FileRouteTypes {
     | '/profile'
     | '/terms'
     | '/api/cover-letter'
+    | '/api/create-order'
     | '/api/tailor'
+    | '/api/verify-payment'
   id:
     | '__root__'
     | '/'
@@ -96,7 +118,9 @@ export interface FileRouteTypes {
     | '/profile'
     | '/terms'
     | '/api/cover-letter'
+    | '/api/create-order'
     | '/api/tailor'
+    | '/api/verify-payment'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -105,7 +129,9 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   TermsRoute: typeof TermsRoute
   ApiCoverLetterRoute: typeof ApiCoverLetterRoute
+  ApiCreateOrderRoute: typeof ApiCreateOrderRoute
   ApiTailorRoute: typeof ApiTailorRoute
+  ApiVerifyPaymentRoute: typeof ApiVerifyPaymentRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -145,11 +171,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCoverLetterRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/create-order': {
+      id: '/api/create-order'
+      path: '/api/create-order'
+      fullPath: '/api/create-order'
+      preLoaderRoute: typeof ApiCreateOrderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/tailor': {
       id: '/api/tailor'
       path: '/api/tailor'
       fullPath: '/api/tailor'
       preLoaderRoute: typeof ApiTailorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/verify-payment': {
+      id: '/api/verify-payment'
+      path: '/api/verify-payment'
+      fullPath: '/api/verify-payment'
+      preLoaderRoute: typeof ApiVerifyPaymentRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -161,7 +201,9 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   TermsRoute: TermsRoute,
   ApiCoverLetterRoute: ApiCoverLetterRoute,
+  ApiCreateOrderRoute: ApiCreateOrderRoute,
   ApiTailorRoute: ApiTailorRoute,
+  ApiVerifyPaymentRoute: ApiVerifyPaymentRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
