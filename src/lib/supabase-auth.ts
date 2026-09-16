@@ -102,6 +102,12 @@ export function useAuth() {
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
+        options: {
+          emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/` : undefined,
+          data: {
+            app_name: "CVFitt",
+          },
+        },
       });
       if (error) return { user: null, session: null, error };
       return { user: data.user, session: data.session, error: null };

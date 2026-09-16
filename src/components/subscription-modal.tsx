@@ -28,9 +28,24 @@ import { useAuth } from "@/lib/supabase-auth";
 import { useCurrency } from "@/lib/currency";
 import { toast } from "sonner";
 
+interface RazorpayInstance {
+  open: () => void;
+  on: (event: string, callback: (response: { error?: { description?: string } }) => void) => void;
+}
+
+interface RazorpayConstructor {
+  new (options: Record<string, unknown>): RazorpayInstance;
+}
+
+declare global {
+  interface Window {
+    Razorpay?: RazorpayConstructor;
+  }
+}
+
 function loadRazorpayScript(): Promise<boolean> {
   return new Promise((resolve) => {
-    if (typeof window !== "undefined" && (window as any).Razorpay) {
+    if (typeof window !== "undefined" && window.Razorpay) {
       resolve(true);
       return;
     }
@@ -102,6 +117,16 @@ export function SubscriptionModal({ open, onOpenChange, featureReason }: Subscri
 
   const cardBrand = useMemo(() => getCardBrand(cardNumber), [cardNumber]);
 
+  const idempotencyKeyRef = useRef<string>("");
+  const isProcessingRef = useRef<boolean>(false);
+  const [paymentGateway, setPaymentGateway] = useState<"razorpay" | "card">("razorpay");
+  const [customRazorpayKey, setCustomRazorpayKey] = useState("");
+  const [showKeyConfig, setShowKeyConfig] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<
+    "idle" | "processing" | "succeeded" | "failed"
+  >("idle");
+  const [paymentError, setPaymentError] = useState("");
+
   if (!open) return null;
 
   const currentPriceFormatted =
@@ -151,16 +176,6 @@ export function SubscriptionModal({ open, onOpenChange, featureReason }: Subscri
     }
   };
 
-  const idempotencyKeyRef = useRef<string>("");
-  const isProcessingRef = useRef<boolean>(false);
-  const [paymentGateway, setPaymentGateway] = useState<"razorpay" | "card">("razorpay");
-  const [customRazorpayKey, setCustomRazorpayKey] = useState("");
-  const [showKeyConfig, setShowKeyConfig] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState<
-    "idle" | "processing" | "succeeded" | "failed"
-  >("idle");
-  const [paymentError, setPaymentError] = useState("");
-
   const fillTestCard = () => {
     setCardName(user?.email?.split("@")[0] || "Alex Chen");
     setCardNumber("4242 4242 4242 4242");
@@ -204,7 +219,7 @@ export function SubscriptionModal({ open, onOpenChange, featureReason }: Subscri
     try {
       // Step A: Load Razorpay Checkout.js SDK
       const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded || !(window as any).Razorpay) {
+      if (!scriptLoaded || !window.Razorpay) {
         throw new Error(
           "Unable to initialize Razorpay checkout script. Please check your network connection.",
         );
@@ -232,9 +247,15 @@ export function SubscriptionModal({ open, onOpenChange, featureReason }: Subscri
         }),
       });
 
-      const orderData = await orderResponse.json();
+      const orderData = (await orderResponse.json()) as {
+        order_id?: string;
+        amount?: number;
+        currency?: string;
+        key_id?: string;
+        error?: string;
+      };
 
-      if (!orderResponse.ok) {
+      if (!orderResponse.ok || !orderData.order_id) {
         const errorMsg =
           orderData.error ||
           (orderResponse.status === 401
@@ -288,7 +309,11 @@ export function SubscriptionModal({ open, onOpenChange, featureReason }: Subscri
               }),
             });
 
-            const verifyData = await verifyResponse.json();
+            const verifyData = (await verifyResponse.json()) as {
+              success?: boolean;
+              error?: string;
+              message?: string;
+            };
 
             if (!verifyResponse.ok || !verifyData.success) {
               throw new Error(
@@ -307,12 +332,14 @@ export function SubscriptionModal({ open, onOpenChange, featureReason }: Subscri
             setPaymentStatus("succeeded");
             setStep("success");
             toast.success(`🎉 Payment Verified! Razorpay ID: ${txnId}`);
-          } catch (verifyErr: any) {
+          } catch (verifyErr: unknown) {
             isProcessingRef.current = false;
             setPaymentLoading(false);
             setPaymentStatus("failed");
             const verifyMsg =
-              verifyErr?.message || "Payment signature verification failed. Zero funds charged.";
+              verifyErr instanceof Error
+                ? verifyErr.message
+                : "Payment signature verification failed. Zero funds charged.";
             setPaymentError(verifyMsg);
             toast.error(verifyMsg);
           }
@@ -330,22 +357,24 @@ export function SubscriptionModal({ open, onOpenChange, featureReason }: Subscri
         },
       };
 
-      const rzp = new (window as any).Razorpay(options);
-      rzp.on("payment.failed", function (failResponse: any) {
+      const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", function (failResponse: { error?: { description?: string } }) {
         isProcessingRef.current = false;
         setPaymentLoading(false);
         setPaymentStatus("failed");
-        const errorMsg = failResponse?.error?.description || "Payment was declined by issuing bank.";
+        const errorMsg = failResponse.error?.description || "Payment was declined by issuing bank.";
         setPaymentError(`Transaction Failed: ${errorMsg}`);
         toast.error(`Payment Failed: ${errorMsg}`);
       });
       rzp.open();
-    } catch (err: any) {
+    } catch (err: unknown) {
       isProcessingRef.current = false;
       setPaymentLoading(false);
       setPaymentStatus("failed");
-      setPaymentError(err?.message || "Failed to initialize Razorpay checkout.");
-      toast.error(err?.message || "Payment initialization failed.");
+      const errorMsg =
+        err instanceof Error ? err.message : "Failed to initialize Razorpay checkout.";
+      setPaymentError(errorMsg);
+      toast.error(errorMsg);
     }
   };
 
