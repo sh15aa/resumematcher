@@ -16,8 +16,11 @@ export function NativeBannerAd({ className = "" }: NativeBannerAdProps) {
   useEffect(() => {
     if (isSubscribed || !isEnabled || !wrapperRef.current) return;
 
-    // Avoid multiple scripts if already injected
-    if (document.getElementById(`script-${config.containerId}`)) return;
+    // Clean up any stale script instance to ensure clean remount
+    const existing = document.getElementById(`script-${config.containerId}`);
+    if (existing && existing.parentNode) {
+      existing.parentNode.removeChild(existing);
+    }
 
     const script = document.createElement("script");
     script.id = `script-${config.containerId}`;
@@ -26,6 +29,12 @@ export function NativeBannerAd({ className = "" }: NativeBannerAdProps) {
     script.src = config.scriptUrl;
 
     wrapperRef.current.appendChild(script);
+
+    return () => {
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    };
   }, [isSubscribed, isEnabled, config.scriptUrl, config.containerId]);
 
   if (isSubscribed || !isEnabled) return null;

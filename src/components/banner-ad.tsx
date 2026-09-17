@@ -135,22 +135,23 @@ export function BannerAd({ variant = "bottom", onUpgradeClick, className = "" }:
 
           {hasRealAd ? (
             <div className="w-full flex justify-center py-2 overflow-x-hidden">
-              {/* Desktop / Tablet: 728x90 */}
-              <div className="hidden sm:block">
-                <AdsterraBannerIframe
-                  adKey={bottomConfig.key}
-                  width={bottomConfig.width}
-                  height={bottomConfig.height}
-                  scriptUrl={bottomConfig.scriptUrl}
-                />
-              </div>
-              {/* Mobile (< 640px): 320x50 */}
-              <div className="block sm:hidden">
+              {/* Adsterra Mobile Banner (320x50) */}
+              <div className="mobileShow">
                 <AdsterraBannerIframe
                   adKey={ADS_CONFIG.banners.stickyBottom.key}
                   width={ADS_CONFIG.banners.stickyBottom.width}
                   height={ADS_CONFIG.banners.stickyBottom.height}
                   scriptUrl={ADS_CONFIG.banners.stickyBottom.scriptUrl}
+                />
+              </div>
+
+              {/* Adsterra Desktop Banner (728x90) */}
+              <div className="mobileHide">
+                <AdsterraBannerIframe
+                  adKey={bottomConfig.key}
+                  width={bottomConfig.width}
+                  height={bottomConfig.height}
+                  scriptUrl={bottomConfig.scriptUrl}
                 />
               </div>
             </div>

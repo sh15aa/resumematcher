@@ -297,3 +297,34 @@
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* Adsterra Responsive Mobile & Desktop Ad Switching */
+.mobileShow {
+  display: none !important;
+}
+
+/* Smartphone Portrait and Landscape (supports both hardware device-width and viewport width) */
+@media only screen and (min-device-width: 320px) and (max-device-width: 480px),
+       only screen and (max-width: 640px) {
+  .mobileShow {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+}
+
+.mobileHide {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+}
+
+/* Smartphone Portrait and Landscape (hide desktop banner on mobile) */
+@media only screen and (min-device-width: 320px) and (max-device-width: 480px),
+       only screen and (max-width: 640px) {
+  .mobileHide {
+    display: none !important;
+  }
+}
