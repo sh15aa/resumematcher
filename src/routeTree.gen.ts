@@ -13,10 +13,12 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as ApiAuthorizeDownloadRouteImport } from './routes/api/authorize-download'
 import { Route as ApiCoverLetterRouteImport } from './routes/api/cover-letter'
 import { Route as ApiCreateOrderRouteImport } from './routes/api/create-order'
 import { Route as ApiTailorRouteImport } from './routes/api/tailor'
 import { Route as ApiVerifyPaymentRouteImport } from './routes/api/verify-payment'
+import { Route as ApiVerifySubscriptionRouteImport } from './routes/api/verify-subscription'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -36,6 +38,11 @@ const ProfileRoute = ProfileRouteImport.update({
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthorizeDownloadRoute = ApiAuthorizeDownloadRouteImport.update({
+  id: '/api/authorize-download',
+  path: '/api/authorize-download',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiCoverLetterRoute = ApiCoverLetterRouteImport.update({
@@ -58,26 +65,35 @@ const ApiVerifyPaymentRoute = ApiVerifyPaymentRouteImport.update({
   path: '/api/verify-payment',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiVerifySubscriptionRoute = ApiVerifySubscriptionRouteImport.update({
+  id: '/api/verify-subscription',
+  path: '/api/verify-subscription',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/terms': typeof TermsRoute
+  '/api/authorize-download': typeof ApiAuthorizeDownloadRoute
   '/api/cover-letter': typeof ApiCoverLetterRoute
   '/api/create-order': typeof ApiCreateOrderRoute
   '/api/tailor': typeof ApiTailorRoute
   '/api/verify-payment': typeof ApiVerifyPaymentRoute
+  '/api/verify-subscription': typeof ApiVerifySubscriptionRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/terms': typeof TermsRoute
+  '/api/authorize-download': typeof ApiAuthorizeDownloadRoute
   '/api/cover-letter': typeof ApiCoverLetterRoute
   '/api/create-order': typeof ApiCreateOrderRoute
   '/api/tailor': typeof ApiTailorRoute
   '/api/verify-payment': typeof ApiVerifyPaymentRoute
+  '/api/verify-subscription': typeof ApiVerifySubscriptionRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -85,10 +101,12 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/terms': typeof TermsRoute
+  '/api/authorize-download': typeof ApiAuthorizeDownloadRoute
   '/api/cover-letter': typeof ApiCoverLetterRoute
   '/api/create-order': typeof ApiCreateOrderRoute
   '/api/tailor': typeof ApiTailorRoute
   '/api/verify-payment': typeof ApiVerifyPaymentRoute
+  '/api/verify-subscription': typeof ApiVerifySubscriptionRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -97,30 +115,36 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/profile'
     | '/terms'
+    | '/api/authorize-download'
     | '/api/cover-letter'
     | '/api/create-order'
     | '/api/tailor'
     | '/api/verify-payment'
+    | '/api/verify-subscription'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/privacy'
     | '/profile'
     | '/terms'
+    | '/api/authorize-download'
     | '/api/cover-letter'
     | '/api/create-order'
     | '/api/tailor'
     | '/api/verify-payment'
+    | '/api/verify-subscription'
   id:
     | '__root__'
     | '/'
     | '/privacy'
     | '/profile'
     | '/terms'
+    | '/api/authorize-download'
     | '/api/cover-letter'
     | '/api/create-order'
     | '/api/tailor'
     | '/api/verify-payment'
+    | '/api/verify-subscription'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -128,10 +152,12 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRoute
   TermsRoute: typeof TermsRoute
+  ApiAuthorizeDownloadRoute: typeof ApiAuthorizeDownloadRoute
   ApiCoverLetterRoute: typeof ApiCoverLetterRoute
   ApiCreateOrderRoute: typeof ApiCreateOrderRoute
   ApiTailorRoute: typeof ApiTailorRoute
   ApiVerifyPaymentRoute: typeof ApiVerifyPaymentRoute
+  ApiVerifySubscriptionRoute: typeof ApiVerifySubscriptionRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -164,6 +190,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/authorize-download': {
+      id: '/api/authorize-download'
+      path: '/api/authorize-download'
+      fullPath: '/api/authorize-download'
+      preLoaderRoute: typeof ApiAuthorizeDownloadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/cover-letter': {
       id: '/api/cover-letter'
       path: '/api/cover-letter'
@@ -192,6 +225,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiVerifyPaymentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/verify-subscription': {
+      id: '/api/verify-subscription'
+      path: '/api/verify-subscription'
+      fullPath: '/api/verify-subscription'
+      preLoaderRoute: typeof ApiVerifySubscriptionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -200,10 +240,12 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRoute,
   TermsRoute: TermsRoute,
+  ApiAuthorizeDownloadRoute: ApiAuthorizeDownloadRoute,
   ApiCoverLetterRoute: ApiCoverLetterRoute,
   ApiCreateOrderRoute: ApiCreateOrderRoute,
   ApiTailorRoute: ApiTailorRoute,
   ApiVerifyPaymentRoute: ApiVerifyPaymentRoute,
+  ApiVerifySubscriptionRoute: ApiVerifySubscriptionRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

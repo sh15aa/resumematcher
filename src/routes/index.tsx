@@ -86,7 +86,7 @@ import {
   type TailorResult,
 } from "@/lib/partial-json";
 import { downloadResumeWord } from "@/lib/word-export";
-import { useSubscription } from "@/lib/subscription";
+import { useSubscription, authorizeServerDownload } from "@/lib/subscription";
 import { useAuth } from "@/lib/supabase-auth";
 import { SubscriptionModal } from "@/components/subscription-modal";
 import { AuthModal } from "@/components/auth-modal";
@@ -94,6 +94,7 @@ import { TemplateZoomModal } from "@/components/template-zoom-modal";
 import { TemplateCard } from "@/components/template-card";
 import { BannerAd } from "@/components/banner-ad";
 import { NativeBannerAd } from "@/components/native-banner-ad";
+import { ResumeSkeleton } from "@/components/resume-skeleton";
 import { PENDING_RESUME_KEY } from "./profile";
 
 export const Route = createFileRoute("/")({
@@ -674,6 +675,12 @@ function Index() {
     setTab("resume");
     outputRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
+    const slowTimer = setTimeout(() => {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("app:slow-network"));
+      }
+    }, 6000);
+
     try {
       const response = await fetch("/api/tailor", {
         method: "POST",
@@ -713,6 +720,7 @@ function Index() {
           tone,
           resume,
           job,
+          applicant,
           result: parsed,
           templateId,
         }),
@@ -721,6 +729,7 @@ function Index() {
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Unexpected error.");
     } finally {
+      clearTimeout(slowTimer);
       setStreaming(false);
     }
   }
@@ -729,6 +738,13 @@ function Index() {
     if (!result) return;
     setCoverBusy(true);
     setCoverLetter("");
+
+    const slowTimer = setTimeout(() => {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("app:slow-network"));
+      }
+    }, 6000);
+
     try {
       const response = await fetch("/api/cover-letter", {
         method: "POST",
@@ -751,8 +767,9 @@ function Index() {
       if (entryId) setHistory(updateEntry(entryId, { coverLetter: out }));
       toast.success("Cover letter generated!");
     } catch (caught) {
-      toast.error(caught instanceof Error ? caught.message : "Unexpected error.");
+      toast.error(caught instanceof Error ? caught.message : "Cover letter error.");
     } finally {
+      clearTimeout(slowTimer);
       setCoverBusy(false);
     }
   }
@@ -773,15 +790,20 @@ function Index() {
 
   // Word Format Download (Free for first 6 templates including Overleaf FAANGPath)
   const handleDownloadWord = useCallback(
-    (chosenTemplate: ResumeTemplate = template) => {
+    async (chosenTemplate: ResumeTemplate = template) => {
       if (!text) return;
-      if (!chosenTemplate.isFree && !isSubscribed) {
+
+      // Server Gatekeeper: Verifies authorization on server (tamper-proof)
+      const auth = await authorizeServerDownload(chosenTemplate.id, "word");
+      if (!auth.allowed) {
         setSubReason(
-          `"${chosenTemplate.name}" is one of our 26 Executive Pro templates. Subscribe to unlock all 32 templates!`,
+          auth.error ||
+            `"${chosenTemplate.name}" is one of our 26 Executive Pro templates. Subscribe to unlock all 32 templates!`,
         );
         setSubModalOpen(true);
         return;
       }
+
       const kws =
         stealthCloakActive && activeGhostKeywords.length > 0 ? activeGhostKeywords : undefined;
       downloadResumeWord(text, chosenTemplate, applicant, kws);
@@ -791,25 +813,30 @@ function Index() {
         }.`,
       );
     },
-    [text, isSubscribed, template, applicant, stealthCloakActive, activeGhostKeywords],
+    [text, template, applicant, stealthCloakActive, activeGhostKeywords],
   );
 
-  // PDF Download (Requires subscription for all templates)
+  // PDF Download (Strictly requires verified server entitlement)
   const handleDownloadPdf = useCallback(
     async (chosenTemplate: ResumeTemplate = template) => {
       if (!text) return;
-      if (!isSubscribed) {
+
+      // Server Gatekeeper: Cannot be bypassed via DevTools, extensions, or localStorage manipulation
+      const auth = await authorizeServerDownload(chosenTemplate.id, "pdf");
+      if (!auth.allowed) {
         setSubReason(
-          "To download PDF format, an active subscription is required. Free users can select the first 5 templates and download in Word (.doc) format anytime.",
+          auth.error ||
+            "To download vector PDF format, an active Enterprise Pro subscription is required.",
         );
         setSubModalOpen(true);
         return;
       }
+
       const kws =
         stealthCloakActive && activeGhostKeywords.length > 0 ? activeGhostKeywords : undefined;
       await printHtmlDocument(renderResumeHtml(text, chosenTemplate, applicant, kws, false));
     },
-    [text, isSubscribed, template, applicant, stealthCloakActive, activeGhostKeywords],
+    [text, template, applicant, stealthCloakActive, activeGhostKeywords],
   );
 
   // Overleaf FAANGPath LaTeX Source Generation (Underlying LaTeX engine)
@@ -2459,8 +2486,19 @@ function Index() {
               </div>
             )}
 
-            {/* Empty state when no resume generated yet: Clean Minimalist View with Banner Ad */}
-            {!text && !error && (
+            {/* Loading Skeleton when synthesizing resume or reading PDF */}
+            {(streaming || reading) && (
+              <ResumeSkeleton
+                statusText={
+                  reading
+                    ? "Parsing candidate resume details from uploaded PDF document..."
+                    : undefined
+                }
+              />
+            )}
+
+            {/* Empty state when no resume generated yet and not streaming/reading */}
+            {!text && !error && !streaming && !reading && (
               <div className="flex h-full min-h-[460px] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center shadow-xs">
                 <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/20 shadow-inner mb-4">
                   <Award className="size-7" />

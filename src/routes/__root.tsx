@@ -23,6 +23,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { CookieConsent } from "../components/cookie-consent";
 import { AdsterraScripts } from "../components/adsterra-scripts";
+import { NetworkStatus } from "../components/network-status";
 
 function NotFoundComponent() {
   return (
@@ -217,6 +218,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
       { rel: "alternate icon", href: "/favicon.ico", type: "image/x-icon" },
       { rel: "apple-touch-icon", href: "/favicon.svg" },
+      { rel: "dns-prefetch", href: "https://boughwarrior.com" },
+      { rel: "preconnect", href: "https://boughwarrior.com", crossOrigin: "anonymous" },
+      { rel: "dns-prefetch", href: "https://checkout.razorpay.com" },
+      { rel: "preconnect", href: "https://checkout.razorpay.com", crossOrigin: "anonymous" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
@@ -362,6 +367,7 @@ function RootComponent() {
       <Outlet />
       <CookieConsent />
       <AdsterraScripts />
+      <NetworkStatus />
     </QueryClientProvider>
   );
 }

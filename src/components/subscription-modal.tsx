@@ -313,9 +313,10 @@ export function SubscriptionModal({ open, onOpenChange, featureReason }: Subscri
               success?: boolean;
               error?: string;
               message?: string;
+              token?: string;
             };
 
-            if (!verifyResponse.ok || !verifyData.success) {
+            if (!verifyResponse.ok || !verifyData.success || !verifyData.token) {
               throw new Error(
                 verifyData.error || "Payment signature mismatch. Verification failed.",
               );
@@ -325,7 +326,12 @@ export function SubscriptionModal({ open, onOpenChange, featureReason }: Subscri
             const txnId = response.razorpay_payment_id;
             setTransactionId(txnId);
             await linkSubscriptionToUser(billingCycle);
-            subscribe(billingCycle);
+            subscribe(
+              billingCycle,
+              verifyData.token,
+              response.razorpay_order_id,
+              response.razorpay_payment_id,
+            );
 
             isProcessingRef.current = false;
             setPaymentLoading(false);

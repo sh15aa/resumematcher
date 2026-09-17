@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { verifyRazorpaySignature } from "@/lib/razorpay.server";
+import { signEntitlementToken, type PlanType } from "@/lib/entitlement.server";
 
 const VerifyPaymentSchema = z.object({
   order_id: z.string().optional(),
@@ -9,6 +10,7 @@ const VerifyPaymentSchema = z.object({
   razorpay_order_id: z.string().optional(),
   razorpay_payment_id: z.string().optional(),
   razorpay_signature: z.string().optional(),
+  plan: z.enum(["monthly", "annual"]).optional().default("monthly"),
 });
 
 export const Route = createFileRoute("/api/verify-payment")({
@@ -33,14 +35,40 @@ export const Route = createFileRoute("/api/verify-payment")({
           );
         }
 
-        return Response.json(
-          {
+        const orderId = result.order_id!;
+        const paymentId = result.payment_id!;
+        const plan = (body.plan || "monthly") as PlanType;
+
+        // Cryptographically sign the entitlement token with server HMAC-SHA256
+        const token = signEntitlementToken({
+          plan,
+          orderId,
+          paymentId,
+        });
+
+        const headers = new Headers();
+        // Set HTTP-Only secure cookie for browser-enforced security
+        headers.append(
+          "Set-Cookie",
+          `cvfitt_entitlement=${token}; Path=/; Max-Age=${365 * 24 * 60 * 60}; SameSite=Lax; HttpOnly; Secure`,
+        );
+
+        return new Response(
+          JSON.stringify({
             success: true,
             message: result.message,
-            order_id: result.order_id,
-            payment_id: result.payment_id,
+            order_id: orderId,
+            payment_id: paymentId,
+            token,
+            plan,
+          }),
+          {
+            status: 200,
+            headers: {
+              ...Object.fromEntries(headers.entries()),
+              "Content-Type": "application/json",
+            },
           },
-          { status: 200 },
         );
       },
     },
