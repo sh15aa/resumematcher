@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useRef } from "react";
 import { normalizeAdsterraKey, normalizeScriptSrc } from "@/lib/ads-config";
 
 interface AdsterraBannerIframeProps {
@@ -16,63 +16,54 @@ export function AdsterraBannerIframe({
   scriptUrl,
   className = "",
 }: AdsterraBannerIframeProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const cleanKey = normalizeAdsterraKey(adKey);
   const cleanScriptUrl =
-    normalizeScriptSrc(scriptUrl) || `//www.highperformanceformat.com/${cleanKey}/invoke.js`;
+    normalizeScriptSrc(scriptUrl) || `https://boughwarrior.com/${cleanKey}/invoke.js`;
 
-  const srcDoc = useMemo(() => {
-    if (!cleanKey) return "";
-    return `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <base target="_blank">
-  <style>
-    * { box-sizing: border-box; }
-    html, body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background: transparent;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      height: 100%;
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !cleanKey) return;
+
+    // Avoid injecting multiple times if already initialized
+    if (container.querySelector("iframe") || container.getAttribute("data-ad-loaded") === "true") {
+      return;
     }
-  </style>
-</head>
-<body>
-  <script type="text/javascript">
-    atOptions = {
-      'key': '${cleanKey}',
-      'format': 'iframe',
-      'height': ${height},
-      'width': ${width},
-      'params': {}
-    };
-  </script>
-  <script type="text/javascript" src="${cleanScriptUrl}"></script>
-</body>
-</html>`;
+
+    container.setAttribute("data-ad-loaded", "true");
+
+    try {
+      const conf = document.createElement("script");
+      conf.type = "text/javascript";
+      conf.innerHTML = `
+        atOptions = {
+          'key': '${cleanKey}',
+          'format': 'iframe',
+          'height': ${height},
+          'width': ${width},
+          'params': {}
+        };
+      `;
+
+      const script = document.createElement("script");
+      script.type = "text/javascript";
+      script.src = cleanScriptUrl;
+      script.async = true;
+
+      container.appendChild(conf);
+      container.appendChild(script);
+    } catch (e) {
+      console.error("[Adsterra] Error injecting banner:", e);
+    }
   }, [cleanKey, cleanScriptUrl, width, height]);
 
   if (!cleanKey) return null;
 
   return (
     <div
+      ref={containerRef}
       className={`overflow-hidden flex items-center justify-center max-w-full ${className}`}
-      style={{ minHeight: height }}
-    >
-      <iframe
-        title={`Adsterra Ad ${width}x${height}`}
-        srcDoc={srcDoc}
-        width={width}
-        height={height}
-        className="border-0 overflow-hidden max-w-full"
-        scrolling="no"
-      />
-    </div>
+      style={{ minHeight: `${height}px` }}
+    />
   );
 }
