@@ -22,6 +22,7 @@ import {
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { CookieConsent } from "../components/cookie-consent";
+import { AdsterraScripts } from "../components/adsterra-scripts";
 
 function NotFoundComponent() {
   return (
@@ -360,6 +361,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <Outlet />
       <CookieConsent />
+      <AdsterraScripts />
     </QueryClientProvider>
   );
 }

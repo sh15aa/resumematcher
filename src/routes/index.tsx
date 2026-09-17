@@ -93,6 +93,7 @@ import { AuthModal } from "@/components/auth-modal";
 import { TemplateZoomModal } from "@/components/template-zoom-modal";
 import { TemplateCard } from "@/components/template-card";
 import { BannerAd } from "@/components/banner-ad";
+import { NativeBannerAd } from "@/components/native-banner-ad";
 import { PENDING_RESUME_KEY } from "./profile";
 
 export const Route = createFileRoute("/")({
@@ -3492,6 +3493,11 @@ function Index() {
             score={result?.match_score || 100}
             roleTitle={jobTitle || deriveTitle(job)}
           />
+        </div>
+
+        {/* Adsterra 4:1 Native Recommendation Widget */}
+        <div className="w-full max-w-[1740px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 mt-8">
+          <NativeBannerAd />
         </div>
 
         {/* Comprehensive FAQ Section */}
